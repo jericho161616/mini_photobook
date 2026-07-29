@@ -1,3 +1,4 @@
+import { FOLD_SIZE_IDS } from './sizes'
 import type { BookSize, Shape, Template } from '../types'
 
 /**
@@ -351,16 +352,20 @@ export function getTemplate(id: string): Template {
 }
 
 /**
- * Templates that stay composed at the given book size. The A4 Folded sizes
- * get their own fold-aware templates on top of the general-purpose library —
- * those are the only ones with a gutter that actually lines up with the
- * physical fold, but any other layout that fits the page is still offered.
+ * Templates that stay composed at the given book size.
+ *
+ * On the A4 Folded sizes this is only ever the two fold-aware templates —
+ * how the sheet is divided, not what goes in it. A general layout applied
+ * across a folded sheet would put its slots straight over the crease, and
+ * folding the print would ruin whatever sits there. The general library is
+ * still fully available on a folded page, just one half at a time, via
+ * templatesForHalf.
  */
 export function templatesForSize(size: BookSize): Template[] {
   return TEMPLATES.filter((t) => {
     if (t.slots.length > size.maxPhotosPerPage) return false
     if (t.onlyFor) return t.onlyFor.includes(size.id)
-    return true
+    return !FOLD_SIZE_IDS.has(size.id)
   })
 }
 

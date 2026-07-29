@@ -5,6 +5,7 @@ import {
   applyTemplateToPage,
   autoLayout,
   fitPageToSize,
+  normalizePages,
   placementFor,
   reconcileTemplates,
   regenerateUnlocked,
@@ -122,7 +123,7 @@ export const useStore = create<StoreState>((set, get) => {
           photos,
           title: project.title,
           sizeId: project.sizeId,
-          pages: project.pages,
+          pages: normalizePages(project.pages),
           activePageIndex: 0,
           selected: null,
         })

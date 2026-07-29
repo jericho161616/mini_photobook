@@ -93,17 +93,34 @@ export function TemplatePanel() {
   const containerTemplate = currentPage ? getTemplate(currentPage.templateId) : undefined
   const isSplit = Boolean(containerTemplate?.halfSplit && currentPage?.halves)
   const foldOrientation = foldOrientationForSize(size.id)
-  const halfLabels: [string, string] = foldOrientation === 'horizontal' ? ['Top half', 'Bottom half'] : ['Left half', 'Right half']
+  const isFolded = Boolean(foldOrientation)
+  const halfLabels: [string, string] =
+    foldOrientation === 'horizontal' ? ['Top half', 'Bottom half'] : ['Left half', 'Right half']
+
+  // The two sheet templates decide how a folded page is divided, so they're
+  // never shape-filtered — filtering them away would strand the page in
+  // whichever mode it's already in.
+  const sheetTemplates = isFolded ? templatesForSize(size) : visible
+  // Shape chips only drive the general library, which a folded page reaches
+  // through its halves — so they're pointless on an unsplit folded page.
+  const showShapeChips = !isFolded || isSplit
 
   return (
     <section className="panel">
       <h2>Layout</h2>
       <p className="hint">
-        {isSplit ? (
-          <>
-            This page is split at the fold, so each half gets its own layout below — up to{' '}
-            <span className="mono">{MAX_PHOTOS_PER_HALF}</span> photos on each side.
-          </>
+        {isFolded ? (
+          isSplit ? (
+            <>
+              Each half of the folded sheet gets its own layout, so nothing lands across the
+              crease — up to <span className="mono">{MAX_PHOTOS_PER_HALF}</span> photos per half.
+            </>
+          ) : (
+            <>
+              One photo across the whole sheet. It runs over the fold, so keep the subject clear
+              of the dashed crease — or split the sheet to lay out each half on its own.
+            </>
+          )
         ) : (
           <>
             Up to <span className="mono">{size.maxPhotosPerPage}</span> photos per page at this size.
@@ -112,53 +129,63 @@ export function TemplatePanel() {
         )}
       </p>
 
-      <div className="shape-chips">
-        {SHAPE_FILTERS.map((shape) => (
-          <button
-            key={shape.id}
-            className={`shape-chip${shapeFilter === shape.id ? ' active' : ''}`}
-            data-shape={shape.id}
-            onClick={() => setShapeFilter(shape.id)}
-            aria-pressed={shapeFilter === shape.id}
-          >
-            {shape.id !== 'all' && <span className="glyph" />}
-            {shape.label}
-          </button>
-        ))}
-      </div>
-
-      {/* On a split page each half's own picker is the one you actually reach
-          for, so it comes first; the whole-page picker below is mostly there
-          to leave split mode again. */}
-      {isSplit && currentPage?.halves && (
-        <div className="half-panels">
-          {(['0', '1'] as const).map((key) => {
-            const halfIndex = Number(key) as 0 | 1
-            const half: HalfLayout = currentPage.halves![halfIndex]
-            return (
-              <div className="half-panel" key={halfIndex}>
-                <p className="layout-section-title">{halfLabels[halfIndex]}</p>
-                <TemplateGrid
-                  templates={halfTemplates}
-                  activeId={half.templateId}
-                  maxSlots={MAX_PHOTOS_PER_HALF}
-                  onPick={(templateId) => applyHalfTemplate(activePageIndex, halfIndex, templateId)}
-                />
-              </div>
-            )
-          })}
+      {showShapeChips && (
+        <div className="shape-chips">
+          {SHAPE_FILTERS.map((shape) => (
+            <button
+              key={shape.id}
+              className={`shape-chip${shapeFilter === shape.id ? ' active' : ''}`}
+              data-shape={shape.id}
+              onClick={() => setShapeFilter(shape.id)}
+              aria-pressed={shapeFilter === shape.id}
+            >
+              {shape.id !== 'all' && <span className="glyph" />}
+              {shape.label}
+            </button>
+          ))}
         </div>
       )}
 
-      <div className={isSplit ? 'whole-page-panel' : undefined}>
-        {isSplit && <p className="layout-section-title">Whole page instead</p>}
+      {isFolded ? (
+        <>
+          <div className="sheet-panel">
+            <p className="layout-section-title">The sheet</p>
+            <TemplateGrid
+              templates={sheetTemplates}
+              activeId={currentPage?.templateId}
+              maxSlots={size.maxPhotosPerPage}
+              onPick={applyTemplate}
+            />
+          </div>
+
+          {isSplit && currentPage?.halves && (
+            <div className="half-panels">
+              {(['0', '1'] as const).map((key) => {
+                const halfIndex = Number(key) as 0 | 1
+                const half: HalfLayout = currentPage.halves![halfIndex]
+                return (
+                  <div className="half-panel" key={halfIndex}>
+                    <p className="layout-section-title">{halfLabels[halfIndex]}</p>
+                    <TemplateGrid
+                      templates={halfTemplates}
+                      activeId={half.templateId}
+                      maxSlots={MAX_PHOTOS_PER_HALF}
+                      onPick={(templateId) => applyHalfTemplate(activePageIndex, halfIndex, templateId)}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </>
+      ) : (
         <TemplateGrid
           templates={visible}
           activeId={currentPage?.templateId}
           maxSlots={size.maxPhotosPerPage}
           onPick={applyTemplate}
         />
-      </div>
+      )}
     </section>
   )
 }

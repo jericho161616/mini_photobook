@@ -87,10 +87,46 @@ export function pagePlacements(page: Page): (Placement | null)[] {
   return page.halves ? [...page.halves[0].placements, ...page.halves[1].placements] : page.placements
 }
 
-function emptyHalfLayout(templateId: string, seed?: Placement | null): HalfLayout {
-  const placements = emptyPlacements(templateId)
+/** A fresh half starts as a single photo — the simplest thing to build from. */
+const DEFAULT_HALF_TEMPLATE_ID = 'full'
+
+function emptyHalfLayout(seed?: Placement | null): HalfLayout {
+  const placements = emptyPlacements(DEFAULT_HALF_TEMPLATE_ID)
   if (seed) placements[0] = seed
-  return { templateId, placements }
+  return { templateId: DEFAULT_HALF_TEMPLATE_ID, placements }
+}
+
+function seededHalves(a?: Placement | null, b?: Placement | null): [HalfLayout, HalfLayout] {
+  return [emptyHalfLayout(a), emptyHalfLayout(b)]
+}
+
+/**
+ * Build a page for `templateId`. A Split at Fold template always comes with
+ * its two half layouts attached — without them the two halves would be drawn
+ * as plain photo slots straddling the crease.
+ */
+function makePage(templateId: string, photos: (Placement | null)[] = []): Page {
+  const template = getTemplate(templateId)
+  const page: Page = {
+    id: nextPageId(),
+    templateId,
+    placements: template.slots.map((_, i) => photos[i] ?? null),
+    locked: false,
+    text: '',
+  }
+  if (template.halfSplit) page.halves = seededHalves(photos[0], photos[1])
+  return page
+}
+
+/**
+ * Self-heal pages loaded from storage that predate per-half layouts, so a
+ * Split at Fold page saved by an older build still opens with its halves.
+ */
+export function normalizePages(pages: Page[]): Page[] {
+  return pages.map((page) => {
+    if (!getTemplate(page.templateId).halfSplit || page.halves) return page
+    return { ...page, halves: seededHalves(page.placements[0], page.placements[1]) }
+  })
 }
 
 /**
@@ -113,9 +149,7 @@ export function applyTemplateToPage(page: Page, templateId: string): Page {
   const { halves: _drop, ...withoutHalves } = page
   const next: Page = { ...withoutHalves, templateId, placements }
 
-  if (template.halfSplit) {
-    next.halves = [emptyHalfLayout('full', photos[0] ?? null), emptyHalfLayout('full', photos[1] ?? null)]
-  }
+  if (template.halfSplit) next.halves = seededHalves(photos[0], photos[1])
   return next
 }
 
@@ -146,16 +180,7 @@ function layoutPages(photos: Photo[], size: BookSize, pages: number): Page[] {
   if (photos.length === 0) {
     // An empty book still needs a shape to pour photos into later.
     const starters = shapeFitting(candidates, size)
-    return Array.from({ length: pages }, (_, i) => {
-      const template = starters[i % starters.length]
-      return {
-        id: nextPageId(),
-        templateId: template.id,
-        placements: emptyPlacements(template.id),
-        locked: false,
-        text: '',
-      }
-    })
+    return Array.from({ length: pages }, (_, i) => makePage(starters[i % starters.length].id))
   }
 
   const shape = bookShape(size)
@@ -210,7 +235,7 @@ function layoutPages(photos: Photo[], size: BookSize, pages: number): Page[] {
       return slotIndex < take && photo ? placementFor(photo.id) : null
     })
 
-    result.push({ id: nextPageId(), templateId: template.id, placements, locked: false, text: '' })
+    result.push(makePage(template.id, placements))
     cursor += take
     previousTemplateId = template.id
   }
@@ -236,16 +261,9 @@ export function resizePages(pages: Page[], pageCount: number, size: BookSize): P
   if (pages.length > target) return pages.slice(0, target)
 
   const candidates = shapeFitting(templatesForSize(size), size)
-  const added = Array.from({ length: target - pages.length }, (_, i) => {
-    const template = candidates[(pages.length + i) % candidates.length]
-    return {
-      id: nextPageId(),
-      templateId: template.id,
-      placements: emptyPlacements(template.id),
-      locked: false,
-      text: '',
-    }
-  })
+  const added = Array.from({ length: target - pages.length }, (_, i) =>
+    makePage(candidates[(pages.length + i) % candidates.length].id),
+  )
   return [...pages, ...added]
 }
 

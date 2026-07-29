@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { DEFAULT_SIZE_ID, getSize } from '../data/sizes'
 import { getTemplate } from '../data/templates'
 import {
+  applyTemplateToPage,
   autoLayout,
   fitPageToSize,
   placementFor,
@@ -12,11 +13,13 @@ import {
 import * as storage from '../lib/db'
 import { clampOffset, clampZoom, importFiles, releasePhotoUrl } from '../lib/imageUtils'
 import { MIN_PAGES } from '../types'
-import type { Page, Photo, Placement, Project, Shape } from '../types'
+import type { HalfLayout, Page, Photo, Placement, Project, Shape } from '../types'
 
 export interface SlotRef {
   pageIndex: number
   slotIndex: number
+  /** Set only when the slot belongs to one side of a Split at Fold page. */
+  halfIndex?: 0 | 1
 }
 
 interface StoreState {
@@ -43,6 +46,8 @@ interface StoreState {
   select: (ref: SlotRef | null) => void
   setShapeFilter: (shape: Shape | 'all') => void
   applyTemplate: (templateId: string) => void
+  /** Sets one half's own layout on a Split at Fold page. */
+  applyHalfTemplate: (pageIndex: number, halfIndex: 0 | 1, templateId: string) => void
   assignPhoto: (ref: SlotRef, photoId: string) => void
   clearSlot: (ref: SlotRef) => void
   updatePlacement: (ref: SlotRef, patch: Partial<Placement>) => void
@@ -169,12 +174,18 @@ export const useStore = create<StoreState>((set, get) => {
       await storage.deletePhotos(photoIds)
       for (const id of idSet) releasePhotoUrl(id)
       set((state) => ({ photos: state.photos.filter((p) => !idSet.has(p.id)) }))
+      const strip = (placements: (Placement | null)[]) =>
+        placements.map((slot) => (slot && idSet.has(slot.photoId) ? null : slot))
       mutatePages((pages) =>
         pages.map((page) => ({
           ...page,
-          placements: page.placements.map((slot) =>
-            slot && idSet.has(slot.photoId) ? null : slot,
-          ),
+          placements: strip(page.placements),
+          ...(page.halves && {
+            halves: [
+              { ...page.halves[0], placements: strip(page.halves[0].placements) },
+              { ...page.halves[1], placements: strip(page.halves[1].placements) },
+            ] as [HalfLayout, HalfLayout],
+          }),
         })),
       )
     },
@@ -240,23 +251,39 @@ export const useStore = create<StoreState>((set, get) => {
       const { activePageIndex, pages: current } = get()
       if (current[activePageIndex]?.locked) return
       mutatePages((pages) =>
+        pages.map((page, i) => (i === activePageIndex ? applyTemplateToPage(page, templateId) : page)),
+      )
+      set({ selected: null })
+    },
+
+    applyHalfTemplate(pageIndex, halfIndex, templateId) {
+      if (get().pages[pageIndex]?.locked) return
+      mutatePages((pages) =>
         pages.map((page, i) => {
-          if (i !== activePageIndex) return page
+          if (i !== pageIndex || !page.halves) return page
           const template = getTemplate(templateId)
-          // Carry the photos already on this page into the new arrangement.
-          const kept = page.placements.filter((p): p is Placement => p !== null)
+          const kept = page.halves[halfIndex].placements.filter((p): p is Placement => p !== null)
           const placements = template.slots.map((_, slotIndex) => kept[slotIndex] ?? null)
-          return { ...page, templateId, placements }
+          const halves = [...page.halves] as [HalfLayout, HalfLayout]
+          halves[halfIndex] = { templateId, placements }
+          return { ...page, halves }
         }),
       )
       set({ selected: null })
     },
 
-    assignPhoto({ pageIndex, slotIndex }, photoId) {
+    assignPhoto({ pageIndex, slotIndex, halfIndex }, photoId) {
       if (get().pages[pageIndex]?.locked) return
       mutatePages((pages) =>
         pages.map((page, i) => {
           if (i !== pageIndex) return page
+          if (halfIndex !== undefined && page.halves) {
+            const halves = [...page.halves] as [HalfLayout, HalfLayout]
+            const placements = [...halves[halfIndex].placements]
+            placements[slotIndex] = placementFor(photoId)
+            halves[halfIndex] = { ...halves[halfIndex], placements }
+            return { ...page, halves }
+          }
           const placements = [...page.placements]
           placements[slotIndex] = placementFor(photoId)
           return { ...page, placements }
@@ -264,11 +291,18 @@ export const useStore = create<StoreState>((set, get) => {
       )
     },
 
-    clearSlot({ pageIndex, slotIndex }) {
+    clearSlot({ pageIndex, slotIndex, halfIndex }) {
       if (get().pages[pageIndex]?.locked) return
       mutatePages((pages) =>
         pages.map((page, i) => {
           if (i !== pageIndex) return page
+          if (halfIndex !== undefined && page.halves) {
+            const halves = [...page.halves] as [HalfLayout, HalfLayout]
+            const placements = [...halves[halfIndex].placements]
+            placements[slotIndex] = null
+            halves[halfIndex] = { ...halves[halfIndex], placements }
+            return { ...page, halves }
+          }
           const placements = [...page.placements]
           placements[slotIndex] = null
           return { ...page, placements }
@@ -276,19 +310,32 @@ export const useStore = create<StoreState>((set, get) => {
       )
     },
 
-    updatePlacement({ pageIndex, slotIndex }, patch) {
+    updatePlacement({ pageIndex, slotIndex, halfIndex }, patch) {
       if (get().pages[pageIndex]?.locked) return
+      const applyPatch = (existing: Placement | null): Placement | null => {
+        if (!existing) return existing
+        const next: Placement = { ...existing, ...patch }
+        next.zoom = clampZoom(next.zoom)
+        next.offsetX = clampOffset(next.offsetX)
+        next.offsetY = clampOffset(next.offsetY)
+        return next
+      }
       mutatePages((pages) =>
         pages.map((page, i) => {
           if (i !== pageIndex) return page
-          const placements = [...page.placements]
-          const existing = placements[slotIndex]
+          if (halfIndex !== undefined && page.halves) {
+            const existing = page.halves[halfIndex].placements[slotIndex]
+            if (!existing) return page
+            const halves = [...page.halves] as [HalfLayout, HalfLayout]
+            const placements = [...halves[halfIndex].placements]
+            placements[slotIndex] = applyPatch(existing)
+            halves[halfIndex] = { ...halves[halfIndex], placements }
+            return { ...page, halves }
+          }
+          const existing = page.placements[slotIndex]
           if (!existing) return page
-          const next: Placement = { ...existing, ...patch }
-          next.zoom = clampZoom(next.zoom)
-          next.offsetX = clampOffset(next.offsetX)
-          next.offsetY = clampOffset(next.offsetY)
-          placements[slotIndex] = next
+          const placements = [...page.placements]
+          placements[slotIndex] = applyPatch(existing)
           return { ...page, placements }
         }),
       )

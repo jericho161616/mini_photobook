@@ -60,26 +60,51 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
                 aria-current={index === activePageIndex}
               >
                 <span className="fs-slots">
-                  {template.slots.map((slot, slotIndex) => {
-                    const placement = page.placements[slotIndex]
-                    const photo = placement ? photos.get(placement.photoId) : undefined
-                    return (
-                      <span
-                        key={slotIndex}
-                        className={`fs-slot${photo ? ' filled' : ''}`}
-                        style={{
-                          left: `${slot.x}%`,
-                          top: `${slot.y}%`,
-                          width: `${slot.w}%`,
-                          height: `${slot.h}%`,
-                        }}
-                      >
-                        {photo && (
-                          <img src={photoThumbUrl(photo)} alt="" loading="lazy" decoding="async" />
-                        )}
-                      </span>
-                    )
-                  })}
+                  {template.halfSplit && page.halves
+                    ? template.slots.flatMap((region, halfIndex) => {
+                        const half = page.halves![halfIndex as 0 | 1]
+                        const halfTemplate = getTemplate(half.templateId)
+                        return halfTemplate.slots.map((slot, slotIndex) => {
+                          const placement = half.placements[slotIndex]
+                          const photo = placement ? photos.get(placement.photoId) : undefined
+                          return (
+                            <span
+                              key={`${halfIndex}-${slotIndex}`}
+                              className={`fs-slot${photo ? ' filled' : ''}`}
+                              style={{
+                                left: `${region.x + (slot.x / 100) * region.w}%`,
+                                top: `${region.y + (slot.y / 100) * region.h}%`,
+                                width: `${(slot.w / 100) * region.w}%`,
+                                height: `${(slot.h / 100) * region.h}%`,
+                              }}
+                            >
+                              {photo && (
+                                <img src={photoThumbUrl(photo)} alt="" loading="lazy" decoding="async" />
+                              )}
+                            </span>
+                          )
+                        })
+                      })
+                    : template.slots.map((slot, slotIndex) => {
+                        const placement = page.placements[slotIndex]
+                        const photo = placement ? photos.get(placement.photoId) : undefined
+                        return (
+                          <span
+                            key={slotIndex}
+                            className={`fs-slot${photo ? ' filled' : ''}`}
+                            style={{
+                              left: `${slot.x}%`,
+                              top: `${slot.y}%`,
+                              width: `${slot.w}%`,
+                              height: `${slot.h}%`,
+                            }}
+                          >
+                            {photo && (
+                              <img src={photoThumbUrl(photo)} alt="" loading="lazy" decoding="async" />
+                            )}
+                          </span>
+                        )
+                      })}
                 </span>
               </button>
               <button

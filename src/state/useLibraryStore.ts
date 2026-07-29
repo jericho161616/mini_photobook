@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { DEFAULT_SIZE_ID, getSize } from '../data/sizes'
-import { autoLayout } from '../lib/autoLayout'
+import { autoLayout, pagePlacements } from '../lib/autoLayout'
 import * as storage from '../lib/db'
 import { newProjectId } from '../lib/db'
 import { MIN_PAGES } from '../types'
@@ -25,7 +25,7 @@ interface LibraryState {
 /** The first photo actually placed on a page, in reading order — used as the cover art. */
 function firstPlacedPhotoId(pages: Page[]): string | undefined {
   for (const page of pages) {
-    for (const placement of page.placements) {
+    for (const placement of pagePlacements(page)) {
       if (placement) return placement.photoId
     }
   }

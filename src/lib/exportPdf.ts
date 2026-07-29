@@ -1,7 +1,7 @@
 import { getTemplate } from '../data/templates'
-import { resolvePageSize } from './autoLayout'
+import { pagePlacements, resolvePageSize } from './autoLayout'
 import { coverGeometry, slotPixelRect } from './imageUtils'
-import type { BookSize, Page, Photo } from '../types'
+import type { BookSize, Page, Photo, Placement } from '../types'
 
 export const PAGE_MARGIN_RATIO = 0.09
 const DPI = 300
@@ -53,15 +53,11 @@ async function renderPage(
   const template = getTemplate(page.templateId)
   const marginRatio = template.bleed ? 0 : PAGE_MARGIN_RATIO
 
-  template.slots.forEach((slot, slotIndex) => {
-    const placement = page.placements[slotIndex]
+  const drawSlot = (rect: { x: number; y: number; w: number; h: number }, placement: Placement | null) => {
     if (!placement) return
     const bitmap = photoMap.get(placement.photoId)
     if (!bitmap) return
-
-    const rect = slotPixelRect(slot, pageW, pageH, marginRatio)
     const geo = coverGeometry(bitmap.width / bitmap.height, rect.w, rect.h, placement)
-
     // Clip to the slot so the overflow from cover-fit and zoom is trimmed
     // exactly as it appears on screen.
     ctx.save()
@@ -70,7 +66,25 @@ async function renderPage(
     ctx.clip()
     ctx.drawImage(bitmap, rect.x + geo.x, rect.y + geo.y, geo.drawWidth, geo.drawHeight)
     ctx.restore()
-  })
+  }
+
+  if (template.halfSplit && page.halves) {
+    template.slots.forEach((region, halfIndex) => {
+      const half = page.halves![halfIndex as 0 | 1]
+      const halfTemplate = getTemplate(half.templateId)
+      const outer = slotPixelRect(region, pageW, pageH, 0)
+      const halfMargin = halfTemplate.bleed ? 0 : PAGE_MARGIN_RATIO
+      halfTemplate.slots.forEach((slot, slotIndex) => {
+        const inner = slotPixelRect(slot, outer.w, outer.h, halfMargin)
+        drawSlot({ x: outer.x + inner.x, y: outer.y + inner.y, w: inner.w, h: inner.h }, half.placements[slotIndex])
+      })
+    })
+  } else {
+    template.slots.forEach((slot, slotIndex) => {
+      const rect = slotPixelRect(slot, pageW, pageH, marginRatio)
+      drawSlot(rect, page.placements[slotIndex])
+    })
+  }
 
   // Mirrors the on-screen caption so the printed cover matches the editor.
   if (template.caption && title.trim()) {
@@ -121,7 +135,7 @@ export async function exportToPdf({
   // Decode each photo once, not once per page it appears on.
   const needed = new Set<string>()
   for (const page of pages) {
-    for (const placement of page.placements) {
+    for (const placement of pagePlacements(page)) {
       if (placement) needed.add(placement.photoId)
     }
   }

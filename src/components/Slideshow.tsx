@@ -108,13 +108,31 @@ export function Slideshow({ pages, photos, size, title, startIndex, onClose }: S
                 {page.text}
               </div>
             )}
-            {template.slots.map((slot, slotIndex) => {
-              const rect = slotPixelRect(slot, pageWidth, pageHeight, marginRatio)
-              const placement = page.placements[slotIndex]
+            {(template.halfSplit && page.halves
+              ? template.slots.flatMap((region, halfIndex) => {
+                  const half = page.halves![halfIndex as 0 | 1]
+                  const halfTemplate = getTemplate(half.templateId)
+                  const outer = slotPixelRect(region, pageWidth, pageHeight, 0)
+                  const halfMargin = halfTemplate.bleed ? 0 : PAGE_MARGIN_RATIO
+                  return halfTemplate.slots.map((slot, slotIndex) => {
+                    const inner = slotPixelRect(slot, outer.w, outer.h, halfMargin)
+                    return {
+                      key: `${halfIndex}-${slotIndex}`,
+                      rect: { x: outer.x + inner.x, y: outer.y + inner.y, w: inner.w, h: inner.h },
+                      placement: half.placements[slotIndex],
+                    }
+                  })
+                })
+              : template.slots.map((slot, slotIndex) => ({
+                  key: String(slotIndex),
+                  rect: slotPixelRect(slot, pageWidth, pageHeight, marginRatio),
+                  placement: page.placements[slotIndex],
+                }))
+            ).map(({ key, rect, placement }) => {
               const photo = placement ? photos.get(placement.photoId) : undefined
               return (
                 <div
-                  key={slotIndex}
+                  key={key}
                   className="slot"
                   style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
                 >

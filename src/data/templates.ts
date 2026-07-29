@@ -297,8 +297,10 @@ export const TEMPLATES: Template[] = [
     fits: ['wide'],
     onlyFor: ['a4-folded-portrait'],
     // Edge-to-edge and no gutter: the two halves are the same physical sheet,
-    // meeting exactly at the fold rather than a designed page margin.
+    // meeting exactly at the fold rather than a designed page margin. Each
+    // "slot" here is a region holding its own independent layout, not a photo.
     bleed: true,
+    halfSplit: true,
     slots: [
       { x: 0, y: 0, w: 50, h: 100 },
       { x: 50, y: 0, w: 50, h: 100 },
@@ -320,6 +322,7 @@ export const TEMPLATES: Template[] = [
     fits: ['tall'],
     onlyFor: ['a4-folded-landscape'],
     bleed: true,
+    halfSplit: true,
     slots: [
       { x: 0, y: 0, w: 100, h: 50 },
       { x: 0, y: 50, w: 100, h: 50 },
@@ -359,4 +362,18 @@ export function templatesForSize(size: BookSize): Template[] {
     if (t.onlyFor) return t.onlyFor.includes(size.id)
     return true
   })
+}
+
+/** A folded sheet's half is roughly A5-sized — dense enough for a small collage. */
+export const MAX_PHOTOS_PER_HALF = 3
+
+/**
+ * Layout choices for one side of a "Split at Fold" page. Only the
+ * general-purpose library applies — a fold-only template wouldn't make sense
+ * nested inside half of an already-folded sheet.
+ */
+export function templatesForHalf(shape: Shape): Template[] {
+  const general = TEMPLATES.filter((t) => !t.onlyFor && !t.halfSplit && t.slots.length <= MAX_PHOTOS_PER_HALF)
+  const fitting = general.filter((t) => t.fits.includes(shape))
+  return fitting.length > 0 ? fitting : general
 }

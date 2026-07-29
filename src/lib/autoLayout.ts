@@ -1,7 +1,7 @@
 import { bookShape, getSize } from '../data/sizes'
 import { getTemplate, templatesForSize } from '../data/templates'
 import { MAX_PAGES, MIN_PAGES } from '../types'
-import type { BookSize, Page, Photo, Placement, Template } from '../types'
+import type { BookSize, HalfLayout, Page, Photo, Placement, Shape, Template } from '../types'
 
 export function clampPages(n: number): number {
   return Math.max(MIN_PAGES, Math.min(MAX_PAGES, n))
@@ -75,6 +75,57 @@ export function emptyPlacements(templateId: string): (Placement | null)[] {
 
 export function placementFor(photoId: string): Placement {
   return { photoId, zoom: 1, offsetX: 0, offsetY: 0 }
+}
+
+/**
+ * Every placement actually on this page — flattened out of `halves` for a
+ * Split at Fold page, or the flat `placements` array everywhere else. Used
+ * wherever code just needs "which photos are on this page," regardless of
+ * whether the page has independent half layouts.
+ */
+export function pagePlacements(page: Page): (Placement | null)[] {
+  return page.halves ? [...page.halves[0].placements, ...page.halves[1].placements] : page.placements
+}
+
+/** The half-region's own shape — both halves of a fold are always identical. */
+export function halfShape(size: BookSize): Shape {
+  const halfRatio =
+    bookShape(size) === 'wide' ? size.widthIn / 2 / size.heightIn : size.widthIn / (size.heightIn / 2)
+  if (halfRatio > 1.15) return 'wide'
+  if (halfRatio < 0.87) return 'tall'
+  return 'square'
+}
+
+function emptyHalfLayout(templateId: string, seed?: Placement | null): HalfLayout {
+  const placements = emptyPlacements(templateId)
+  if (seed) placements[0] = seed
+  return { templateId, placements }
+}
+
+/**
+ * Apply a chosen template to a page, handling the transition in and out of
+ * Split at Fold: leaving it flattens both halves' photos back into one list
+ * for the new template's slots; entering it seeds each half with a single
+ * photo. Staying split (e.g. flipping fold orientation) leaves each half's
+ * own layout untouched.
+ */
+export function applyTemplateToPage(page: Page, templateId: string): Page {
+  const template = getTemplate(templateId)
+  const oldTemplate = getTemplate(page.templateId)
+
+  if (oldTemplate.halfSplit && template.halfSplit && page.halves) {
+    return { ...page, templateId }
+  }
+
+  const photos = pagePlacements(page).filter((p): p is Placement => p !== null)
+  const placements = template.slots.map((_, i) => photos[i] ?? null)
+  const { halves: _drop, ...withoutHalves } = page
+  const next: Page = { ...withoutHalves, templateId, placements }
+
+  if (template.halfSplit) {
+    next.halves = [emptyHalfLayout('full', photos[0] ?? null), emptyHalfLayout('full', photos[1] ?? null)]
+  }
+  return next
 }
 
 export interface AutoLayoutOptions {
@@ -231,15 +282,13 @@ export function reconcileTemplates(pages: Page[], size: BookSize): Page[] {
  */
 export function fitPageToSize(page: Page, size: BookSize): Page {
   const allowed = shapeFitting(templatesForSize(size), size)
-  const photos = page.placements.filter((p): p is Placement => p !== null)
   const replacement = [...allowed].sort((a, b) => {
     if (b.slots.length !== a.slots.length) return b.slots.length - a.slots.length
     // On a tie, prefer a template built for this exact size (e.g. the A4
     // Folded fold-line layouts) over a general-purpose one of the same size.
     return Number(Boolean(b.onlyFor)) - Number(Boolean(a.onlyFor))
   })[0]
-  const placements = replacement.slots.map((_, i) => photos[i] ?? null)
-  return { ...page, templateId: replacement.id, placements }
+  return applyTemplateToPage(page, replacement.id)
 }
 
 /** The size actually in effect for this page — its own override, or the book's. */
@@ -257,7 +306,7 @@ export function regenerateUnlocked(pages: Page[], photos: Photo[], size: BookSiz
   const reservedIds = new Set(
     pages
       .filter((p) => p.locked)
-      .flatMap((p) => p.placements.filter((pl): pl is Placement => pl !== null))
+      .flatMap((p) => pagePlacements(p).filter((pl): pl is Placement => pl !== null))
       .map((pl) => pl.photoId),
   )
   const freePhotos = photos.filter((p) => !reservedIds.has(p.id))
@@ -278,7 +327,7 @@ export function regenerateUnlocked(pages: Page[], photos: Photo[], size: BookSiz
 export function usedPhotoIds(pages: Page[]): Set<string> {
   const used = new Set<string>()
   for (const page of pages) {
-    for (const placement of page.placements) {
+    for (const placement of pagePlacements(page)) {
       if (placement) used.add(placement.photoId)
     }
   }

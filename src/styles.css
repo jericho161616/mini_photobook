@@ -841,6 +841,27 @@ input:focus-visible,
   gap: 8px;
 }
 
+.half-panels {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.half-panel-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink-soft);
+  margin: 0 0 8px;
+}
+
+.half-panel .template-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
 .family-label {
   grid-column: 1 / -1;
   font-size: 9.5px;

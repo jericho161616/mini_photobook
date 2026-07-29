@@ -33,6 +33,13 @@ export interface Template {
    * were designed for.
    */
   onlyFor?: string[]
+  /**
+   * Marks the two "Split at Fold" templates — each of their two slots isn't a
+   * photo slot itself, but a region holding its own independent HalfLayout
+   * (own template, own photos), so each side of the fold can be composed
+   * differently rather than always being one photo per side.
+   */
+  halfSplit?: boolean
 }
 
 export interface BookSize {
@@ -72,10 +79,18 @@ export interface Placement {
   offsetY: number
 }
 
+/** One side of a "Split at Fold" page — its own independent layout and photos. */
+export interface HalfLayout {
+  templateId: string
+  /** One entry per this half's own template slot; null means the slot is empty. */
+  placements: (Placement | null)[]
+}
+
 export interface Page {
   id: string
   templateId: string
-  /** One entry per template slot; null means the slot is empty. */
+  /** One entry per template slot; null means the slot is empty. Unused (and
+   *  stale) while `halves` is set — a Split at Fold page's photos live there. */
   placements: (Placement | null)[]
   /** Locked pages ignore template changes, photo drops, panning, and reordering. */
   locked: boolean
@@ -87,6 +102,8 @@ export interface Page {
    * own size," which is true for every page outside that family.
    */
   sizeId?: string
+  /** Set only when this page's template is one of the two "Split at Fold" ones. */
+  halves?: [HalfLayout, HalfLayout]
 }
 
 export interface Project {

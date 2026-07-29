@@ -8,7 +8,12 @@ export function SlotInspector() {
   const updatePlacement = useStore((s) => s.updatePlacement)
   const clearSlot = useStore((s) => s.clearSlot)
 
-  const placement = selected ? pages[selected.pageIndex]?.placements[selected.slotIndex] : null
+  const selectedPage = selected ? pages[selected.pageIndex] : undefined
+  const placement = selected
+    ? selected.halfIndex !== undefined
+      ? selectedPage?.halves?.[selected.halfIndex].placements[selected.slotIndex]
+      : selectedPage?.placements[selected.slotIndex]
+    : null
   const photo = placement ? photos.find((p) => p.id === placement.photoId) : undefined
 
   return (

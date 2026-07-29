@@ -13,9 +13,11 @@ interface PageViewProps {
   side: 'left' | 'right'
   title: string
   selectedSlot: number | null
-  onSelectSlot: (slotIndex: number) => void
-  onDropPhoto: (slotIndex: number, photoId: string) => void
-  onPan: (slotIndex: number, offsetX: number, offsetY: number) => void
+  /** Set only when the selected slot belongs to one half of a Split at Fold page. */
+  selectedHalfIndex?: 0 | 1
+  onSelectSlot: (slotIndex: number, halfIndex?: 0 | 1) => void
+  onDropPhoto: (slotIndex: number, photoId: string, halfIndex?: 0 | 1) => void
+  onPan: (slotIndex: number, offsetX: number, offsetY: number, halfIndex?: 0 | 1) => void
   onToggleLock: () => void
   /** Present only when this page's size belongs to the A4 family. */
   sizePicker?: { options: { id: string; label: string }[]; value: string; onChange: (sizeId: string) => void }
@@ -36,6 +38,7 @@ export function PageView({
   side,
   title,
   selectedSlot,
+  selectedHalfIndex,
   onSelectSlot,
   onDropPhoto,
   onPan,
@@ -119,23 +122,48 @@ export function PageView({
             {page.text}
           </div>
         )}
-        {template.slots.map((slot, slotIndex) => {
-          const rect = slotPixelRect(slot, width, height, marginRatio)
-          const placement = page.placements[slotIndex] ?? null
-          const photo = placement ? photos.get(placement.photoId) : undefined
-          return (
-            <SlotView
-              key={slotIndex}
-              rect={rect}
-              placement={placement}
-              photo={photo}
-              selected={selectedSlot === slotIndex}
-              onSelect={() => onSelectSlot(slotIndex)}
-              onDropPhoto={(photoId) => onDropPhoto(slotIndex, photoId)}
-              onPan={(x, y) => onPan(slotIndex, x, y)}
-            />
-          )
-        })}
+        {template.halfSplit && page.halves
+          ? template.slots.flatMap((halfRegion, halfIndex) => {
+              const outer = slotPixelRect(halfRegion, width, height, 0)
+              const half = page.halves![halfIndex as 0 | 1]
+              const halfTemplate = getTemplate(half.templateId)
+              const halfMargin = halfTemplate.bleed ? 0 : PAGE_MARGIN_RATIO
+              return halfTemplate.slots.map((slot, slotIndex) => {
+                const inner = slotPixelRect(slot, outer.w, outer.h, halfMargin)
+                const rect = { x: outer.x + inner.x, y: outer.y + inner.y, w: inner.w, h: inner.h }
+                const placement = half.placements[slotIndex] ?? null
+                const photo = placement ? photos.get(placement.photoId) : undefined
+                return (
+                  <SlotView
+                    key={`${halfIndex}-${slotIndex}`}
+                    rect={rect}
+                    placement={placement}
+                    photo={photo}
+                    selected={selectedHalfIndex === halfIndex && selectedSlot === slotIndex}
+                    onSelect={() => onSelectSlot(slotIndex, halfIndex as 0 | 1)}
+                    onDropPhoto={(photoId) => onDropPhoto(slotIndex, photoId, halfIndex as 0 | 1)}
+                    onPan={(x, y) => onPan(slotIndex, x, y, halfIndex as 0 | 1)}
+                  />
+                )
+              })
+            })
+          : template.slots.map((slot, slotIndex) => {
+              const rect = slotPixelRect(slot, width, height, marginRatio)
+              const placement = page.placements[slotIndex] ?? null
+              const photo = placement ? photos.get(placement.photoId) : undefined
+              return (
+                <SlotView
+                  key={slotIndex}
+                  rect={rect}
+                  placement={placement}
+                  photo={photo}
+                  selected={selectedHalfIndex === undefined && selectedSlot === slotIndex}
+                  onSelect={() => onSelectSlot(slotIndex)}
+                  onDropPhoto={(photoId) => onDropPhoto(slotIndex, photoId)}
+                  onPan={(x, y) => onPan(slotIndex, x, y)}
+                />
+              )
+            })}
       </div>
     </div>
   )

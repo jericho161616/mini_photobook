@@ -1,9 +1,73 @@
 import { Fragment } from 'react'
-import { getSize } from '../data/sizes'
-import { SHAPE_FILTERS, templatesForSize } from '../data/templates'
-import { resolvePageSize } from '../lib/autoLayout'
+import { foldOrientationForSize, getSize } from '../data/sizes'
+import {
+  getTemplate,
+  MAX_PHOTOS_PER_HALF,
+  SHAPE_FILTERS,
+  templatesForHalf,
+  templatesForSize,
+} from '../data/templates'
+import { halfShape, resolvePageSize } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
-import type { TemplateFamily } from '../types'
+import type { HalfLayout, Template, TemplateFamily } from '../types'
+
+/** A grid of template swatches — reused for both the whole-page picker and each half's own. */
+function TemplateGrid({
+  templates,
+  activeId,
+  maxSlots,
+  onPick,
+}: {
+  templates: Template[]
+  activeId: string | undefined
+  maxSlots: number
+  onPick: (templateId: string) => void
+}) {
+  let lastFamily: TemplateFamily | null = null
+  return (
+    <div className="template-grid">
+      {templates.map((template) => {
+        const showFamily = template.family !== lastFamily
+        lastFamily = template.family
+        const isActive = activeId === template.id
+        const tooDense = template.slots.length > maxSlots
+
+        return (
+          <Fragment key={template.id}>
+            {showFamily && <div className="family-label">{template.family}</div>}
+            <button
+              className={`tmpl${isActive ? ' active' : ''}`}
+              onClick={() => onPick(template.id)}
+              disabled={tooDense}
+              title={
+                tooDense
+                  ? `Needs a larger book — ${template.slots.length} photos exceeds this size's limit of ${maxSlots}`
+                  : template.label
+              }
+              aria-pressed={isActive}
+            >
+              <span className="icon">
+                {template.slots.map((slot, i) => (
+                  <span
+                    key={i}
+                    className="s"
+                    style={{
+                      left: `${slot.x}%`,
+                      top: `${slot.y}%`,
+                      width: `${slot.w}%`,
+                      height: `${slot.h}%`,
+                    }}
+                  />
+                ))}
+              </span>
+              <span className="label">{template.label}</span>
+            </button>
+          </Fragment>
+        )
+      })}
+    </div>
+  )
+}
 
 export function TemplatePanel() {
   const sizeId = useStore((s) => s.sizeId)
@@ -12,6 +76,7 @@ export function TemplatePanel() {
   const shapeFilter = useStore((s) => s.shapeFilter)
   const setShapeFilter = useStore((s) => s.setShapeFilter)
   const applyTemplate = useStore((s) => s.applyTemplate)
+  const applyHalfTemplate = useStore((s) => s.applyHalfTemplate)
 
   const bookSize = getSize(sizeId)
   const currentPage = pages[activePageIndex]
@@ -23,7 +88,10 @@ export function TemplatePanel() {
     (t) => shapeFilter === 'all' || t.fits.includes(shapeFilter),
   )
 
-  let lastFamily: TemplateFamily | null = null
+  const containerTemplate = currentPage ? getTemplate(currentPage.templateId) : undefined
+  const isSplit = Boolean(containerTemplate?.halfSplit && currentPage?.halves)
+  const foldOrientation = foldOrientationForSize(size.id)
+  const halfLabels: [string, string] = foldOrientation === 'horizontal' ? ['Top half', 'Bottom half'] : ['Left half', 'Right half']
 
   return (
     <section className="panel">
@@ -48,47 +116,33 @@ export function TemplatePanel() {
         ))}
       </div>
 
-      <div className="template-grid">
-        {visible.map((template) => {
-          const showFamily = template.family !== lastFamily
-          lastFamily = template.family
-          const isActive = currentPage?.templateId === template.id
-          const tooDense = template.slots.length > size.maxPhotosPerPage
+      <TemplateGrid
+        templates={visible}
+        activeId={currentPage?.templateId}
+        maxSlots={size.maxPhotosPerPage}
+        onPick={applyTemplate}
+      />
 
-          return (
-            <Fragment key={template.id}>
-              {showFamily && <div className="family-label">{template.family}</div>}
-              <button
-                className={`tmpl${isActive ? ' active' : ''}`}
-                onClick={() => applyTemplate(template.id)}
-                disabled={tooDense}
-                title={
-                  tooDense
-                    ? `Needs a larger book — ${template.slots.length} photos exceeds this size's limit of ${size.maxPhotosPerPage}`
-                    : template.label
-                }
-                aria-pressed={isActive}
-              >
-                <span className="icon">
-                  {template.slots.map((slot, i) => (
-                    <span
-                      key={i}
-                      className="s"
-                      style={{
-                        left: `${slot.x}%`,
-                        top: `${slot.y}%`,
-                        width: `${slot.w}%`,
-                        height: `${slot.h}%`,
-                      }}
-                    />
-                  ))}
-                </span>
-                <span className="label">{template.label}</span>
-              </button>
-            </Fragment>
-          )
-        })}
-      </div>
+      {isSplit && currentPage?.halves && (
+        <div className="half-panels">
+          {(['0', '1'] as const).map((key) => {
+            const halfIndex = Number(key) as 0 | 1
+            const half: HalfLayout = currentPage.halves![halfIndex]
+            const shape = halfShape(size)
+            return (
+              <div className="half-panel" key={halfIndex}>
+                <p className="half-panel-title">{halfLabels[halfIndex]}</p>
+                <TemplateGrid
+                  templates={templatesForHalf(shape)}
+                  activeId={half.templateId}
+                  maxSlots={MAX_PHOTOS_PER_HALF}
+                  onPick={(templateId) => applyHalfTemplate(activePageIndex, halfIndex, templateId)}
+                />
+              </div>
+            )
+          })}
+        </div>
+      )}
     </section>
   )
 }

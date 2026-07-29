@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { Photo, Project } from '../types'
+import type { Photo, Placement, Project } from '../types'
 
 /**
  * Everything lives in the browser's own IndexedDB. No network calls, no
@@ -130,12 +130,20 @@ export async function duplicateProjectCascade(
     title: newTitle,
     createdAt: Date.now(),
     updatedAt: Date.now(),
-    pages: source.pages.map((page) => ({
-      ...page,
-      placements: page.placements.map((placement) =>
-        placement ? { ...placement, photoId: idMap.get(placement.photoId) ?? placement.photoId } : null,
-      ),
-    })),
+    pages: source.pages.map((page) => {
+      const remap = (placement: Placement | null): Placement | null =>
+        placement ? { ...placement, photoId: idMap.get(placement.photoId) ?? placement.photoId } : null
+      return {
+        ...page,
+        placements: page.placements.map(remap),
+        ...(page.halves && {
+          halves: [
+            { ...page.halves[0], placements: page.halves[0].placements.map(remap) },
+            { ...page.halves[1], placements: page.halves[1].placements.map(remap) },
+          ] as typeof page.halves,
+        }),
+      }
+    }),
   }
 
   for (const photo of copiedPhotos) photo.projectId = newProject.id

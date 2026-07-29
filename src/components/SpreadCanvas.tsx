@@ -94,10 +94,13 @@ export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
         side={side}
         title={title}
         selectedSlot={selected?.pageIndex === index ? selected.slotIndex : null}
-        onSelectSlot={(slotIndex) => select({ pageIndex: index, slotIndex })}
-        onDropPhoto={(slotIndex, photoId) => assignPhoto({ pageIndex: index, slotIndex }, photoId)}
-        onPan={(slotIndex, offsetX, offsetY) =>
-          updatePlacement({ pageIndex: index, slotIndex }, { offsetX, offsetY })
+        selectedHalfIndex={selected?.pageIndex === index ? selected.halfIndex : undefined}
+        onSelectSlot={(slotIndex, halfIndex) => select({ pageIndex: index, slotIndex, halfIndex })}
+        onDropPhoto={(slotIndex, photoId, halfIndex) =>
+          assignPhoto({ pageIndex: index, slotIndex, halfIndex }, photoId)
+        }
+        onPan={(slotIndex, offsetX, offsetY, halfIndex) =>
+          updatePlacement({ pageIndex: index, slotIndex, halfIndex }, { offsetX, offsetY })
         }
         onToggleLock={() => togglePageLock(index)}
         sizePicker={sizePicker}

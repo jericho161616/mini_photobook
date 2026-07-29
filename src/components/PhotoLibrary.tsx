@@ -91,24 +91,26 @@ export function PhotoLibrary({ onClose }: PhotoLibraryProps) {
                   aria-pressed={isSelected}
                   title={photo.name}
                 >
-                  <img
-                    src={photoThumbUrl(photo)}
-                    alt={photo.name}
-                    draggable={false}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                  <span className="library-check" aria-hidden="true">
-                    {isSelected ? '✓' : ''}
-                  </span>
-                  {!used.has(photo.id) && <span className="library-unused">Unplaced</span>}
-                  <span className="library-caption">
-                    {photo.name}
-                    <br />
-                    <span className="mono">
-                      {photo.width}×{photo.height}
+                  <div className="library-thumb-frame">
+                    <img
+                      src={photoThumbUrl(photo)}
+                      alt={photo.name}
+                      draggable={false}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <span className="library-check" aria-hidden="true">
+                      {isSelected ? '✓' : ''}
                     </span>
-                  </span>
+                    {!used.has(photo.id) && <span className="library-unused">Unplaced</span>}
+                    <span className="library-caption">
+                      {photo.name}
+                      <br />
+                      <span className="mono">
+                        {photo.width}×{photo.height}
+                      </span>
+                    </span>
+                  </div>
                 </button>
               )
             })}

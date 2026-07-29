@@ -436,16 +436,31 @@ input:focus-visible,
 }
 
 .photo-thumb {
-  aspect-ratio: 1;
-  border-radius: 6px;
   position: relative;
+  padding: 0;
+}
+
+/*
+ * Square via the classic padding-percentage trick instead of `aspect-ratio`.
+ * A percentage `padding-top` resolves against the element's own WIDTH, so it
+ * produces a height with no dependency on CSS Grid's default row-stretch
+ * behaviour (which can silently override `aspect-ratio` on a grid item) and
+ * no dependency on `aspect-ratio` browser support at all — this has worked
+ * identically everywhere for over a decade.
+ */
+.photo-thumb-frame {
+  width: 100%;
+  padding-top: 100%;
+  position: relative;
+  border-radius: 6px;
   overflow: hidden;
   border: 1px solid rgba(0, 0, 0, 0.08);
-  padding: 0;
   background: var(--linen-deep);
 }
 
-.photo-thumb img {
+.photo-thumb-frame img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   /* Cover, not contain: a very wide (e.g. panorama) photo shown whole inside
@@ -1151,15 +1166,25 @@ input:focus-visible,
 
 .library-thumb {
   position: relative;
-  aspect-ratio: 1;
-  border-radius: 8px;
-  overflow: hidden;
   border: 2px solid transparent;
+  border-radius: 8px;
   padding: 0;
+  background: transparent;
+}
+
+/* See .photo-thumb-frame — padding-percentage square, immune to grid stretch. */
+.library-thumb-frame {
+  position: relative;
+  width: 100%;
+  padding-top: 100%;
+  border-radius: 6px;
+  overflow: hidden;
   background: var(--linen-deep);
 }
 
-.library-thumb img {
+.library-thumb-frame img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   /* Same reasoning as the tray: cover keeps every thumbnail recognizable,
@@ -1172,7 +1197,7 @@ input:focus-visible,
   border-color: var(--navy);
 }
 
-.library-thumb.selected::after {
+.library-thumb.selected .library-thumb-frame::after {
   content: '';
   position: absolute;
   inset: 0;

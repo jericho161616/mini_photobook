@@ -48,13 +48,15 @@ export function PhotoTray() {
               }}
               title={photo.name}
             >
-              <img
-                src={photoThumbUrl(photo)}
-                alt={photo.name}
-                draggable={false}
-                loading="lazy"
-                decoding="async"
-              />
+              <div className="photo-thumb-frame">
+                <img
+                  src={photoThumbUrl(photo)}
+                  alt={photo.name}
+                  draggable={false}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
               <button
                 className="remove"
                 onClick={() => void removePhoto(photo.id)}

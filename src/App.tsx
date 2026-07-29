@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Filmstrip } from './components/Filmstrip'
+import { PageTextPanel } from './components/PageTextPanel'
 import { PhotoTray } from './components/PhotoTray'
 import { SizePanel } from './components/SizePanel'
+import { Slideshow } from './components/Slideshow'
 import { SlotInspector } from './components/SlotInspector'
 import { SpreadCanvas } from './components/SpreadCanvas'
 import { TemplatePanel } from './components/TemplatePanel'
@@ -25,6 +27,7 @@ export default function App() {
   const [progress, setProgress] = useState({ done: 0, total: 0 })
   const [error, setError] = useState<string | null>(null)
   const [theme, setTheme] = useState<ThemeChoice>(() => resolveInitialTheme())
+  const [slideshowOpen, setSlideshowOpen] = useState(false)
 
   const toggleTheme = useCallback(() => {
     setTheme((prev) => {
@@ -85,6 +88,7 @@ export default function App() {
       <TopBar
         onExport={() => void handleExport()}
         exporting={exporting}
+        onPlay={() => setSlideshowOpen(true)}
         theme={theme}
         onToggleTheme={toggleTheme}
       />
@@ -106,10 +110,22 @@ export default function App() {
         <aside className="sidebar">
           <SlotInspector />
           <TemplatePanel />
+          <PageTextPanel />
         </aside>
       </div>
 
       <Filmstrip photos={photoMap} />
+
+      {slideshowOpen && (
+        <Slideshow
+          pages={pages}
+          photos={photoMap}
+          size={getSize(sizeId)}
+          title={title}
+          startIndex={activePageIndex}
+          onClose={() => setSlideshowOpen(false)}
+        />
+      )}
 
       {exporting && (
         <div className="overlay" role="status" aria-live="polite">

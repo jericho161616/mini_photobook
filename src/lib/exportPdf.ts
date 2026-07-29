@@ -6,6 +6,24 @@ export const PAGE_MARGIN_RATIO = 0.09
 const DPI = 300
 const JPEG_QUALITY = 0.92
 
+/** Greedy word wrap so canvas text (which doesn't wrap on its own) matches the on-screen note. */
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const words = text.split(/\s+/)
+  const lines: string[] = []
+  let line = ''
+  for (const word of words) {
+    const candidate = line ? `${line} ${word}` : word
+    if (ctx.measureText(candidate).width > maxWidth && line) {
+      lines.push(line)
+      line = word
+    } else {
+      line = candidate
+    }
+  }
+  if (line) lines.push(line)
+  return lines
+}
+
 /**
  * Pages are drawn straight onto a canvas at print resolution rather than
  * screenshotting the editor, so the output is genuinely 300 DPI instead of an
@@ -61,6 +79,22 @@ async function renderPage(
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText(title, rect.x + rect.w / 2, rect.y + rect.h / 2, rect.w)
+  }
+
+  // Mirrors the on-screen page note: left-aligned, wrapping, italic.
+  if (template.textSlot && page.text.trim()) {
+    const rect = slotPixelRect(template.textSlot, pageW, pageH, marginRatio)
+    const fontSize = Math.round(pageH * 0.026)
+    ctx.fillStyle = '#5b564c'
+    ctx.font = `italic ${fontSize}px -apple-system, "Segoe UI", sans-serif`
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'top'
+    const lineHeight = fontSize * 1.35
+    const lines = wrapText(ctx, page.text.trim(), rect.w)
+    const maxLines = Math.max(1, Math.floor(rect.h / lineHeight))
+    lines.slice(0, maxLines).forEach((line, i) => {
+      ctx.fillText(line, rect.x, rect.y + i * lineHeight, rect.w)
+    })
   }
 
   return canvas.toDataURL('image/jpeg', JPEG_QUALITY)

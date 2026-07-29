@@ -19,6 +19,12 @@ export interface Template {
   slots: SlotRect[]
   /** Optional area for the book title, e.g. beneath a cover photo. */
   caption?: SlotRect
+  /**
+   * Optional area for the designer's own note on this page — a date, a place,
+   * a line of text. Only templates that reserve room for it offer the option;
+   * everywhere else, there's nowhere for text to go.
+   */
+  textSlot?: SlotRect
   /** Edge-to-edge: the page margin is skipped for this template. */
   bleed?: boolean
 }
@@ -65,6 +71,8 @@ export interface Page {
   placements: (Placement | null)[]
   /** Locked pages ignore template changes, photo drops, panning, and reordering. */
   locked: boolean
+  /** The designer's own note for this page — blank unless the template has a textSlot. */
+  text: string
 }
 
 export interface Project {

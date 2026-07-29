@@ -45,6 +45,7 @@ interface StoreState {
   clearSlot: (ref: SlotRef) => void
   updatePlacement: (ref: SlotRef, patch: Partial<Placement>) => void
   togglePageLock: (pageIndex: number) => void
+  setPageText: (pageIndex: number, text: string) => void
   movePage: (from: number, to: number) => void
   reset: () => Promise<void>
 }
@@ -247,6 +248,13 @@ export const useStore = create<StoreState>((set, get) => {
     togglePageLock(pageIndex) {
       mutatePages((pages) =>
         pages.map((page, i) => (i === pageIndex ? { ...page, locked: !page.locked } : page)),
+      )
+    },
+
+    setPageText(pageIndex, text) {
+      if (get().pages[pageIndex]?.locked) return
+      mutatePages((pages) =>
+        pages.map((page, i) => (i === pageIndex ? { ...page, text } : page)),
       )
     },
 

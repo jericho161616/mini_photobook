@@ -111,6 +111,7 @@ function layoutPages(photos: Photo[], size: BookSize, pages: number): Page[] {
         templateId: template.id,
         placements: emptyPlacements(template.id),
         locked: false,
+        text: '',
       }
     })
   }
@@ -167,7 +168,7 @@ function layoutPages(photos: Photo[], size: BookSize, pages: number): Page[] {
       return slotIndex < take && photo ? placementFor(photo.id) : null
     })
 
-    result.push({ id: nextPageId(), templateId: template.id, placements, locked: false })
+    result.push({ id: nextPageId(), templateId: template.id, placements, locked: false, text: '' })
     cursor += take
     previousTemplateId = template.id
   }
@@ -192,6 +193,7 @@ export function resizePages(pages: Page[], pageCount: number, size: BookSize): P
       templateId: template.id,
       placements: emptyPlacements(template.id),
       locked: false,
+      text: '',
     }
   })
   return [...pages, ...added]

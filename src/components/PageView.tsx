@@ -43,6 +43,9 @@ export function PageView({
   const captionRect = template.caption
     ? slotPixelRect(template.caption, width, height, marginRatio)
     : null
+  const textRect = template.textSlot
+    ? slotPixelRect(template.textSlot, width, height, marginRatio)
+    : null
 
   return (
     <div
@@ -72,6 +75,20 @@ export function PageView({
             }}
           >
             {title}
+          </div>
+        )}
+        {textRect && page.text.trim() && (
+          <div
+            className="page-caption page-note"
+            style={{
+              left: textRect.x,
+              top: textRect.y,
+              width: textRect.w,
+              height: textRect.h,
+              fontSize: Math.max(6, height * 0.026),
+            }}
+          >
+            {page.text}
           </div>
         )}
         {template.slots.map((slot, slotIndex) => {

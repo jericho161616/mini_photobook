@@ -40,6 +40,25 @@ export const TEMPLATES: Template[] = [
     ],
   },
   {
+    id: 'fullNote',
+    label: '1 · Photo + Note',
+    family: 'Minimal',
+    fits: ['square', 'tall', 'wide'],
+    slots: [{ x: 0, y: 0, w: 100, h: 78 }],
+    textSlot: { x: 6, y: 84, w: 88, h: 12 },
+  },
+  {
+    id: 'duoNote',
+    label: '2 · Side + Note',
+    family: 'Minimal',
+    fits: ['wide'],
+    slots: [
+      { x: 0, y: 0, w: 47, h: 82 },
+      { x: 53, y: 0, w: 47, h: 82 },
+    ],
+    textSlot: { x: 6, y: 88, w: 88, h: 10 },
+  },
+  {
     id: 'duoV',
     label: '2 · Side',
     family: 'Minimal',

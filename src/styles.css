@@ -251,6 +251,21 @@ input:focus-visible,
   border-color: #a8483f;
 }
 
+/* Deliberately unassuming — the confirm dialog is the real safety net, but a
+   destructive action still shouldn't look like a normal control. */
+.btn-quiet {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink-soft);
+  font-size: 12px;
+  padding: 8px 10px;
+}
+
+.btn-quiet:hover {
+  border-color: var(--line);
+  color: #a8483f;
+}
+
 .theme-toggle {
   flex: 0 0 auto;
   width: 34px;
@@ -293,6 +308,16 @@ input:focus-visible,
 
 .sidebar > .panel {
   flex: 0 0 auto;
+}
+
+/* The photo panel is the dominant content in its sidebar, so it takes
+   whatever height the other (compact) panels leave behind instead of
+   scrolling in a small fixed box while that space sits empty below it. */
+.sidebar > .panel.panel-grow {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .panel h2 .count {
@@ -391,9 +416,11 @@ input:focus-visible,
 .photo-tray {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  align-content: start;
   gap: 7px;
   margin-bottom: 8px;
-  max-height: 320px;
+  flex: 1 1 auto;
+  min-height: 120px;
   overflow-y: auto;
 }
 
@@ -457,6 +484,10 @@ input:focus-visible,
 .dropzone.dragging {
   border-color: var(--navy-soft);
   color: var(--navy-soft);
+}
+
+.panel-grow > .empty-note {
+  flex: 1 1 auto;
 }
 
 .empty-note {
@@ -622,6 +653,17 @@ input:focus-visible,
   overflow: hidden;
   white-space: nowrap;
   pointer-events: none;
+}
+
+.page-note {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-style: italic;
+  color: #5b564c;
+  text-align: left;
+  justify-content: flex-start;
+  align-items: flex-start;
+  white-space: normal;
+  line-height: 1.35;
 }
 
 .slot-hint {
@@ -812,6 +854,24 @@ input:focus-visible,
   font-size: 11.5px;
 }
 
+.page-text-input {
+  width: 100%;
+  resize: vertical;
+  min-height: 44px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+.page-text-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ---- Filmstrip ---- */
 .filmstrip {
   flex: 0 0 auto;
@@ -957,6 +1017,72 @@ input:focus-visible,
   height: 100%;
   background: var(--navy);
   transition: width 0.2s;
+}
+
+/* ---- Slideshow ---- */
+.slideshow-overlay {
+  background: rgba(10, 10, 9, 0.92);
+  flex-direction: column;
+  gap: 20px;
+}
+
+.slideshow-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slideshow-page {
+  border-radius: 4px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+}
+
+.slideshow-page .slots {
+  pointer-events: none;
+}
+
+.slideshow-close {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.slideshow-close:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.slideshow-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 8px 14px;
+  border-radius: 999px;
+}
+
+.slideshow-controls .btn {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+
+.slideshow-controls .btn:hover {
+  border-color: #fff;
+  color: #fff;
+}
+
+.slideshow-count {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  padding-left: 6px;
 }
 
 /* ---- Photo library modal ---- */

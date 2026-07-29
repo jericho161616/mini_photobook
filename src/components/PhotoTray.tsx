@@ -21,12 +21,10 @@ export function PhotoTray() {
   const available = useMemo(() => photos.filter((p) => !used.has(p.id)), [photos, used])
 
   return (
-    <section className="panel">
+    <section className="panel panel-grow">
       <h2>
         Photos
-        <span className="count mono">
-          {available.length} left · {photos.length} total
-        </span>
+        <span className="count mono">{available.length} left</span>
       </h2>
 
       {photos.length === 0 ? (

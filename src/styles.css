@@ -448,11 +448,12 @@ input:focus-visible,
 .photo-thumb img {
   width: 100%;
   height: 100%;
-  /* Contain, not cover: this is for recognizing which photo is which before
-     it's placed, so the whole frame matters more than a clean crop. The
-     actual page slots (and the filmstrip preview of them) still crop to fill,
-     since that's what will really print. */
-  object-fit: contain;
+  /* Cover, not contain: a very wide (e.g. panorama) photo shown whole inside
+     a square thumbnail reduces to an unreadable sliver. Cropping keeps every
+     thumbnail actually recognizable at a glance, which matters more here
+     than seeing every edge — the full photo is always visible once placed
+     on a page or opened at size. */
+  object-fit: cover;
   display: block;
 }
 
@@ -1161,8 +1162,9 @@ input:focus-visible,
 .library-thumb img {
   width: 100%;
   height: 100%;
-  /* Same reasoning as the tray: show the whole photo, not a cropped square. */
-  object-fit: contain;
+  /* Same reasoning as the tray: cover keeps every thumbnail recognizable,
+     even a panorama, rather than shrinking it to an unreadable sliver. */
+  object-fit: cover;
   display: block;
 }
 

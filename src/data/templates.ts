@@ -18,6 +18,28 @@ export const TEMPLATES: Template[] = [
     slots: [{ x: 0, y: 0, w: 100, h: 100 }],
   },
   {
+    id: 'fullBleed',
+    label: '1 · Full Bleed',
+    family: 'Minimal',
+    fits: ['square', 'tall', 'wide'],
+    bleed: true,
+    slots: [{ x: 0, y: 0, w: 100, h: 100 }],
+  },
+  {
+    id: 'grid4',
+    label: '4 · Grid',
+    family: 'Minimal',
+    fits: ['square'],
+    // Same 2×2 idea as Portfolio's grid, but with a wider gutter — the
+    // minimalist read is in the extra breathing room between photos.
+    slots: [
+      { x: 0, y: 0, w: 46, h: 46 },
+      { x: 54, y: 0, w: 46, h: 46 },
+      { x: 0, y: 54, w: 46, h: 46 },
+      { x: 54, y: 54, w: 46, h: 46 },
+    ],
+  },
+  {
     id: 'duoV',
     label: '2 · Side',
     family: 'Minimal',
@@ -57,6 +79,19 @@ export const TEMPLATES: Template[] = [
       { x: 0, y: 0, w: 63, h: 100 },
       { x: 67, y: 0, w: 33, h: 47 },
       { x: 67, y: 53, w: 33, h: 47 },
+    ],
+  },
+  {
+    id: 'bleedDuo',
+    label: '2 · Bleed Diptych',
+    family: 'Portfolio',
+    fits: ['wide'],
+    // No gutter and no margin — the two photos touch edge to edge and edge
+    // to page, reading as one continuous spread rather than two frames.
+    bleed: true,
+    slots: [
+      { x: 0, y: 0, w: 50, h: 100 },
+      { x: 50, y: 0, w: 50, h: 100 },
     ],
   },
   {

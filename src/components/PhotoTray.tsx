@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { usedPhotoIds } from '../lib/autoLayout'
-import { ACCEPTED_TYPES, photoUrl } from '../lib/imageUtils'
+import { ACCEPTED_TYPES, photoThumbUrl } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
 import { PhotoLibrary } from './PhotoLibrary'
 
@@ -16,51 +16,63 @@ export function PhotoTray() {
   const [libraryOpen, setLibraryOpen] = useState(false)
 
   const used = usedPhotoIds(pages)
-  const placedCount = photos.filter((p) => used.has(p.id)).length
+  // A photo already placed on a page won't be dragged onto a second one, so
+  // there's no reason for it to keep taking up room in the tray.
+  const available = useMemo(() => photos.filter((p) => !used.has(p.id)), [photos, used])
 
   return (
     <section className="panel">
       <h2>
         Photos
         <span className="count mono">
-          {placedCount}/{photos.length}
+          {available.length} left · {photos.length} total
         </span>
       </h2>
 
       {photos.length === 0 ? (
         <p className="empty-note">
-          No photos yet. Add some and the book lays itself out — you can rearrange from there.
+          No photos yet. Add some, then drag them onto a slot wherever you want them.
+        </p>
+      ) : available.length === 0 ? (
+        <p className="empty-note">
+          Every photo is placed. Add more, or open the library to swap one out.
         </p>
       ) : (
-        <>
-          <div className="photo-tray">
-            {photos.map((photo) => (
-              <div
-                key={photo.id}
-                className={`photo-thumb${used.has(photo.id) ? ' used' : ''}`}
-                draggable
-                onDragStart={(e) => {
-                  e.dataTransfer.setData('text/photo-id', photo.id)
-                  e.dataTransfer.effectAllowed = 'copy'
-                }}
-                title={photo.name}
+        <div className="photo-tray">
+          {available.map((photo) => (
+            <div
+              key={photo.id}
+              className="photo-thumb"
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData('text/photo-id', photo.id)
+                e.dataTransfer.effectAllowed = 'copy'
+              }}
+              title={photo.name}
+            >
+              <img
+                src={photoThumbUrl(photo)}
+                alt={photo.name}
+                draggable={false}
+                loading="lazy"
+                decoding="async"
+              />
+              <button
+                className="remove"
+                onClick={() => void removePhoto(photo.id)}
+                aria-label={`Remove ${photo.name}`}
               >
-                <img src={photoUrl(photo)} alt={photo.name} draggable={false} />
-                <button
-                  className="remove"
-                  onClick={() => void removePhoto(photo.id)}
-                  aria-label={`Remove ${photo.name}`}
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
-          <button className="btn expand-btn" onClick={() => setLibraryOpen(true)}>
-            ⤢ View & manage all photos
-          </button>
-        </>
+      {photos.length > 0 && (
+        <button className="btn expand-btn" onClick={() => setLibraryOpen(true)}>
+          ⤢ View & manage all photos
+        </button>
       )}
 
       <button

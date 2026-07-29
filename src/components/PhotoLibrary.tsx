@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { usedPhotoIds } from '../lib/autoLayout'
-import { photoUrl } from '../lib/imageUtils'
+import { photoThumbUrl } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
 
 interface PhotoLibraryProps {
@@ -91,7 +91,13 @@ export function PhotoLibrary({ onClose }: PhotoLibraryProps) {
                   aria-pressed={isSelected}
                   title={photo.name}
                 >
-                  <img src={photoUrl(photo)} alt={photo.name} draggable={false} />
+                  <img
+                    src={photoThumbUrl(photo)}
+                    alt={photo.name}
+                    draggable={false}
+                    loading="lazy"
+                    decoding="async"
+                  />
                   <span className="library-check" aria-hidden="true">
                     {isSelected ? '✓' : ''}
                   </span>

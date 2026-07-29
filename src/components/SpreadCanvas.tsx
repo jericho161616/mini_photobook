@@ -28,6 +28,7 @@ export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
   const select = useStore((s) => s.select)
   const assignPhoto = useStore((s) => s.assignPhoto)
   const updatePlacement = useStore((s) => s.updatePlacement)
+  const togglePageLock = useStore((s) => s.togglePageLock)
 
   const size = getSize(sizeId)
   const ratio = sizeRatio(size)
@@ -76,6 +77,7 @@ export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
         onPan={(slotIndex, offsetX, offsetY) =>
           updatePlacement({ pageIndex: index, slotIndex }, { offsetX, offsetY })
         }
+        onToggleLock={() => togglePageLock(index)}
       />
     )
   }

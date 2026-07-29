@@ -3,15 +3,14 @@ import { DEFAULT_SIZE_ID, getSize } from '../data/sizes'
 import { getTemplate } from '../data/templates'
 import {
   autoLayout,
-  clampPages,
-  emptyPlacements,
   placementFor,
   reconcileTemplates,
+  regenerateUnlocked,
   resizePages,
-  suggestPageCount,
 } from '../lib/autoLayout'
 import * as storage from '../lib/db'
 import { clampOffset, clampZoom, importFiles, releasePhotoUrl } from '../lib/imageUtils'
+import { MIN_PAGES } from '../types'
 import type { Page, Photo, Placement, Project, Shape } from '../types'
 
 export interface SlotRef {
@@ -45,6 +44,7 @@ interface StoreState {
   assignPhoto: (ref: SlotRef, photoId: string) => void
   clearSlot: (ref: SlotRef) => void
   updatePlacement: (ref: SlotRef, patch: Partial<Placement>) => void
+  togglePageLock: (pageIndex: number) => void
   movePage: (from: number, to: number) => void
   reset: () => Promise<void>
 }
@@ -92,8 +92,10 @@ export const useStore = create<StoreState>((set, get) => {
       if (project) {
         set({ ready: true, photos, title: project.title, sizeId: project.sizeId, pages: project.pages })
       } else {
+        // A brand new book always opens at the minimum page count, empty —
+        // the designer decides how many pages and where every photo goes.
         const size = getSize(DEFAULT_SIZE_ID)
-        const pages = autoLayout({ photos, size, pageCount: suggestPageCount(photos.length, size) })
+        const pages = autoLayout({ photos: [], size, pageCount: MIN_PAGES })
         set({ ready: true, photos, pages })
         persist()
       }
@@ -105,33 +107,10 @@ export const useStore = create<StoreState>((set, get) => {
         const imported = await importFiles(files)
         if (imported.length === 0) return
 
+        // Importing only adds photos to the library. Nothing is placed on any
+        // page automatically — that's a deliberate choice the designer makes.
         await storage.savePhotos(imported)
-        const photos = [...get().photos, ...imported]
-        set({ photos })
-
-        // First import lays the book out; later imports flow into empty slots
-        // so the designer's existing work survives.
-        const { pages } = get()
-        const hasContent = pages.some((p) => p.placements.some((slot) => slot !== null))
-
-        if (!hasContent) {
-          const size = getSize(get().sizeId)
-          set({
-            pages: autoLayout({ photos, size, pageCount: suggestPageCount(photos.length, size) }),
-          })
-        } else {
-          const queue = [...imported]
-          mutatePages((current) =>
-            current.map((page) => {
-              if (queue.length === 0) return page
-              const placements = page.placements.map((slot) => {
-                if (slot !== null || queue.length === 0) return slot
-                return placementFor(queue.shift()!.id)
-              })
-              return { ...page, placements }
-            }),
-          )
-        }
+        set((state) => ({ photos: [...state.photos, ...imported] }))
         persist()
       } finally {
         set({ importing: false })
@@ -186,10 +165,9 @@ export const useStore = create<StoreState>((set, get) => {
     regenerate() {
       const { photos, sizeId, pages } = get()
       const size = getSize(sizeId)
-      set({
-        pages: autoLayout({ photos, size, pageCount: clampPages(pages.length) }),
-        selected: null,
-      })
+      // Locked pages, and the photos already on them, are left untouched —
+      // only the unlocked pages get relaid out.
+      set({ pages: regenerateUnlocked(pages, photos, size), selected: null })
       persist()
     },
 
@@ -199,6 +177,8 @@ export const useStore = create<StoreState>((set, get) => {
     },
 
     select(ref) {
+      // A locked page's slots aren't editable, so there's nothing to select.
+      if (ref && get().pages[ref.pageIndex]?.locked) return
       set({ selected: ref })
     },
 
@@ -207,7 +187,8 @@ export const useStore = create<StoreState>((set, get) => {
     },
 
     applyTemplate(templateId) {
-      const { activePageIndex } = get()
+      const { activePageIndex, pages: current } = get()
+      if (current[activePageIndex]?.locked) return
       mutatePages((pages) =>
         pages.map((page, i) => {
           if (i !== activePageIndex) return page
@@ -222,6 +203,7 @@ export const useStore = create<StoreState>((set, get) => {
     },
 
     assignPhoto({ pageIndex, slotIndex }, photoId) {
+      if (get().pages[pageIndex]?.locked) return
       mutatePages((pages) =>
         pages.map((page, i) => {
           if (i !== pageIndex) return page
@@ -233,6 +215,7 @@ export const useStore = create<StoreState>((set, get) => {
     },
 
     clearSlot({ pageIndex, slotIndex }) {
+      if (get().pages[pageIndex]?.locked) return
       mutatePages((pages) =>
         pages.map((page, i) => {
           if (i !== pageIndex) return page
@@ -244,6 +227,7 @@ export const useStore = create<StoreState>((set, get) => {
     },
 
     updatePlacement({ pageIndex, slotIndex }, patch) {
+      if (get().pages[pageIndex]?.locked) return
       mutatePages((pages) =>
         pages.map((page, i) => {
           if (i !== pageIndex) return page
@@ -260,9 +244,16 @@ export const useStore = create<StoreState>((set, get) => {
       )
     },
 
+    togglePageLock(pageIndex) {
+      mutatePages((pages) =>
+        pages.map((page, i) => (i === pageIndex ? { ...page, locked: !page.locked } : page)),
+      )
+    },
+
     movePage(from, to) {
       mutatePages((pages) => {
         if (from === to || from < 0 || from >= pages.length) return pages
+        if (pages[from].locked) return pages
         const next = [...pages]
         const [moved] = next.splice(from, 1)
         next.splice(Math.max(0, Math.min(to, next.length)), 0, moved)
@@ -279,7 +270,7 @@ export const useStore = create<StoreState>((set, get) => {
         photos: [],
         title: 'Untitled Book',
         sizeId: DEFAULT_SIZE_ID,
-        pages: autoLayout({ photos: [], size, pageCount: suggestPageCount(0, size) }),
+        pages: autoLayout({ photos: [], size, pageCount: MIN_PAGES }),
         activePageIndex: 0,
         selected: null,
       })
@@ -287,10 +278,3 @@ export const useStore = create<StoreState>((set, get) => {
     },
   }
 })
-
-/** Slots with no photo, in reading order — used to place the next import. */
-export function emptySlotCount(pages: Page[]): number {
-  return pages.reduce((sum, page) => sum + page.placements.filter((p) => p === null).length, 0)
-}
-
-export { emptyPlacements }

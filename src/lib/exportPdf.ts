@@ -32,6 +32,7 @@ async function renderPage(
   ctx.imageSmoothingQuality = 'high'
 
   const template = getTemplate(page.templateId)
+  const marginRatio = template.bleed ? 0 : PAGE_MARGIN_RATIO
 
   template.slots.forEach((slot, slotIndex) => {
     const placement = page.placements[slotIndex]
@@ -39,7 +40,7 @@ async function renderPage(
     const bitmap = photoMap.get(placement.photoId)
     if (!bitmap) return
 
-    const rect = slotPixelRect(slot, pageW, pageH, PAGE_MARGIN_RATIO)
+    const rect = slotPixelRect(slot, pageW, pageH, marginRatio)
     const geo = coverGeometry(bitmap.width / bitmap.height, rect.w, rect.h, placement)
 
     // Clip to the slot so the overflow from cover-fit and zoom is trimmed

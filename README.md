@@ -24,11 +24,13 @@ npm run preview
 
 ## What it does
 
-**Suggests a layout from your photos.** Import a set and the auto-layout engine
-picks a template per page by comparing each photo's aspect ratio to the shape of
-the slots available, so portraits land in upright slots and panoramas in wide
-ones. Consecutive pages are nudged toward different templates so the book doesn't
-read as one layout repeated.
+**You decide where every photo goes.** Importing photos only adds them to your
+library — nothing gets placed automatically. A new book opens at the minimum
+10 pages, empty, and you drag each photo onto the slot you want it in. An
+auto-layout engine exists (the "Re-flow" button) for when you want a starting
+point or want to fill in the rest quickly: it picks a template per page by
+comparing each photo's aspect ratio to the shape of the slots available, and
+it skips any page you've locked.
 
 **Fourteen sizes across three groups.** Nine standard photobook trims (6×6 up to
 14×11), the ISO paper sizes a home printer actually takes (A6–A3), and a
@@ -36,9 +38,16 @@ Polaroid-style 3.5×4.2 frame for a single instant-photo page. Larger sizes allo
 denser pages — a 6×6 caps at three photos per page where a 14×11 allows five.
 Changing size re-fits any page whose layout no longer suits the trim.
 
-**Two layout families.** *Minimal* is one to three photos with room around them.
-*Portfolio* is editorial — rows, collages, and covers. Filter either by page
-shape (square / tall / wide) and mix shapes freely from page to page.
+**Two layout families, including full-bleed.** *Minimal* is one to a few photos
+with room around them — including an edge-to-edge Full Bleed option with no
+margin at all. *Portfolio* is editorial — rows, collages, covers, and a
+bleed diptych where two photos touch with no gutter between them. Filter
+either family by page shape (square / tall / wide) and mix shapes freely
+from page to page.
+
+**Lock a page.** Once a page is the way you want it, lock it — a locked page
+ignores template changes, photo drops, panning, reordering, and even the
+"Re-flow" button, so a stray click elsewhere in the book can't disturb it.
 
 **Full manual control.** Drag photos from the tray into any slot, swap the
 template on any page, drag within a slot to reframe, zoom from 1× to 3×, and
@@ -50,10 +59,16 @@ you have already worked on and only adds or trims from the end.
 **Titled cover.** Page one uses a cover layout carrying the book title, which
 renders in the editor and in the exported PDF.
 
-**A photo library for managing the set.** The sidebar tray stays compact for
-dragging into slots; "View & manage all photos" opens a larger grid where you
-can check off several photos and remove them at once, and see at a glance
-which ones aren't placed on any page yet.
+**A photo tray that only shows what you still need.** Once a photo is placed
+on a page it drops out of the tray — there's no reason to keep dragging past
+photos you've already used. "View & manage all photos" opens a larger grid
+of the full library, where you can check off several photos and remove them
+at once, and see which ones aren't placed anywhere yet.
+
+**Book size is a one-time decision.** The sidebar shows your current size and
+a "Change" button rather than the full picker sitting there permanently —
+that space goes to photos and layout instead. The picker itself is grouped
+into Photobook trims, printer paper (A6–A3), and novelty (Polaroid).
 
 **Light and dark themes**, matching your OS by default with a manual toggle in
 the top bar that's remembered next time you open the app.
@@ -64,6 +79,12 @@ print resolution and every crop matches what you arranged on screen.
 
 Work is saved to the browser's IndexedDB as you go and restored when you reopen
 the app.
+
+**Thumbnails are actually thumbnails.** Each photo gets a small (320px)
+downscaled copy generated once at import; the tray, filmstrip, and library
+grid all use that instead of decoding the full-resolution original at
+postage-stamp size. Only the main editing canvas and the PDF export touch
+the full-resolution file.
 
 ## How it's built
 
@@ -100,5 +121,7 @@ identical.
 
 - Text/caption blocks on interior pages, not just the cover
 - Background colour or paper stock per book
-- Bleed and safe-area guides for commercial printers
+- Bleed and safe-area guides for commercial printers (the full-bleed and
+  diptych templates skip the *page* margin, but don't yet add printer-specific
+  trim/safe zones)
 - Exporting the project to a file so books move between machines

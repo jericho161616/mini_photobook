@@ -19,6 +19,8 @@ export interface Template {
   slots: SlotRect[]
   /** Optional area for the book title, e.g. beneath a cover photo. */
   caption?: SlotRect
+  /** Edge-to-edge: the page margin is skipped for this template. */
+  bleed?: boolean
 }
 
 export interface BookSize {
@@ -37,6 +39,8 @@ export interface Photo {
   name: string
   /** Full-resolution original, kept as a blob so nothing leaves the machine. */
   blob: Blob
+  /** Downscaled once at import — used everywhere the photo appears at thumbnail size. */
+  thumbBlob: Blob
   width: number
   height: number
   addedAt: number
@@ -59,6 +63,8 @@ export interface Page {
   templateId: string
   /** One entry per template slot; null means the slot is empty. */
   placements: (Placement | null)[]
+  /** Locked pages ignore template changes, photo drops, panning, and reordering. */
+  locked: boolean
 }
 
 export interface Project {

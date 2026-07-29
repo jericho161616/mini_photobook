@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { getSize, sizeRatio } from '../data/sizes'
 import { getTemplate } from '../data/templates'
-import { photoUrl } from '../lib/imageUtils'
+import { photoThumbUrl } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
 import type { Photo } from '../types'
 
-const THUMB_WIDTH = 46
+const THUMB_WIDTH = 72
 
 export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
   const pages = useStore((s) => s.pages)
@@ -13,6 +13,7 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
   const activePageIndex = useStore((s) => s.activePageIndex)
   const setActivePage = useStore((s) => s.setActivePage)
   const movePage = useStore((s) => s.movePage)
+  const togglePageLock = useStore((s) => s.togglePageLock)
 
   const [dragFrom, setDragFrom] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
@@ -26,56 +27,71 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
         const template = getTemplate(page.templateId)
         return (
           <div className="fs-item" key={page.id}>
-            <button
-              className={[
-                'fs-page',
-                index === activePageIndex && 'active',
-                dragOver === index && 'drag-over',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              style={{ height }}
-              onClick={() => setActivePage(index)}
-              draggable
-              onDragStart={() => setDragFrom(index)}
-              onDragEnd={() => {
-                setDragFrom(null)
-                setDragOver(null)
-              }}
-              onDragOver={(e) => {
-                e.preventDefault()
-                if (dragFrom !== null) setDragOver(index)
-              }}
-              onDrop={(e) => {
-                e.preventDefault()
-                if (dragFrom !== null && dragFrom !== index) movePage(dragFrom, index)
-                setDragFrom(null)
-                setDragOver(null)
-              }}
-              aria-label={`Page ${index + 1}`}
-              aria-current={index === activePageIndex}
-            >
-              <span className="fs-slots">
-                {template.slots.map((slot, slotIndex) => {
-                  const placement = page.placements[slotIndex]
-                  const photo = placement ? photos.get(placement.photoId) : undefined
-                  return (
-                    <span
-                      key={slotIndex}
-                      className={`fs-slot${photo ? ' filled' : ''}`}
-                      style={{
-                        left: `${slot.x}%`,
-                        top: `${slot.y}%`,
-                        width: `${slot.w}%`,
-                        height: `${slot.h}%`,
-                      }}
-                    >
-                      {photo && <img src={photoUrl(photo)} alt="" />}
-                    </span>
-                  )
-                })}
-              </span>
-            </button>
+            <div className="fs-page-wrap" style={{ width: THUMB_WIDTH, height }}>
+              <button
+                className={[
+                  'fs-page',
+                  index === activePageIndex && 'active',
+                  page.locked && 'locked',
+                  dragOver === index && 'drag-over',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                onClick={() => setActivePage(index)}
+                draggable={!page.locked}
+                onDragStart={() => setDragFrom(index)}
+                onDragEnd={() => {
+                  setDragFrom(null)
+                  setDragOver(null)
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  if (dragFrom !== null) setDragOver(index)
+                }}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  if (dragFrom !== null && dragFrom !== index) movePage(dragFrom, index)
+                  setDragFrom(null)
+                  setDragOver(null)
+                }}
+                aria-label={`Page ${index + 1}`}
+                aria-current={index === activePageIndex}
+              >
+                <span className="fs-slots">
+                  {template.slots.map((slot, slotIndex) => {
+                    const placement = page.placements[slotIndex]
+                    const photo = placement ? photos.get(placement.photoId) : undefined
+                    return (
+                      <span
+                        key={slotIndex}
+                        className={`fs-slot${photo ? ' filled' : ''}`}
+                        style={{
+                          left: `${slot.x}%`,
+                          top: `${slot.y}%`,
+                          width: `${slot.w}%`,
+                          height: `${slot.h}%`,
+                        }}
+                      >
+                        {photo && (
+                          <img src={photoThumbUrl(photo)} alt="" loading="lazy" decoding="async" />
+                        )}
+                      </span>
+                    )
+                  })}
+                </span>
+              </button>
+              <button
+                className="fs-lock"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  togglePageLock(index)
+                }}
+                aria-label={page.locked ? `Unlock page ${index + 1}` : `Lock page ${index + 1}`}
+                title={page.locked ? 'Unlock this page' : 'Lock this page'}
+              >
+                {page.locked ? '🔒' : '🔓'}
+              </button>
+            </div>
             <span className="fs-num mono">{index + 1}</span>
           </div>
         )

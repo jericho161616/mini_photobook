@@ -89,7 +89,15 @@ export interface AutoLayoutOptions {
  * so the book doesn't read as the same layout repeated.
  */
 export function autoLayout({ photos, size, pageCount }: AutoLayoutOptions): Page[] {
-  const pages = clampPages(pageCount)
+  return layoutPages(photos, size, clampPages(pageCount))
+}
+
+/**
+ * The actual layout pass, without the whole-book 10–30 page clamp — used
+ * directly when laying out just the unlocked pages of a book, which may
+ * legitimately number fewer than the book's own minimum.
+ */
+function layoutPages(photos: Photo[], size: BookSize, pages: number): Page[] {
   const candidates = templatesForSize(size.maxPhotosPerPage)
   const pageRatio = size.widthIn / size.heightIn
 
@@ -98,7 +106,12 @@ export function autoLayout({ photos, size, pageCount }: AutoLayoutOptions): Page
     const starters = shapeFitting(candidates, size)
     return Array.from({ length: pages }, (_, i) => {
       const template = starters[i % starters.length]
-      return { id: nextPageId(), templateId: template.id, placements: emptyPlacements(template.id) }
+      return {
+        id: nextPageId(),
+        templateId: template.id,
+        placements: emptyPlacements(template.id),
+        locked: false,
+      }
     })
   }
 
@@ -154,7 +167,7 @@ export function autoLayout({ photos, size, pageCount }: AutoLayoutOptions): Page
       return slotIndex < take && photo ? placementFor(photo.id) : null
     })
 
-    result.push({ id: nextPageId(), templateId: template.id, placements })
+    result.push({ id: nextPageId(), templateId: template.id, placements, locked: false })
     cursor += take
     previousTemplateId = template.id
   }
@@ -174,7 +187,12 @@ export function resizePages(pages: Page[], pageCount: number, size: BookSize): P
   const candidates = shapeFitting(templatesForSize(size.maxPhotosPerPage), size)
   const added = Array.from({ length: target - pages.length }, (_, i) => {
     const template = candidates[(pages.length + i) % candidates.length]
-    return { id: nextPageId(), templateId: template.id, placements: emptyPlacements(template.id) }
+    return {
+      id: nextPageId(),
+      templateId: template.id,
+      placements: emptyPlacements(template.id),
+      locked: false,
+    }
   })
   return [...pages, ...added]
 }
@@ -188,7 +206,9 @@ export function reconcileTemplates(pages: Page[], size: BookSize): Page[] {
   const allowedIds = new Set(allowed.map((t) => t.id))
 
   return pages.map((page) => {
-    if (allowedIds.has(page.templateId)) return page
+    // A locked page is protected from every kind of edit, including the
+    // knock-on effect of resizing the whole book.
+    if (page.locked || allowedIds.has(page.templateId)) return page
 
     const photos = page.placements.filter((p): p is Placement => p !== null)
     // Densest layout that still fits and suits the new trim, so we drop as few
@@ -199,6 +219,32 @@ export function reconcileTemplates(pages: Page[], size: BookSize): Page[] {
     const placements = replacement.slots.map((_, i) => photos[i] ?? null)
     return { ...page, templateId: replacement.id, placements }
   })
+}
+
+/**
+ * Re-run auto-layout for a book that already has some pages locked. Locked
+ * pages, and whatever photos are already sitting on them, are left exactly as
+ * they are; every other photo is redistributed across the remaining pages.
+ */
+export function regenerateUnlocked(pages: Page[], photos: Photo[], size: BookSize): Page[] {
+  const reservedIds = new Set(
+    pages
+      .filter((p) => p.locked)
+      .flatMap((p) => p.placements.filter((pl): pl is Placement => pl !== null))
+      .map((pl) => pl.photoId),
+  )
+  const freePhotos = photos.filter((p) => !reservedIds.has(p.id))
+  const unlockedIndexes = pages.map((_, i) => i).filter((i) => !pages[i].locked)
+
+  if (unlockedIndexes.length === 0) return pages
+
+  const replacements = layoutPages(freePhotos, size, unlockedIndexes.length)
+
+  const result = [...pages]
+  unlockedIndexes.forEach((pageIndex, i) => {
+    if (replacements[i]) result[pageIndex] = replacements[i]
+  })
+  return result
 }
 
 /** Photo ids currently placed anywhere in the book. */

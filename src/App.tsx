@@ -104,8 +104,8 @@ export default function App() {
         <SpreadCanvas photos={photoMap} />
 
         <aside className="sidebar">
-          <TemplatePanel />
           <SlotInspector />
+          <TemplatePanel />
         </aside>
       </div>
 

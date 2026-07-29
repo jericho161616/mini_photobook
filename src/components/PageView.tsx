@@ -16,6 +16,7 @@ interface PageViewProps {
   onSelectSlot: (slotIndex: number) => void
   onDropPhoto: (slotIndex: number, photoId: string) => void
   onPan: (slotIndex: number, offsetX: number, offsetY: number) => void
+  onToggleLock: () => void
 }
 
 export function PageView({
@@ -30,6 +31,7 @@ export function PageView({
   onSelectSlot,
   onDropPhoto,
   onPan,
+  onToggleLock,
 }: PageViewProps) {
   if (!page) {
     // Odd page counts leave the final verso empty rather than inventing a page.
@@ -37,12 +39,25 @@ export function PageView({
   }
 
   const template = getTemplate(page.templateId)
+  const marginRatio = template.bleed ? 0 : PAGE_MARGIN_RATIO
   const captionRect = template.caption
-    ? slotPixelRect(template.caption, width, height, PAGE_MARGIN_RATIO)
+    ? slotPixelRect(template.caption, width, height, marginRatio)
     : null
 
   return (
-    <div className={`page ${side}`} style={{ width, height }} data-page-index={pageIndex}>
+    <div
+      className={`page ${side}${page.locked ? ' locked' : ''}`}
+      style={{ width, height }}
+      data-page-index={pageIndex}
+    >
+      <button
+        className="page-lock"
+        onClick={onToggleLock}
+        aria-label={page.locked ? `Unlock page ${pageIndex + 1}` : `Lock page ${pageIndex + 1}`}
+        title={page.locked ? 'Unlock this page' : 'Lock this page to protect it from edits'}
+      >
+        {page.locked ? '🔒' : '🔓'}
+      </button>
       <div className="slots" style={{ inset: 0 }}>
         {captionRect && title.trim() && (
           <div
@@ -60,7 +75,7 @@ export function PageView({
           </div>
         )}
         {template.slots.map((slot, slotIndex) => {
-          const rect = slotPixelRect(slot, width, height, PAGE_MARGIN_RATIO)
+          const rect = slotPixelRect(slot, width, height, marginRatio)
           const placement = page.placements[slotIndex] ?? null
           const photo = placement ? photos.get(placement.photoId) : undefined
           return (

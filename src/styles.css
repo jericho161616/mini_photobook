@@ -89,6 +89,10 @@ h2 {
   letter-spacing: 0.08em;
   color: var(--ink-soft);
   margin: 0 0 12px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 button,
@@ -292,11 +296,12 @@ input:focus-visible,
 }
 
 .panel h2 .count {
-  float: right;
   color: var(--ink-soft);
   font-weight: 400;
   text-transform: none;
   letter-spacing: 0;
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 /* size picker */
@@ -304,6 +309,12 @@ input:focus-visible,
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+}
+
+.size-grid-modal {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .size-swatch {
@@ -318,17 +329,18 @@ input:focus-visible,
   text-align: center;
 }
 
-.size-swatch .shape {
+.shape {
   border: 1.5px solid var(--ink-soft);
   border-radius: 2px;
+  flex: 0 0 auto;
 }
 
-.size-swatch .name {
+.name {
   font-size: 10.5px;
   line-height: 1.25;
 }
 
-.size-swatch .dims {
+.dims {
   font-size: 9.5px;
   color: var(--ink-soft);
 }
@@ -345,6 +357,34 @@ input:focus-visible,
 .size-swatch.active .name {
   color: var(--navy-soft);
   font-weight: 600;
+}
+
+/* compact "current size" summary, shown instead of the full grid */
+.size-current {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.size-current-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.size-current-text .name {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.size-picker-card {
+  width: min(560px, 92vw);
 }
 
 /* photo tray */
@@ -378,14 +418,6 @@ input:focus-visible,
   height: 100%;
   object-fit: cover;
   display: block;
-}
-
-.photo-thumb.used::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border: 2px solid var(--brass);
-  border-radius: 5px;
 }
 
 .photo-thumb .remove {
@@ -472,6 +504,48 @@ input:focus-visible,
 
 .page.blank {
   opacity: 0.35;
+}
+
+.page.locked .slots {
+  pointer-events: none;
+}
+
+.page.locked::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.06);
+  pointer-events: none;
+}
+
+.page-lock {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 0.35;
+  transition: opacity 0.15s;
+}
+
+.page:hover .page-lock,
+.page.locked .page-lock {
+  opacity: 0.9;
+}
+
+.page-lock:hover {
+  opacity: 1;
 }
 
 .gutter {
@@ -742,9 +816,9 @@ input:focus-visible,
 .filmstrip {
   flex: 0 0 auto;
   display: flex;
-  gap: 8px;
+  gap: 10px;
   overflow-x: auto;
-  padding: 12px;
+  padding: 14px;
   background: var(--linen);
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -757,8 +831,13 @@ input:focus-visible,
   flex: 0 0 auto;
 }
 
+.fs-page-wrap {
+  position: relative;
+}
+
 .fs-page {
-  width: 46px;
+  width: 100%;
+  height: 100%;
   background: var(--page-stock);
   border-radius: 3px;
   position: relative;
@@ -776,6 +855,38 @@ input:focus-visible,
 
 .fs-page.drag-over {
   outline-color: var(--navy);
+}
+
+.fs-page.locked::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.fs-lock {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 8px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.fs-page-wrap:hover .fs-lock,
+.fs-page.locked ~ .fs-lock {
+  opacity: 0.9;
 }
 
 .fs-slots {
@@ -804,9 +915,9 @@ input:focus-visible,
 
 .fs-num {
   text-align: center;
-  font-size: 8px;
+  font-size: 9.5px;
   color: var(--ink-soft);
-  margin-top: 3px;
+  margin-top: 4px;
 }
 
 /* ---- Overlay ---- */

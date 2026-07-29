@@ -220,6 +220,53 @@ export const TEMPLATES: Template[] = [
       { x: 0, y: 72, w: 100, h: 28 },
     ],
   },
+  {
+    id: 'tiersWide',
+    label: '2 · Tiers',
+    family: 'Portfolio',
+    fits: ['wide'],
+    // The app's only other 2-photo stack (Minimal's "2 · Stack") is tall/square
+    // only — a landscape book had no stacked-pair option until this.
+    slots: [
+      { x: 0, y: 0, w: 100, h: 47 },
+      { x: 0, y: 53, w: 100, h: 47 },
+    ],
+  },
+  {
+    id: 'tiersWide3',
+    label: '3 · Tiers (Wide)',
+    family: 'Portfolio',
+    fits: ['wide'],
+    slots: [
+      { x: 0, y: 0, w: 100, h: 31 },
+      { x: 0, y: 34.5, w: 100, h: 31 },
+      { x: 0, y: 69, w: 100, h: 31 },
+    ],
+  },
+  {
+    id: 'squareDuo',
+    label: '2 · Square Duo',
+    family: 'Portfolio',
+    // Restricted to square trims: the slots are true squares (equal width and
+    // height percentages), which only reads as a square once the page itself
+    // is roughly 1:1 — on a true landscape page these would come out tall.
+    fits: ['square'],
+    slots: [
+      { x: 4, y: 27, w: 42, h: 42 },
+      { x: 54, y: 27, w: 42, h: 42 },
+    ],
+  },
+  {
+    id: 'squareRow3',
+    label: '3 · Square Row',
+    family: 'Portfolio',
+    fits: ['square'],
+    slots: [
+      { x: 4, y: 36, w: 28, h: 28 },
+      { x: 36, y: 36, w: 28, h: 28 },
+      { x: 68, y: 36, w: 28, h: 28 },
+    ],
+  },
 ]
 
 export const SHAPE_FILTERS: { id: Shape | 'all'; label: string }[] = [

@@ -128,7 +128,7 @@ export function PageView({
               const half = page.halves![halfIndex as 0 | 1]
               const halfTemplate = getTemplate(half.templateId)
               const halfMargin = halfTemplate.bleed ? 0 : PAGE_MARGIN_RATIO
-              return halfTemplate.slots.map((slot, slotIndex) => {
+              const nested: JSX.Element[] = halfTemplate.slots.map((slot, slotIndex) => {
                 const inner = slotPixelRect(slot, outer.w, outer.h, halfMargin)
                 const rect = { x: outer.x + inner.x, y: outer.y + inner.y, w: inner.w, h: inner.h }
                 const placement = half.placements[slotIndex] ?? null
@@ -146,6 +146,27 @@ export function PageView({
                   />
                 )
               })
+
+              // This half's own note, positioned inside this half's region.
+              if (halfTemplate.textSlot && half.text.trim()) {
+                const inner = slotPixelRect(halfTemplate.textSlot, outer.w, outer.h, halfMargin)
+                nested.push(
+                  <div
+                    key={`${halfIndex}-note`}
+                    className="page-caption page-note"
+                    style={{
+                      left: outer.x + inner.x,
+                      top: outer.y + inner.y,
+                      width: inner.w,
+                      height: inner.h,
+                      fontSize: Math.max(6, outer.h * 0.026),
+                    }}
+                  >
+                    {half.text}
+                  </div>,
+                )
+              }
+              return nested
             })
           : template.slots.map((slot, slotIndex) => {
               const rect = slotPixelRect(slot, width, height, marginRatio)

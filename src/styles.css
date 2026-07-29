@@ -841,10 +841,35 @@ input:focus-visible,
   gap: 8px;
 }
 
-.half-panels {
+.half-tabs {
   display: flex;
-  flex-direction: column;
-  gap: 18px;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.half-tab {
+  flex: 1;
+  font: inherit;
+  font-size: 11.5px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.half-tab:hover:not(.active) {
+  border-color: var(--navy-soft);
+  color: var(--ink);
+}
+
+.half-tab.active {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: var(--page-stock);
+  font-weight: 600;
 }
 
 .layout-section-title {

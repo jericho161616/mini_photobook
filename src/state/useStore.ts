@@ -31,6 +31,8 @@ interface StoreState {
   sizeId: string
   pages: Page[]
   activePageIndex: number
+  /** Which side of a Split at Fold page the sidebar is currently editing. */
+  activeHalfIndex: 0 | 1
   selected: SlotRef | null
   shapeFilter: Shape | 'all'
   importing: boolean
@@ -44,6 +46,7 @@ interface StoreState {
   setPageCount: (count: number) => void
   regenerate: () => void
   setActivePage: (index: number) => void
+  setActiveHalf: (halfIndex: 0 | 1) => void
   select: (ref: SlotRef | null) => void
   setShapeFilter: (shape: Shape | 'all') => void
   applyTemplate: (templateId: string) => void
@@ -56,6 +59,8 @@ interface StoreState {
   /** Overrides one page's size within the A4 family (e.g. A4 <-> A4 Folded — Landscape). */
   setPageSize: (pageIndex: number, sizeId: string) => void
   setPageText: (pageIndex: number, text: string) => void
+  /** Sets one half's own note on a Split at Fold page. */
+  setHalfText: (pageIndex: number, halfIndex: 0 | 1, text: string) => void
   movePage: (from: number, to: number) => void
   reset: () => Promise<void>
   /** Writes immediately instead of waiting for the debounce — call before
@@ -105,6 +110,7 @@ export const useStore = create<StoreState>((set, get) => {
     sizeId: DEFAULT_SIZE_ID,
     pages: [],
     activePageIndex: 0,
+    activeHalfIndex: 0,
     selected: null,
     shapeFilter: 'all',
     importing: false,
@@ -235,7 +241,16 @@ export const useStore = create<StoreState>((set, get) => {
 
     setActivePage(index) {
       const { pages } = get()
-      set({ activePageIndex: Math.max(0, Math.min(index, pages.length - 1)), selected: null })
+      set({
+        activePageIndex: Math.max(0, Math.min(index, pages.length - 1)),
+        // A new page starts on its first half, not wherever the last one was.
+        activeHalfIndex: 0,
+        selected: null,
+      })
+    },
+
+    setActiveHalf(halfIndex) {
+      set({ activeHalfIndex: halfIndex, selected: null })
     },
 
     select(ref) {
@@ -263,10 +278,12 @@ export const useStore = create<StoreState>((set, get) => {
         pages.map((page, i) => {
           if (i !== pageIndex || !page.halves) return page
           const template = getTemplate(templateId)
-          const kept = page.halves[halfIndex].placements.filter((p): p is Placement => p !== null)
+          const existing = page.halves[halfIndex]
+          const kept = existing.placements.filter((p): p is Placement => p !== null)
           const placements = template.slots.map((_, slotIndex) => kept[slotIndex] ?? null)
           const halves = [...page.halves] as [HalfLayout, HalfLayout]
-          halves[halfIndex] = { templateId, placements }
+          // The note survives a layout change, the same way photos do.
+          halves[halfIndex] = { templateId, placements, text: existing.text }
           return { ...page, halves }
         }),
       )
@@ -365,6 +382,18 @@ export const useStore = create<StoreState>((set, get) => {
       if (get().pages[pageIndex]?.locked) return
       mutatePages((pages) =>
         pages.map((page, i) => (i === pageIndex ? { ...page, text } : page)),
+      )
+    },
+
+    setHalfText(pageIndex, halfIndex, text) {
+      if (get().pages[pageIndex]?.locked) return
+      mutatePages((pages) =>
+        pages.map((page, i) => {
+          if (i !== pageIndex || !page.halves) return page
+          const halves = [...page.halves] as [HalfLayout, HalfLayout]
+          halves[halfIndex] = { ...halves[halfIndex], text }
+          return { ...page, halves }
+        }),
       )
     },
 

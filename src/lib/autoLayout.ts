@@ -93,7 +93,7 @@ const DEFAULT_HALF_TEMPLATE_ID = 'full'
 function emptyHalfLayout(seed?: Placement | null): HalfLayout {
   const placements = emptyPlacements(DEFAULT_HALF_TEMPLATE_ID)
   if (seed) placements[0] = seed
-  return { templateId: DEFAULT_HALF_TEMPLATE_ID, placements }
+  return { templateId: DEFAULT_HALF_TEMPLATE_ID, placements, text: '' }
 }
 
 function seededHalves(a?: Placement | null, b?: Placement | null): [HalfLayout, HalfLayout] {
@@ -124,8 +124,12 @@ function makePage(templateId: string, photos: (Placement | null)[] = []): Page {
  */
 export function normalizePages(pages: Page[]): Page[] {
   return pages.map((page) => {
-    if (!getTemplate(page.templateId).halfSplit || page.halves) return page
-    return { ...page, halves: seededHalves(page.placements[0], page.placements[1]) }
+    if (!getTemplate(page.templateId).halfSplit) return page
+    if (!page.halves) return { ...page, halves: seededHalves(page.placements[0], page.placements[1]) }
+    // Halves saved before per-half notes existed have no text of their own.
+    const [a, b] = page.halves
+    if (a.text !== undefined && b.text !== undefined) return page
+    return { ...page, halves: [{ ...a, text: a.text ?? '' }, { ...b, text: b.text ?? '' }] }
   })
 }
 

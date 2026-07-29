@@ -68,6 +68,21 @@ async function renderPage(
     ctx.restore()
   }
 
+  /** The page note: left-aligned, wrapping, italic — matching the editor. */
+  const drawNote = (rect: { x: number; y: number; w: number; h: number }, text: string, scaleH: number) => {
+    const fontSize = Math.round(scaleH * 0.026)
+    ctx.fillStyle = '#5b564c'
+    ctx.font = `italic ${fontSize}px -apple-system, "Segoe UI", sans-serif`
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'top'
+    const lineHeight = fontSize * 1.35
+    const lines = wrapText(ctx, text.trim(), rect.w)
+    const maxLines = Math.max(1, Math.floor(rect.h / lineHeight))
+    lines.slice(0, maxLines).forEach((line, i) => {
+      ctx.fillText(line, rect.x, rect.y + i * lineHeight, rect.w)
+    })
+  }
+
   if (template.halfSplit && page.halves) {
     template.slots.forEach((region, halfIndex) => {
       const half = page.halves![halfIndex as 0 | 1]
@@ -78,6 +93,14 @@ async function renderPage(
         const inner = slotPixelRect(slot, outer.w, outer.h, halfMargin)
         drawSlot({ x: outer.x + inner.x, y: outer.y + inner.y, w: inner.w, h: inner.h }, half.placements[slotIndex])
       })
+      if (halfTemplate.textSlot && half.text.trim()) {
+        const inner = slotPixelRect(halfTemplate.textSlot, outer.w, outer.h, halfMargin)
+        drawNote(
+          { x: outer.x + inner.x, y: outer.y + inner.y, w: inner.w, h: inner.h },
+          half.text,
+          outer.h,
+        )
+      }
     })
   } else {
     template.slots.forEach((slot, slotIndex) => {
@@ -96,20 +119,8 @@ async function renderPage(
     ctx.fillText(title, rect.x + rect.w / 2, rect.y + rect.h / 2, rect.w)
   }
 
-  // Mirrors the on-screen page note: left-aligned, wrapping, italic.
   if (template.textSlot && page.text.trim()) {
-    const rect = slotPixelRect(template.textSlot, pageW, pageH, marginRatio)
-    const fontSize = Math.round(pageH * 0.026)
-    ctx.fillStyle = '#5b564c'
-    ctx.font = `italic ${fontSize}px -apple-system, "Segoe UI", sans-serif`
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'top'
-    const lineHeight = fontSize * 1.35
-    const lines = wrapText(ctx, page.text.trim(), rect.w)
-    const maxLines = Math.max(1, Math.floor(rect.h / lineHeight))
-    lines.slice(0, maxLines).forEach((line, i) => {
-      ctx.fillText(line, rect.x, rect.y + i * lineHeight, rect.w)
-    })
+    drawNote(slotPixelRect(template.textSlot, pageW, pageH, marginRatio), page.text, pageH)
   }
 
   return canvas.toDataURL('image/jpeg', JPEG_QUALITY)

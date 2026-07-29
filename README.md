@@ -63,6 +63,13 @@ Polaroid with a note while the other is a 2×2 grid or a three-tier column —
 up to four photos per half, chosen independently, with the shape chips
 filtering both halves the same way they filter a whole page.
 
+You work one half at a time: a **Left half / Right half** toggle (or Top /
+Bottom, depending on which way the sheet folds) switches which half the
+sidebar is laying out, so the panel stays short and there's no reaching past
+one half's options to get at the other's. The Page Note follows the same
+toggle — each half keeps its own note, so a Polaroid + Note on one side and a
+different note on the other both print in their own half.
+
 This is deliberate rather than a restriction: a general layout applied across
 a folded sheet would put a photo right over the crease, and folding the print
 would ruin it. Keeping layouts inside a half means nothing ever lands on the

@@ -9,7 +9,7 @@ import {
 } from '../data/templates'
 import { resolvePageSize } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
-import type { HalfLayout, Shape, Template, TemplateFamily } from '../types'
+import type { Shape, Template, TemplateFamily } from '../types'
 
 /** A grid of template swatches — reused for both the whole-page picker and each half's own. */
 function TemplateGrid({
@@ -77,6 +77,8 @@ export function TemplatePanel() {
   const setShapeFilter = useStore((s) => s.setShapeFilter)
   const applyTemplate = useStore((s) => s.applyTemplate)
   const applyHalfTemplate = useStore((s) => s.applyHalfTemplate)
+  const activeHalfIndex = useStore((s) => s.activeHalfIndex)
+  const setActiveHalf = useStore((s) => s.setActiveHalf)
 
   const bookSize = getSize(sizeId)
   const currentPage = pages[activePageIndex]
@@ -158,23 +160,29 @@ export function TemplatePanel() {
             />
           </div>
 
+          {/* One half at a time — showing both grids at once made for a very
+              long panel and easy mis-clicks into the wrong half. */}
           {isSplit && currentPage?.halves && (
-            <div className="half-panels">
-              {(['0', '1'] as const).map((key) => {
-                const halfIndex = Number(key) as 0 | 1
-                const half: HalfLayout = currentPage.halves![halfIndex]
-                return (
-                  <div className="half-panel" key={halfIndex}>
-                    <p className="layout-section-title">{halfLabels[halfIndex]}</p>
-                    <TemplateGrid
-                      templates={halfTemplates}
-                      activeId={half.templateId}
-                      maxSlots={MAX_PHOTOS_PER_HALF}
-                      onPick={(templateId) => applyHalfTemplate(activePageIndex, halfIndex, templateId)}
-                    />
-                  </div>
-                )
-              })}
+            <div className="half-panel">
+              <div className="half-tabs" role="tablist" aria-label="Which half to lay out">
+                {([0, 1] as const).map((halfIndex) => (
+                  <button
+                    key={halfIndex}
+                    role="tab"
+                    className={`half-tab${activeHalfIndex === halfIndex ? ' active' : ''}`}
+                    aria-selected={activeHalfIndex === halfIndex}
+                    onClick={() => setActiveHalf(halfIndex)}
+                  >
+                    {halfLabels[halfIndex]}
+                  </button>
+                ))}
+              </div>
+              <TemplateGrid
+                templates={halfTemplates}
+                activeId={currentPage.halves[activeHalfIndex].templateId}
+                maxSlots={MAX_PHOTOS_PER_HALF}
+                onPick={(templateId) => applyHalfTemplate(activePageIndex, activeHalfIndex, templateId)}
+              />
             </div>
           )}
         </>

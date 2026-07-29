@@ -108,6 +108,35 @@ export function Slideshow({ pages, photos, size, title, startIndex, onClose }: S
                 {page.text}
               </div>
             )}
+            {template.halfSplit &&
+              page.halves &&
+              template.slots.map((region, halfIndex) => {
+                const half = page.halves![halfIndex as 0 | 1]
+                const halfTemplate = getTemplate(half.templateId)
+                if (!halfTemplate.textSlot || !half.text.trim()) return null
+                const outer = slotPixelRect(region, pageWidth, pageHeight, 0)
+                const inner = slotPixelRect(
+                  halfTemplate.textSlot,
+                  outer.w,
+                  outer.h,
+                  halfTemplate.bleed ? 0 : PAGE_MARGIN_RATIO,
+                )
+                return (
+                  <div
+                    key={`note-${halfIndex}`}
+                    className="page-caption page-note"
+                    style={{
+                      left: outer.x + inner.x,
+                      top: outer.y + inner.y,
+                      width: inner.w,
+                      height: inner.h,
+                      fontSize: Math.max(6, outer.h * 0.026),
+                    }}
+                  >
+                    {half.text}
+                  </div>
+                )
+              })}
             {(template.halfSplit && page.halves
               ? template.slots.flatMap((region, halfIndex) => {
                   const half = page.halves![halfIndex as 0 | 1]

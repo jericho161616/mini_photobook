@@ -84,6 +84,8 @@ export interface HalfLayout {
   templateId: string
   /** One entry per this half's own template slot; null means the slot is empty. */
   placements: (Placement | null)[]
+  /** This half's own note — blank unless its template reserves a textSlot. */
+  text: string
 }
 
 export interface Page {

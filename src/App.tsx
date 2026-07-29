@@ -109,8 +109,8 @@ export default function App() {
 
         <aside className="sidebar">
           <SlotInspector />
-          <TemplatePanel />
           <PageTextPanel />
+          <TemplatePanel />
         </aside>
       </div>
 

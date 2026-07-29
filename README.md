@@ -54,13 +54,16 @@ not just its two fold-aware ones. Larger sizes allow denser pages — a 6×6 cap
 at three photos per page where a 14×11 allows five. Changing size re-fits any
 page whose layout no longer suits the trim.
 
-**Each half of a folded page can hold its own arrangement.** Split at Fold
-doesn't limit you to one photo per side — pick "Split at Fold," and each half
-gets its own Layout panel underneath the main one, offering the same general
-templates (filtered to what actually fits that half) so one side can be a
-single photo while the other is a small grid or collage. Flipping the page's
-fold orientation keeps both halves' photos and layouts; switching the whole
-page to a different layout collapses them back into one shared arrangement.
+**Each half of a folded page is its own little page.** Split at Fold doesn't
+limit you to one photo per side — pick "Split at Fold," and each half gets its
+own Layout panel at the top of the Layout sidebar, offering the whole general
+template library, exactly as a standalone page would. One side can be a single
+full-bleed photo while the other is a 2×2 grid, a three-tier column, or a
+Polaroid with a note — up to four photos per half, chosen independently. The
+shape chips filter both halves' choices the same way they filter a whole page's.
+Flipping the page's fold orientation keeps both halves' photos and layouts;
+switching the whole page to a different layout collapses them back into one
+shared arrangement.
 
 **Mix any A4 size, page by page.** A page sized A4, A4 Landscape, A4 Folded —
 Portrait, or A4 Folded — Landscape gets a small per-page size picker, so a

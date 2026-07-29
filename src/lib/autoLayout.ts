@@ -1,7 +1,7 @@
 import { bookShape, getSize } from '../data/sizes'
 import { getTemplate, templatesForSize } from '../data/templates'
 import { MAX_PAGES, MIN_PAGES } from '../types'
-import type { BookSize, HalfLayout, Page, Photo, Placement, Shape, Template } from '../types'
+import type { BookSize, HalfLayout, Page, Photo, Placement, Template } from '../types'
 
 export function clampPages(n: number): number {
   return Math.max(MIN_PAGES, Math.min(MAX_PAGES, n))
@@ -85,15 +85,6 @@ export function placementFor(photoId: string): Placement {
  */
 export function pagePlacements(page: Page): (Placement | null)[] {
   return page.halves ? [...page.halves[0].placements, ...page.halves[1].placements] : page.placements
-}
-
-/** The half-region's own shape — both halves of a fold are always identical. */
-export function halfShape(size: BookSize): Shape {
-  const halfRatio =
-    bookShape(size) === 'wide' ? size.widthIn / 2 / size.heightIn : size.widthIn / (size.heightIn / 2)
-  if (halfRatio > 1.15) return 'wide'
-  if (halfRatio < 0.87) return 'tall'
-  return 'square'
 }
 
 function emptyHalfLayout(templateId: string, seed?: Placement | null): HalfLayout {
@@ -283,10 +274,12 @@ export function reconcileTemplates(pages: Page[], size: BookSize): Page[] {
 export function fitPageToSize(page: Page, size: BookSize): Page {
   const allowed = shapeFitting(templatesForSize(size), size)
   const replacement = [...allowed].sort((a, b) => {
-    if (b.slots.length !== a.slots.length) return b.slots.length - a.slots.length
-    // On a tie, prefer a template built for this exact size (e.g. the A4
-    // Folded fold-line layouts) over a general-purpose one of the same size.
-    return Number(Boolean(b.onlyFor)) - Number(Boolean(a.onlyFor))
+    // A template built for this exact size wins outright — on a folded sheet
+    // that's the layout whose gutter lines up with the physical crease, which
+    // matters more than fitting the most photos.
+    const byPurpose = Number(Boolean(b.onlyFor)) - Number(Boolean(a.onlyFor))
+    if (byPurpose !== 0) return byPurpose
+    return b.slots.length - a.slots.length
   })[0]
   return applyTemplateToPage(page, replacement.id)
 }

@@ -7,9 +7,9 @@ import {
   templatesForHalf,
   templatesForSize,
 } from '../data/templates'
-import { halfShape, resolvePageSize } from '../lib/autoLayout'
+import { resolvePageSize } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
-import type { HalfLayout, Template, TemplateFamily } from '../types'
+import type { HalfLayout, Shape, Template, TemplateFamily } from '../types'
 
 /** A grid of template swatches — reused for both the whole-page picker and each half's own. */
 function TemplateGrid({
@@ -84,9 +84,11 @@ export function TemplatePanel() {
   // to it (an A4 Folded page only ever offers its fold-aware layouts).
   const size = currentPage ? resolvePageSize(currentPage, bookSize) : bookSize
 
-  const visible = templatesForSize(size).filter(
-    (t) => shapeFilter === 'all' || t.fits.includes(shapeFilter),
-  )
+  const byShape = <T extends { fits: Shape[] }>(templates: T[]) =>
+    templates.filter((t) => shapeFilter === 'all' || t.fits.includes(shapeFilter))
+
+  const visible = byShape(templatesForSize(size))
+  const halfTemplates = byShape(templatesForHalf())
 
   const containerTemplate = currentPage ? getTemplate(currentPage.templateId) : undefined
   const isSplit = Boolean(containerTemplate?.halfSplit && currentPage?.halves)
@@ -97,8 +99,17 @@ export function TemplatePanel() {
     <section className="panel">
       <h2>Layout</h2>
       <p className="hint">
-        Up to <span className="mono">{size.maxPhotosPerPage}</span> photos per page at this size.
-        Filter by shape and mix them freely across the book.
+        {isSplit ? (
+          <>
+            This page is split at the fold, so each half gets its own layout below — up to{' '}
+            <span className="mono">{MAX_PHOTOS_PER_HALF}</span> photos on each side.
+          </>
+        ) : (
+          <>
+            Up to <span className="mono">{size.maxPhotosPerPage}</span> photos per page at this size.
+            Filter by shape and mix them freely across the book.
+          </>
+        )}
       </p>
 
       <div className="shape-chips">
@@ -116,24 +127,19 @@ export function TemplatePanel() {
         ))}
       </div>
 
-      <TemplateGrid
-        templates={visible}
-        activeId={currentPage?.templateId}
-        maxSlots={size.maxPhotosPerPage}
-        onPick={applyTemplate}
-      />
-
+      {/* On a split page each half's own picker is the one you actually reach
+          for, so it comes first; the whole-page picker below is mostly there
+          to leave split mode again. */}
       {isSplit && currentPage?.halves && (
         <div className="half-panels">
           {(['0', '1'] as const).map((key) => {
             const halfIndex = Number(key) as 0 | 1
             const half: HalfLayout = currentPage.halves![halfIndex]
-            const shape = halfShape(size)
             return (
               <div className="half-panel" key={halfIndex}>
-                <p className="half-panel-title">{halfLabels[halfIndex]}</p>
+                <p className="layout-section-title">{halfLabels[halfIndex]}</p>
                 <TemplateGrid
-                  templates={templatesForHalf(shape)}
+                  templates={halfTemplates}
                   activeId={half.templateId}
                   maxSlots={MAX_PHOTOS_PER_HALF}
                   onPick={(templateId) => applyHalfTemplate(activePageIndex, halfIndex, templateId)}
@@ -143,6 +149,16 @@ export function TemplatePanel() {
           })}
         </div>
       )}
+
+      <div className={isSplit ? 'whole-page-panel' : undefined}>
+        {isSplit && <p className="layout-section-title">Whole page instead</p>}
+        <TemplateGrid
+          templates={visible}
+          activeId={currentPage?.templateId}
+          maxSlots={size.maxPhotosPerPage}
+          onPick={applyTemplate}
+        />
+      </div>
     </section>
   )
 }

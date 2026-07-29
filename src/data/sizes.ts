@@ -51,8 +51,10 @@ export const PRINT_SIZES: BookSize[] = [
  * that reads landscape once opened out flat like a tent card.
  */
 export const BOOKLET_SIZES: BookSize[] = [
-  { id: 'a4-folded-portrait', name: 'A4 Folded — Portrait', widthIn: 11.69, heightIn: 8.27, maxPhotosPerPage: 2 },
-  { id: 'a4-folded-landscape', name: 'A4 Folded — Landscape', widthIn: 8.27, heightIn: 11.69, maxPhotosPerPage: 2 },
+  // Same sheet as a flat A4, so the same density — and a Split at Fold page
+  // goes denser still, since each half carries its own layout on top of this.
+  { id: 'a4-folded-portrait', name: 'A4 Folded — Portrait', widthIn: 11.69, heightIn: 8.27, maxPhotosPerPage: 4 },
+  { id: 'a4-folded-landscape', name: 'A4 Folded — Landscape', widthIn: 8.27, heightIn: 11.69, maxPhotosPerPage: 4 },
 ]
 
 export const SIZE_GROUPS: { label: string; sizes: BookSize[] }[] = [

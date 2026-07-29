@@ -364,16 +364,21 @@ export function templatesForSize(size: BookSize): Template[] {
   })
 }
 
-/** A folded sheet's half is roughly A5-sized — dense enough for a small collage. */
-export const MAX_PHOTOS_PER_HALF = 3
+/** A folded sheet's half is roughly A5-sized — room for a 2×2 collage of its own. */
+export const MAX_PHOTOS_PER_HALF = 4
 
 /**
- * Layout choices for one side of a "Split at Fold" page. Only the
- * general-purpose library applies — a fold-only template wouldn't make sense
- * nested inside half of an already-folded sheet.
+ * Layout choices for one side of a "Split at Fold" page — the whole
+ * general-purpose library, exactly as a standalone page would offer it, so a
+ * half really is its own little page rather than a restricted version of one.
+ * Only the fold-aware templates are held back: nesting another fold inside
+ * half of an already-folded sheet has no physical meaning.
+ *
+ * Shape isn't filtered here — the shape chips do that, the same way they do
+ * for a whole page.
  */
-export function templatesForHalf(shape: Shape): Template[] {
-  const general = TEMPLATES.filter((t) => !t.onlyFor && !t.halfSplit && t.slots.length <= MAX_PHOTOS_PER_HALF)
-  const fitting = general.filter((t) => t.fits.includes(shape))
-  return fitting.length > 0 ? fitting : general
+export function templatesForHalf(): Template[] {
+  return TEMPLATES.filter(
+    (t) => !t.onlyFor && !t.halfSplit && t.slots.length <= MAX_PHOTOS_PER_HALF,
+  )
 }

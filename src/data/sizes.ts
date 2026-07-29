@@ -66,30 +66,28 @@ export const SIZE_GROUPS: { label: string; sizes: BookSize[] }[] = [
 const ALL_SIZES = [...SIZES, ...PAPER_SIZES, ...PRINT_SIZES, ...BOOKLET_SIZES, ...NOVELTY_SIZES]
 
 /**
- * Pairs of sizes that are the same physical paper, just rotated — lets a
- * single page within an A4-family book be flipped to the other orientation
- * without changing what size the rest of the book is.
+ * The four A4 sizes — flat and folded, each in both orientations — treated as
+ * one interchangeable family. A page inside an A4-family book can be set to
+ * any of the four without changing what size the rest of the book is, so a
+ * single "whole sheet" page and a folded-card page can sit side by side.
  */
-const ORIENTATION_PAIRS: [string, string][] = [
-  ['a4', 'a4-landscape'],
-  ['a4-folded-portrait', 'a4-folded-landscape'],
-]
+const A4_FAMILY_IDS = ['a4', 'a4-landscape', 'a4-folded-portrait', 'a4-folded-landscape']
 
-/** The size id a page could flip to, or undefined if this size has no pair. */
-export function pairedOrientationSizeId(sizeId: string): string | undefined {
-  for (const [a, b] of ORIENTATION_PAIRS) {
-    if (sizeId === a) return b
-    if (sizeId === b) return a
-  }
-  return undefined
+const A4_FAMILY_SHORT_LABELS: Record<string, string> = {
+  'a4': 'A4',
+  'a4-landscape': 'A4 Landscape',
+  'a4-folded-portrait': 'A4 Folded ↕',
+  'a4-folded-landscape': 'A4 Folded ↔',
 }
 
-/** Every size id that belongs to an A4 orientation pair. */
-export const ORIENTATION_TOGGLE_SIZE_IDS = new Set(ORIENTATION_PAIRS.flat())
-
-/** Short label for the toggle button — which way this size reads. */
-export function orientationLabel(sizeId: string): 'Portrait' | 'Landscape' {
-  return sizeId.includes('landscape') ? 'Landscape' : 'Portrait'
+/**
+ * The other sizes a page could be set to, if `sizeId` belongs to the A4
+ * family — undefined if it doesn't, in which case no per-page override is
+ * offered at all.
+ */
+export function a4FamilyOptions(sizeId: string): { id: string; label: string }[] | undefined {
+  if (!A4_FAMILY_IDS.includes(sizeId)) return undefined
+  return A4_FAMILY_IDS.map((id) => ({ id, label: A4_FAMILY_SHORT_LABELS[id] }))
 }
 
 /** Size ids for the two A4 Folded sizes — used to restrict fold-only templates. */

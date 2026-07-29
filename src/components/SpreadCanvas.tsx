@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { getSize, orientationLabel, pairedOrientationSizeId, sizeRatio } from '../data/sizes'
+import { a4FamilyOptions, getSize, sizeRatio } from '../data/sizes'
 import { resolvePageSize } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
 import type { Page, Photo } from '../types'
@@ -30,7 +30,7 @@ export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
   const assignPhoto = useStore((s) => s.assignPhoto)
   const updatePlacement = useStore((s) => s.updatePlacement)
   const togglePageLock = useStore((s) => s.togglePageLock)
-  const setPageOrientation = useStore((s) => s.setPageOrientation)
+  const setPageSize = useStore((s) => s.setPageSize)
 
   const size = getSize(sizeId)
 
@@ -75,11 +75,12 @@ export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
     const page: Page = pages[index]
     const pageSize = resolvePageSize(page, size)
     const { width, height } = dimsFor(sizeRatio(pageSize))
-    const otherSizeId = pairedOrientationSizeId(pageSize.id)
-    const orientationToggle = otherSizeId
+    const familyOptions = a4FamilyOptions(pageSize.id)
+    const sizePicker = familyOptions
       ? {
-          otherLabel: orientationLabel(otherSizeId),
-          onToggle: () => setPageOrientation(index, otherSizeId),
+          options: familyOptions,
+          value: pageSize.id,
+          onChange: (nextSizeId: string) => setPageSize(index, nextSizeId),
         }
       : undefined
     return (
@@ -98,7 +99,7 @@ export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
           updatePlacement({ pageIndex: index, slotIndex }, { offsetX, offsetY })
         }
         onToggleLock={() => togglePageLock(index)}
-        orientationToggle={orientationToggle}
+        sizePicker={sizePicker}
       />
     )
   }

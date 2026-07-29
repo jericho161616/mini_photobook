@@ -47,8 +47,8 @@ interface StoreState {
   clearSlot: (ref: SlotRef) => void
   updatePlacement: (ref: SlotRef, patch: Partial<Placement>) => void
   togglePageLock: (pageIndex: number) => void
-  /** Flips one page to the other orientation within the A4 family (e.g. A4 <-> A4 Landscape). */
-  setPageOrientation: (pageIndex: number, sizeId: string) => void
+  /** Overrides one page's size within the A4 family (e.g. A4 <-> A4 Folded — Landscape). */
+  setPageSize: (pageIndex: number, sizeId: string) => void
   setPageText: (pageIndex: number, text: string) => void
   movePage: (from: number, to: number) => void
   reset: () => Promise<void>
@@ -300,7 +300,7 @@ export const useStore = create<StoreState>((set, get) => {
       )
     },
 
-    setPageOrientation(pageIndex, sizeId) {
+    setPageSize(pageIndex, sizeId) {
       const { sizeId: bookSizeId, pages: current } = get()
       if (current[pageIndex]?.locked) return
       const newSize = getSize(sizeId)

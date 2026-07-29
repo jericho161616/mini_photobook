@@ -17,8 +17,8 @@ interface PageViewProps {
   onDropPhoto: (slotIndex: number, photoId: string) => void
   onPan: (slotIndex: number, offsetX: number, offsetY: number) => void
   onToggleLock: () => void
-  /** Present only when this page's size belongs to an A4 orientation pair. */
-  orientationToggle?: { otherLabel: string; onToggle: () => void }
+  /** Present only when this page's size belongs to the A4 family. */
+  sizePicker?: { options: { id: string; label: string }[]; value: string; onChange: (sizeId: string) => void }
 }
 
 export function PageView({
@@ -34,7 +34,7 @@ export function PageView({
   onDropPhoto,
   onPan,
   onToggleLock,
-  orientationToggle,
+  sizePicker,
 }: PageViewProps) {
   if (!page) {
     // Odd page counts leave the final verso empty rather than inventing a page.
@@ -64,19 +64,22 @@ export function PageView({
       >
         {page.locked ? '🔒' : '🔓'}
       </button>
-      {orientationToggle && (
-        <button
-          className="page-orient"
-          onClick={orientationToggle.onToggle}
+      {sizePicker && (
+        <select
+          className="page-size-picker"
+          value={sizePicker.value}
+          onChange={(e) => sizePicker.onChange(e.target.value)}
           disabled={page.locked}
-          title={
-            page.locked
-              ? 'Unlock this page to change its orientation'
-              : `Switch this page to ${orientationToggle.otherLabel}`
-          }
+          title={page.locked ? 'Unlock this page to change its size' : "This page's size, within the A4 family"}
+          onClick={(e) => e.stopPropagation()}
+          aria-label={`Page ${pageIndex + 1} size`}
         >
-          ⤾ {orientationToggle.otherLabel}
-        </button>
+          {sizePicker.options.map((opt) => (
+            <option key={opt.id} value={opt.id}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
       )}
       {template.foldLine && (
         <div className={`fold-guide ${template.foldLine}`} aria-hidden="true" />

@@ -232,7 +232,12 @@ export function reconcileTemplates(pages: Page[], size: BookSize): Page[] {
 export function fitPageToSize(page: Page, size: BookSize): Page {
   const allowed = shapeFitting(templatesForSize(size), size)
   const photos = page.placements.filter((p): p is Placement => p !== null)
-  const replacement = [...allowed].sort((a, b) => b.slots.length - a.slots.length)[0]
+  const replacement = [...allowed].sort((a, b) => {
+    if (b.slots.length !== a.slots.length) return b.slots.length - a.slots.length
+    // On a tie, prefer a template built for this exact size (e.g. the A4
+    // Folded fold-line layouts) over a general-purpose one of the same size.
+    return Number(Boolean(b.onlyFor)) - Number(Boolean(a.onlyFor))
+  })[0]
   const placements = replacement.slots.map((_, i) => photos[i] ?? null)
   return { ...page, templateId: replacement.id, placements }
 }

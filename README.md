@@ -48,15 +48,17 @@ into a small card, in a Portrait fold (fold a landscape sheet top-to-bottom)
 or a Landscape fold (fold a portrait sheet left-to-right). A folded page can
 carry two different photos, one on each side of the fold, or one photo
 spanning the whole sheet — the fold line itself is always shown in the editor
-as a dashed guide so you know where it lands, but it's never printed. Larger
-sizes allow denser pages — a 6×6 caps at three photos per page where a 14×11
-allows five. Changing size re-fits any page whose layout no longer suits the trim.
+as a dashed guide so you know where it lands, but it's never printed. A folded
+page still offers the full general layout library too (grids, rows, collages),
+not just its two fold-aware ones. Larger sizes allow denser pages — a 6×6 caps
+at three photos per page where a 14×11 allows five. Changing size re-fits any
+page whose layout no longer suits the trim.
 
-**Mix portrait and landscape pages within the A4 family.** A page sized A4,
-A4 Landscape, or either A4 Folded orientation gets its own small flip control,
-so page 2 can be portrait while page 3 is landscape in the same book — no need
-to commit the whole book to one orientation. Locking a page also locks in
-whichever orientation it's currently set to.
+**Mix any A4 size, page by page.** A page sized A4, A4 Landscape, A4 Folded —
+Portrait, or A4 Folded — Landscape gets a small per-page size picker, so a
+single book can freely combine a plain full-sheet page, a landscape page, and
+a folded-card page wherever you want them — not just two fixed orientations.
+Locking a page also locks in whichever of the four it's currently set to.
 
 **Two layout families, including full-bleed.** *Minimal* is one to a few photos
 with room around them — including an edge-to-edge Full Bleed option with no

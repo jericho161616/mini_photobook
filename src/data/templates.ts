@@ -1,4 +1,3 @@
-import { FOLD_SIZE_IDS } from './sizes'
 import type { BookSize, Shape, Template } from '../types'
 
 /**
@@ -354,14 +353,14 @@ export function getTemplate(id: string): Template {
 
 /**
  * Templates that stay composed at the given book size. The A4 Folded sizes
- * only offer their own fold-aware templates (they don't have a page margin
- * or gutter that lines up with the physical fold); every other size only
- * offers the general-purpose templates.
+ * get their own fold-aware templates on top of the general-purpose library —
+ * those are the only ones with a gutter that actually lines up with the
+ * physical fold, but any other layout that fits the page is still offered.
  */
 export function templatesForSize(size: BookSize): Template[] {
   return TEMPLATES.filter((t) => {
     if (t.slots.length > size.maxPhotosPerPage) return false
     if (t.onlyFor) return t.onlyFor.includes(size.id)
-    return !FOLD_SIZE_IDS.has(size.id)
+    return true
   })
 }

@@ -3,6 +3,7 @@ import { DEFAULT_SIZE_ID, getSize } from '../data/sizes'
 import { getTemplate } from '../data/templates'
 import {
   autoLayout,
+  fitPageToSize,
   placementFor,
   reconcileTemplates,
   regenerateUnlocked,
@@ -46,6 +47,8 @@ interface StoreState {
   clearSlot: (ref: SlotRef) => void
   updatePlacement: (ref: SlotRef, patch: Partial<Placement>) => void
   togglePageLock: (pageIndex: number) => void
+  /** Flips one page to the other orientation within the A4 family (e.g. A4 <-> A4 Landscape). */
+  setPageOrientation: (pageIndex: number, sizeId: string) => void
   setPageText: (pageIndex: number, text: string) => void
   movePage: (from: number, to: number) => void
   reset: () => Promise<void>
@@ -183,7 +186,16 @@ export const useStore = create<StoreState>((set, get) => {
 
     setSize(sizeId) {
       const size = getSize(sizeId)
-      set((state) => ({ sizeId, pages: reconcileTemplates(state.pages, size), selected: null }))
+      set((state) => {
+        // A page's own orientation override only makes sense against the book
+        // size it was chosen relative to — a fresh book size clears it, except
+        // on locked pages, which stay exactly as they are like everything else
+        // about them.
+        const pages = state.pages.map((page) =>
+          page.locked || !page.sizeId ? page : { ...page, sizeId: undefined },
+        )
+        return { sizeId, pages: reconcileTemplates(pages, size), selected: null }
+      })
       persist()
     },
 
@@ -285,6 +297,19 @@ export const useStore = create<StoreState>((set, get) => {
     togglePageLock(pageIndex) {
       mutatePages((pages) =>
         pages.map((page, i) => (i === pageIndex ? { ...page, locked: !page.locked } : page)),
+      )
+    },
+
+    setPageOrientation(pageIndex, sizeId) {
+      const { sizeId: bookSizeId, pages: current } = get()
+      if (current[pageIndex]?.locked) return
+      const newSize = getSize(sizeId)
+      mutatePages((pages) =>
+        pages.map((page, i) => {
+          if (i !== pageIndex) return page
+          const fitted = fitPageToSize(page, newSize)
+          return { ...fitted, sizeId: sizeId === bookSizeId ? undefined : sizeId }
+        }),
       )
     },
 

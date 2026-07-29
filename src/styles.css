@@ -620,6 +620,63 @@ input:focus-visible,
   opacity: 1;
 }
 
+.page-orient {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  height: 24px;
+  border-radius: 12px;
+  border: none;
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 9px 0 8px;
+  opacity: 0.35;
+  transition: opacity 0.15s;
+}
+
+.page:hover .page-orient {
+  opacity: 0.9;
+}
+
+.page-orient:hover:not(:disabled) {
+  opacity: 1;
+}
+
+.page-orient:disabled {
+  cursor: not-allowed;
+}
+
+.fold-guide {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  border-color: var(--brass-soft);
+}
+
+.fold-guide.vertical {
+  top: 4%;
+  bottom: 4%;
+  left: 50%;
+  width: 0;
+  border-left: 2px dashed var(--brass-soft);
+  transform: translateX(-1px);
+}
+
+.fold-guide.horizontal {
+  left: 4%;
+  right: 4%;
+  top: 50%;
+  height: 0;
+  border-top: 2px dashed var(--brass-soft);
+  transform: translateY(-1px);
+}
+
 .gutter {
   width: 10px;
   flex: 0 0 auto;

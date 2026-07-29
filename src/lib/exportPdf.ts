@@ -1,4 +1,5 @@
 import { getTemplate } from '../data/templates'
+import { resolvePageSize } from './autoLayout'
 import { coverGeometry, slotPixelRect } from './imageUtils'
 import type { BookSize, Page, Photo } from '../types'
 
@@ -138,17 +139,27 @@ export async function exportToPdf({
     // Pulled in on demand — the PDF engine is far larger than the editor itself.
     const { jsPDF } = await import('jspdf')
 
+    const firstSize = pages.length > 0 ? resolvePageSize(pages[0], size) : size
     const pdf = new jsPDF({
-      orientation: size.widthIn >= size.heightIn ? 'landscape' : 'portrait',
+      orientation: firstSize.widthIn >= firstSize.heightIn ? 'landscape' : 'portrait',
       unit: 'in',
-      format: [size.widthIn, size.heightIn],
+      format: [firstSize.widthIn, firstSize.heightIn],
       compress: true,
     })
 
     for (let i = 0; i < pages.length; i++) {
-      if (i > 0) pdf.addPage([size.widthIn, size.heightIn])
-      const dataUrl = await renderPage(pages[i], size, photoMap, background, title)
-      pdf.addImage(dataUrl, 'JPEG', 0, 0, size.widthIn, size.heightIn)
+      // A page can override the book's own size (mixed orientation within
+      // the A4 family), so each page's trim is resolved individually rather
+      // than assumed to match the book default.
+      const pageSize = resolvePageSize(pages[i], size)
+      if (i > 0) {
+        pdf.addPage(
+          [pageSize.widthIn, pageSize.heightIn],
+          pageSize.widthIn >= pageSize.heightIn ? 'landscape' : 'portrait',
+        )
+      }
+      const dataUrl = await renderPage(pages[i], pageSize, photoMap, background, title)
+      pdf.addImage(dataUrl, 'JPEG', 0, 0, pageSize.widthIn, pageSize.heightIn)
       onProgress?.(i + 1, pages.length)
       // Yield so the progress indicator can actually paint between pages.
       await new Promise((resolve) => setTimeout(resolve, 0))

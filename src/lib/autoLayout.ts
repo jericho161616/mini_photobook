@@ -1,4 +1,4 @@
-import { bookShape } from '../data/sizes'
+import { bookShape, getSize } from '../data/sizes'
 import { getTemplate, templatesForSize } from '../data/templates'
 import { MAX_PAGES, MIN_PAGES } from '../types'
 import type { BookSize, Page, Photo, Placement, Template } from '../types'
@@ -98,7 +98,7 @@ export function autoLayout({ photos, size, pageCount }: AutoLayoutOptions): Page
  * legitimately number fewer than the book's own minimum.
  */
 function layoutPages(photos: Photo[], size: BookSize, pages: number): Page[] {
-  const candidates = templatesForSize(size.maxPhotosPerPage)
+  const candidates = templatesForSize(size)
   const pageRatio = size.widthIn / size.heightIn
 
   if (photos.length === 0) {
@@ -193,7 +193,7 @@ export function resizePages(pages: Page[], pageCount: number, size: BookSize): P
   if (pages.length === target) return pages
   if (pages.length > target) return pages.slice(0, target)
 
-  const candidates = shapeFitting(templatesForSize(size.maxPhotosPerPage), size)
+  const candidates = shapeFitting(templatesForSize(size), size)
   const added = Array.from({ length: target - pages.length }, (_, i) => {
     const template = candidates[(pages.length + i) % candidates.length]
     return {
@@ -212,23 +212,35 @@ export function resizePages(pages: Page[], pageCount: number, size: BookSize): P
  * pages to the closest allowed layout, carrying over as many photos as fit.
  */
 export function reconcileTemplates(pages: Page[], size: BookSize): Page[] {
-  const allowed = templatesForSize(size.maxPhotosPerPage)
+  const allowed = templatesForSize(size)
   const allowedIds = new Set(allowed.map((t) => t.id))
 
   return pages.map((page) => {
     // A locked page is protected from every kind of edit, including the
     // knock-on effect of resizing the whole book.
     if (page.locked || allowedIds.has(page.templateId)) return page
-
-    const photos = page.placements.filter((p): p is Placement => p !== null)
-    // Densest layout that still fits and suits the new trim, so we drop as few
-    // photos as possible while keeping the page well composed.
-    const replacement = [...shapeFitting(allowed, size)].sort(
-      (a, b) => b.slots.length - a.slots.length,
-    )[0]
-    const placements = replacement.slots.map((_, i) => photos[i] ?? null)
-    return { ...page, templateId: replacement.id, placements }
+    return fitPageToSize(page, size)
   })
+}
+
+/**
+ * Re-fit a single page to a new size, picking the densest template that
+ * suits the new shape and carrying over as many of its photos as fit. Used
+ * both by whole-book resize (above) and by flipping one page's orientation
+ * within the A4 family.
+ */
+export function fitPageToSize(page: Page, size: BookSize): Page {
+  const allowed = shapeFitting(templatesForSize(size), size)
+  const photos = page.placements.filter((p): p is Placement => p !== null)
+  const replacement = [...allowed].sort((a, b) => b.slots.length - a.slots.length)[0]
+  const placements = replacement.slots.map((_, i) => photos[i] ?? null)
+  return { ...page, templateId: replacement.id, placements }
+}
+
+/** The size actually in effect for this page — its own override, or the book's. */
+export function resolvePageSize(page: Page, bookSize: BookSize): BookSize {
+  if (!page.sizeId) return bookSize
+  return getSize(page.sizeId)
 }
 
 /**

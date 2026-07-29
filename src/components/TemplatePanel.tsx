@@ -1,6 +1,7 @@
 import { Fragment } from 'react'
 import { getSize } from '../data/sizes'
-import { SHAPE_FILTERS, TEMPLATES } from '../data/templates'
+import { SHAPE_FILTERS, templatesForSize } from '../data/templates'
+import { resolvePageSize } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
 import type { TemplateFamily } from '../types'
 
@@ -12,10 +13,13 @@ export function TemplatePanel() {
   const setShapeFilter = useStore((s) => s.setShapeFilter)
   const applyTemplate = useStore((s) => s.applyTemplate)
 
-  const size = getSize(sizeId)
+  const bookSize = getSize(sizeId)
   const currentPage = pages[activePageIndex]
+  // A page's own orientation override changes which templates actually apply
+  // to it (an A4 Folded page only ever offers its fold-aware layouts).
+  const size = currentPage ? resolvePageSize(currentPage, bookSize) : bookSize
 
-  const visible = TEMPLATES.filter(
+  const visible = templatesForSize(size).filter(
     (t) => shapeFilter === 'all' || t.fits.includes(shapeFilter),
   )
 

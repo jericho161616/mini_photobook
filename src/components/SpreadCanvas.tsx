@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { getSize, sizeRatio } from '../data/sizes'
+import { getSize, orientationLabel, pairedOrientationSizeId, sizeRatio } from '../data/sizes'
+import { resolvePageSize } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
-import type { Photo } from '../types'
+import type { Page, Photo } from '../types'
 import { PageView } from './PageView'
 
 /** Frame around the spread: padding, the gutter, and breathing room. */
@@ -29,9 +30,9 @@ export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
   const assignPhoto = useStore((s) => s.assignPhoto)
   const updatePlacement = useStore((s) => s.updatePlacement)
   const togglePageLock = useStore((s) => s.togglePageLock)
+  const setPageOrientation = useStore((s) => s.setPageOrientation)
 
   const size = getSize(sizeId)
-  const ratio = sizeRatio(size)
 
   // The spread should use whatever room the window gives it, so a tall book
   // isn't shown at postage-stamp size just because a wide one fits differently.
@@ -49,26 +50,45 @@ export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
     return () => observer.disconnect()
   }, [])
 
-  const { pageWidth, pageHeight } = useMemo(() => {
+  const dimsFor = useMemo(() => {
     const availableW = Math.max(160, (area.width - SPREAD_CHROME_X) / 2)
     const availableH = Math.max(160, area.height - SPREAD_CHROME_Y)
-    const width = Math.min(MAX_PAGE_WIDTH, availableW, availableH * ratio)
-    return { pageWidth: width, pageHeight: width / ratio }
-  }, [ratio, area])
+    return (ratio: number) => {
+      const width = Math.min(MAX_PAGE_WIDTH, availableW, availableH * ratio)
+      return { width, height: width / ratio }
+    }
+  }, [area])
+
+  const fallbackDims = dimsFor(sizeRatio(size))
 
   const [leftIndex, rightIndex] = spreadFor(activePageIndex)
 
   const renderSide = (index: number | null, side: 'left' | 'right') => {
     if (index === null) {
-      return <div className={`page ${side} blank`} style={{ width: pageWidth, height: pageHeight }} />
+      return (
+        <div
+          className={`page ${side} blank`}
+          style={{ width: fallbackDims.width, height: fallbackDims.height }}
+        />
+      )
     }
+    const page: Page = pages[index]
+    const pageSize = resolvePageSize(page, size)
+    const { width, height } = dimsFor(sizeRatio(pageSize))
+    const otherSizeId = pairedOrientationSizeId(pageSize.id)
+    const orientationToggle = otherSizeId
+      ? {
+          otherLabel: orientationLabel(otherSizeId),
+          onToggle: () => setPageOrientation(index, otherSizeId),
+        }
+      : undefined
     return (
       <PageView
-        page={pages[index]}
+        page={page}
         pageIndex={index}
         photos={photos}
-        width={pageWidth}
-        height={pageHeight}
+        width={width}
+        height={height}
         side={side}
         title={title}
         selectedSlot={selected?.pageIndex === index ? selected.slotIndex : null}
@@ -78,6 +98,7 @@ export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
           updatePlacement({ pageIndex: index, slotIndex }, { offsetX, offsetY })
         }
         onToggleLock={() => togglePageLock(index)}
+        orientationToggle={orientationToggle}
       />
     )
   }

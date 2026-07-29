@@ -1,4 +1,5 @@
-import type { Shape, Template } from '../types'
+import { FOLD_SIZE_IDS } from './sizes'
+import type { BookSize, Shape, Template } from '../types'
 
 /**
  * Two families, deliberately different in voice:
@@ -290,6 +291,54 @@ export const TEMPLATES: Template[] = [
       { x: 68, y: 36, w: 28, h: 28 },
     ],
   },
+  {
+    id: 'foldSplitPortrait',
+    label: '2 · Split at Fold',
+    family: 'Minimal',
+    fits: ['wide'],
+    onlyFor: ['a4-folded-portrait'],
+    foldLine: 'vertical',
+    // Edge-to-edge and no gutter: the two halves are the same physical sheet,
+    // meeting exactly at the fold rather than a designed page margin.
+    bleed: true,
+    slots: [
+      { x: 0, y: 0, w: 50, h: 100 },
+      { x: 50, y: 0, w: 50, h: 100 },
+    ],
+  },
+  {
+    id: 'foldFullPortrait',
+    label: '1 · Full Sheet',
+    family: 'Minimal',
+    fits: ['wide'],
+    onlyFor: ['a4-folded-portrait'],
+    foldLine: 'vertical',
+    bleed: true,
+    slots: [{ x: 0, y: 0, w: 100, h: 100 }],
+  },
+  {
+    id: 'foldSplitLandscape',
+    label: '2 · Split at Fold',
+    family: 'Minimal',
+    fits: ['tall'],
+    onlyFor: ['a4-folded-landscape'],
+    foldLine: 'horizontal',
+    bleed: true,
+    slots: [
+      { x: 0, y: 0, w: 100, h: 50 },
+      { x: 0, y: 50, w: 100, h: 50 },
+    ],
+  },
+  {
+    id: 'foldFullLandscape',
+    label: '1 · Full Sheet',
+    family: 'Minimal',
+    fits: ['tall'],
+    onlyFor: ['a4-folded-landscape'],
+    foldLine: 'horizontal',
+    bleed: true,
+    slots: [{ x: 0, y: 0, w: 100, h: 100 }],
+  },
 ]
 
 export const SHAPE_FILTERS: { id: Shape | 'all'; label: string }[] = [
@@ -303,7 +352,16 @@ export function getTemplate(id: string): Template {
   return TEMPLATES.find((t) => t.id === id) ?? TEMPLATES[0]
 }
 
-/** Templates that stay composed at the given book size. */
-export function templatesForSize(maxPhotosPerPage: number): Template[] {
-  return TEMPLATES.filter((t) => t.slots.length <= maxPhotosPerPage)
+/**
+ * Templates that stay composed at the given book size. The A4 Folded sizes
+ * only offer their own fold-aware templates (they don't have a page margin
+ * or gutter that lines up with the physical fold); every other size only
+ * offers the general-purpose templates.
+ */
+export function templatesForSize(size: BookSize): Template[] {
+  return TEMPLATES.filter((t) => {
+    if (t.slots.length > size.maxPhotosPerPage) return false
+    if (t.onlyFor) return t.onlyFor.includes(size.id)
+    return !FOLD_SIZE_IDS.has(size.id)
+  })
 }

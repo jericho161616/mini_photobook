@@ -27,6 +27,17 @@ export interface Template {
   textSlot?: SlotRect
   /** Edge-to-edge: the page margin is skipped for this template. */
   bleed?: boolean
+  /**
+   * Restricts this template to specific book-size ids — used for the A4
+   * Folded templates, which only make sense on the folded-sheet sizes they
+   * were designed for.
+   */
+  onlyFor?: string[]
+  /**
+   * Draws a dashed guide across the page at the physical fold line, for the
+   * A4 Folded sizes. Editor-only — never rendered into the exported PDF.
+   */
+  foldLine?: 'vertical' | 'horizontal'
 }
 
 export interface BookSize {
@@ -75,6 +86,12 @@ export interface Page {
   locked: boolean
   /** The designer's own note for this page — blank unless the template has a textSlot. */
   text: string
+  /**
+   * Overrides the book's size for this one page — used to mix portrait and
+   * landscape pages within the A4 family. Undefined means "use the book's
+   * own size," which is true for every page outside that family.
+   */
+  sizeId?: string
 }
 
 export interface Project {

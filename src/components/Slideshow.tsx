@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { getTemplate } from '../data/templates'
+import { resolvePageSize } from '../lib/autoLayout'
 import { PAGE_MARGIN_RATIO } from '../lib/exportPdf'
 import { photoUrl, slotPixelRect } from '../lib/imageUtils'
 import type { BookSize, Page, Photo } from '../types'
@@ -27,7 +28,9 @@ export function Slideshow({ pages, photos, size, title, startIndex, onClose }: S
   const [playing, setPlaying] = useState(true)
   const timerRef = useRef<number>()
 
-  const ratio = size.widthIn / size.heightIn
+  const page = pages[index]
+  const pageSize = resolvePageSize(page, size)
+  const ratio = pageSize.widthIn / pageSize.heightIn
   const pageWidth = ratio >= 1 ? MAX_W : MAX_H * ratio
   const pageHeight = ratio >= 1 ? MAX_W / ratio : MAX_H
 
@@ -59,7 +62,6 @@ export function Slideshow({ pages, photos, size, title, startIndex, onClose }: S
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose, pages.length])
 
-  const page = pages[index]
   const template = useMemo(() => getTemplate(page.templateId), [page.templateId])
   const marginRatio = template.bleed ? 0 : PAGE_MARGIN_RATIO
   const captionRect = template.caption

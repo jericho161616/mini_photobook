@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { getSize, sizeRatio } from '../data/sizes'
 import { getTemplate } from '../data/templates'
+import { resolvePageSize } from '../lib/autoLayout'
 import { photoThumbUrl } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
 import type { Photo } from '../types'
@@ -18,13 +19,14 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
   const [dragFrom, setDragFrom] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
 
-  const ratio = sizeRatio(getSize(sizeId))
-  const height = THUMB_WIDTH / ratio
+  const size = getSize(sizeId)
 
   return (
     <footer className="filmstrip">
       {pages.map((page, index) => {
         const template = getTemplate(page.templateId)
+        const ratio = sizeRatio(resolvePageSize(page, size))
+        const height = THUMB_WIDTH / ratio
         return (
           <div className="fs-item" key={page.id}>
             <div className="fs-page-wrap" style={{ width: THUMB_WIDTH, height }}>

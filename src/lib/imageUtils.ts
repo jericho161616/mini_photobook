@@ -63,7 +63,7 @@ async function makeThumbnail(blob: Blob): Promise<Blob> {
   return thumbBlob ?? blob
 }
 
-export async function importFiles(files: File[]): Promise<Photo[]> {
+export async function importFiles(files: File[], projectId: string): Promise<Photo[]> {
   const images = files.filter((f) => ACCEPTED_TYPES.includes(f.type))
   const photos = await Promise.all(
     images.map(async (file) => {
@@ -73,6 +73,7 @@ export async function importFiles(files: File[]): Promise<Photo[]> {
       ])
       return {
         id: nextPhotoId(),
+        projectId,
         name: file.name,
         blob: file,
         thumbBlob,

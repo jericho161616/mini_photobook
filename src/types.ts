@@ -42,6 +42,8 @@ export interface BookSize {
 
 export interface Photo {
   id: string
+  /** Which book this photo belongs to — books keep fully separate photo sets. */
+  projectId: string
   name: string
   /** Full-resolution original, kept as a blob so nothing leaves the machine. */
   blob: Blob
@@ -80,6 +82,7 @@ export interface Project {
   title: string
   sizeId: string
   pages: Page[]
+  createdAt: number
   updatedAt: number
 }
 

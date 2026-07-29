@@ -9,11 +9,19 @@ interface TopBarProps {
   onExport: () => void
   exporting: boolean
   onPlay: () => void
+  onGoToLibrary: () => void
   theme: 'light' | 'dark'
   onToggleTheme: () => void
 }
 
-export function TopBar({ onExport, exporting, onPlay, theme, onToggleTheme }: TopBarProps) {
+export function TopBar({
+  onExport,
+  exporting,
+  onPlay,
+  onGoToLibrary,
+  theme,
+  onToggleTheme,
+}: TopBarProps) {
   const title = useStore((s) => s.title)
   const setTitle = useStore((s) => s.setTitle)
   const sizeId = useStore((s) => s.sizeId)
@@ -37,9 +45,9 @@ export function TopBar({ onExport, exporting, onPlay, theme, onToggleTheme }: To
 
   return (
     <header className="topbar">
-      <div className="brand">
+      <button className="brand brand-link" onClick={onGoToLibrary} title="Back to My Books">
         Moments <span>·</span> Editor
-      </div>
+      </button>
 
       <input
         className="title-input"

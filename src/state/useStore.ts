@@ -20,6 +20,7 @@ export interface SlotRef {
 
 interface StoreState {
   ready: boolean
+  projectId: string | null
   photos: Photo[]
   title: string
   sizeId: string
@@ -29,7 +30,7 @@ interface StoreState {
   shapeFilter: Shape | 'all'
   importing: boolean
 
-  init: () => Promise<void>
+  init: (projectId: string) => Promise<void>
   addFiles: (files: File[]) => Promise<void>
   removePhoto: (photoId: string) => Promise<void>
   removePhotos: (photoIds: string[]) => Promise<void>
@@ -48,14 +49,21 @@ interface StoreState {
   setPageText: (pageIndex: number, text: string) => void
   movePage: (from: number, to: number) => void
   reset: () => Promise<void>
+  /** Writes immediately instead of waiting for the debounce — call before
+   *  navigating away, so My Books never shows a moment-stale card. */
+  flushPending: () => void
 }
 
-function projectFrom(state: Pick<StoreState, 'title' | 'sizeId' | 'pages'>): Project {
+function projectFrom(
+  state: Pick<StoreState, 'projectId' | 'title' | 'sizeId' | 'pages'>,
+  createdAt: number,
+): Project {
   return {
-    id: storage.CURRENT_PROJECT_ID,
+    id: state.projectId!,
     title: state.title,
     sizeId: state.sizeId,
     pages: state.pages,
+    createdAt,
     updatedAt: Date.now(),
   }
 }
@@ -63,12 +71,15 @@ function projectFrom(state: Pick<StoreState, 'title' | 'sizeId' | 'pages'>): Pro
 export const useStore = create<StoreState>((set, get) => {
   /** Debounced write-behind so dragging a photo doesn't hammer IndexedDB. */
   let saveTimer: number | undefined
+  let openedAt = Date.now()
+  const writeNow = () => {
+    const { projectId, title, sizeId, pages } = get()
+    if (!projectId) return
+    void storage.saveProject(projectFrom({ projectId, title, sizeId, pages }, openedAt))
+  }
   const persist = () => {
     window.clearTimeout(saveTimer)
-    saveTimer = window.setTimeout(() => {
-      const { title, sizeId, pages } = get()
-      void storage.saveProject(projectFrom({ title, sizeId, pages }))
-    }, 400)
+    saveTimer = window.setTimeout(writeNow, 400)
   }
 
   /** Apply a change to the pages array and persist it. */
@@ -79,6 +90,7 @@ export const useStore = create<StoreState>((set, get) => {
 
   return {
     ready: false,
+    projectId: null,
     photos: [],
     title: 'Untitled Book',
     sizeId: DEFAULT_SIZE_ID,
@@ -88,24 +100,49 @@ export const useStore = create<StoreState>((set, get) => {
     shapeFilter: 'all',
     importing: false,
 
-    async init() {
-      const [photos, project] = await Promise.all([storage.loadPhotos(), storage.loadProject()])
+    async init(projectId) {
+      set({ ready: false })
+      const [photos, project] = await Promise.all([
+        storage.loadPhotosForProject(projectId),
+        storage.loadProject(projectId),
+      ])
+      openedAt = project?.createdAt ?? Date.now()
       if (project) {
-        set({ ready: true, photos, title: project.title, sizeId: project.sizeId, pages: project.pages })
+        set({
+          ready: true,
+          projectId,
+          photos,
+          title: project.title,
+          sizeId: project.sizeId,
+          pages: project.pages,
+          activePageIndex: 0,
+          selected: null,
+        })
       } else {
-        // A brand new book always opens at the minimum page count, empty —
-        // the designer decides how many pages and where every photo goes.
+        // Shouldn't normally happen — My Books always creates the project
+        // record before opening it — but a blank starting book is a safe fallback.
         const size = getSize(DEFAULT_SIZE_ID)
         const pages = autoLayout({ photos: [], size, pageCount: MIN_PAGES })
-        set({ ready: true, photos, pages })
+        set({
+          ready: true,
+          projectId,
+          photos: [],
+          title: 'Untitled Book',
+          sizeId: DEFAULT_SIZE_ID,
+          pages,
+          activePageIndex: 0,
+          selected: null,
+        })
         persist()
       }
     },
 
     async addFiles(files) {
+      const { projectId } = get()
+      if (!projectId) return
       set({ importing: true })
       try {
-        const imported = await importFiles(files)
+        const imported = await importFiles(files, projectId)
         if (imported.length === 0) return
 
         // Importing only adds photos to the library. Nothing is placed on any
@@ -271,8 +308,11 @@ export const useStore = create<StoreState>((set, get) => {
     },
 
     async reset() {
-      await storage.clearEverything()
-      for (const photo of get().photos) releasePhotoUrl(photo.id)
+      const { projectId, photos } = get()
+      if (!projectId) return
+      // Only this book's photos are cleared — the rest of My Books is untouched.
+      await storage.clearProject(projectId)
+      for (const photo of photos) releasePhotoUrl(photo.id)
       const size = getSize(DEFAULT_SIZE_ID)
       set({
         photos: [],
@@ -283,6 +323,11 @@ export const useStore = create<StoreState>((set, get) => {
         selected: null,
       })
       persist()
+    },
+
+    flushPending() {
+      window.clearTimeout(saveTimer)
+      writeNow()
     },
   }
 })

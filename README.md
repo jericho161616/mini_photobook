@@ -24,6 +24,14 @@ npm run preview
 
 ## What it does
 
+**My Books.** The app opens to a library of every book you've started —
+click "Moments" in the top bar any time to come back to it. Each book keeps
+its own separate photo library and pages; nothing is shared between them.
+From a book's card you can rename it inline, duplicate it (a true
+independent copy — editing the duplicate never touches the original), or
+delete it. There's no limit on how many books you can keep beyond your
+browser's own IndexedDB storage quota.
+
 **You decide where every photo goes.** Importing photos only adds them to your
 library — nothing gets placed automatically. A new book opens at the minimum
 10 pages, empty, and you drag each photo onto the slot you want it in. An
@@ -107,9 +115,11 @@ src/
     autoLayout  page/template assignment and aspect-ratio fitting
     imageUtils  import, measurement, and the shared cover-fit geometry
     exportPdf   300 DPI page rendering and PDF assembly
-    db          Dexie schema
-  state/        the Zustand store
-  components/   editor UI
+    db          Dexie schema (photos + projects, scoped by projectId)
+  state/
+    useStore         the active book's editor state
+    useLibraryStore  the My Books list (create/rename/duplicate/delete)
+  components/   editor UI + My Books screen
 ```
 
 `coverGeometry` in `lib/imageUtils.ts` is deliberately shared between the

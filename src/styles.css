@@ -195,9 +195,22 @@ input:focus-visible,
   margin-left: auto;
 }
 
-.page-control input[type='range'] {
-  width: 130px;
-  accent-color: var(--navy);
+.page-step {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 15px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-count {
+  min-width: 22px;
+  text-align: center;
+  font-size: 13px;
 }
 
 .btn {

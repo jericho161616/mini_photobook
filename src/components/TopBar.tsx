@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { formatDims, getSize } from '../data/sizes'
-import { capacityRange, suggestPageCount } from '../lib/autoLayout'
+import { capacityRange, minPageCount, suggestPageCount } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
 import { MAX_PAGES, MIN_PAGES } from '../types'
 import { ResetConfirm } from './ResetConfirm'
@@ -27,6 +27,13 @@ export function TopBar({ onExport, exporting, onPlay, theme, onToggleTheme }: To
   const [, maxCapacity] = capacityRange(pages.length, size)
   const overflowing = photos.length > maxCapacity
   const suggestion = suggestPageCount(photos.length, size)
+
+  const minCount = minPageCount(pages)
+  // minPageCount only rises above the book's absolute floor when a locked
+  // page is holding it there.
+  const blockedByLock = pages.length <= minCount && minCount > MIN_PAGES
+  const canDecrease = pages.length > minCount
+  const canIncrease = pages.length < MAX_PAGES
 
   return (
     <header className="topbar">
@@ -57,18 +64,32 @@ export function TopBar({ onExport, exporting, onPlay, theme, onToggleTheme }: To
 
       <div className="topbar-right">
         <div className="topbar-group page-control">
-          <label className="meta-label" htmlFor="pageCount">
-            Pages
-          </label>
-          <input
-            id="pageCount"
-            type="range"
-            min={MIN_PAGES}
-            max={MAX_PAGES}
-            value={pages.length}
-            onChange={(e) => setPageCount(Number(e.target.value))}
-          />
-          <span className="mono">{pages.length}</span>
+          <span className="meta-label">Pages</span>
+          <button
+            className="btn page-step"
+            onClick={() => setPageCount(pages.length - 1)}
+            disabled={!canDecrease}
+            aria-label="Remove a page"
+            title={
+              blockedByLock
+                ? `Page ${minCount} is locked — unlock it to remove more pages`
+                : !canDecrease
+                  ? `Minimum is ${minCount} pages`
+                  : 'Remove a page'
+            }
+          >
+            −
+          </button>
+          <span className="mono page-count">{pages.length}</span>
+          <button
+            className="btn page-step"
+            onClick={() => setPageCount(pages.length + 1)}
+            disabled={!canIncrease}
+            aria-label="Add a page"
+            title={canIncrease ? 'Add a page' : `Maximum is ${MAX_PAGES} pages`}
+          >
+            +
+          </button>
         </div>
 
         <button

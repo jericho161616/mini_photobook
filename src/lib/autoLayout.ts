@@ -176,12 +176,20 @@ function layoutPages(photos: Photo[], size: BookSize, pages: number): Page[] {
   return result
 }
 
+/** Fewest pages the book can shrink to without cutting off a locked page. */
+export function minPageCount(pages: Page[]): number {
+  const lastLockedIndex = pages.reduce((last, p, i) => (p.locked ? i : last), -1)
+  return Math.max(MIN_PAGES, lastLockedIndex + 1)
+}
+
 /**
  * Resize an existing book to a new page count, keeping the pages the designer
- * has already worked on and only adding or trimming from the end.
+ * has already worked on and only adding or trimming from the end. Trimming
+ * never removes a locked page — the count just stops shrinking at whichever
+ * locked page sits furthest back in the book.
  */
 export function resizePages(pages: Page[], pageCount: number, size: BookSize): Page[] {
-  const target = clampPages(pageCount)
+  const target = Math.max(clampPages(pageCount), minPageCount(pages))
   if (pages.length === target) return pages
   if (pages.length > target) return pages.slice(0, target)
 

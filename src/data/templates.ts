@@ -79,6 +79,19 @@ export const TEMPLATES: Template[] = [
     ],
   },
   {
+    id: 'duoHNote',
+    label: '2 · Stack + Note',
+    family: 'Minimal',
+    fits: ['tall', 'square'],
+    // "2 · Side + Note" already covers wide pages; this is the same idea for
+    // tall/square ones, where a horizontal stack reads better than side-by-side.
+    slots: [
+      { x: 0, y: 0, w: 100, h: 38 },
+      { x: 0, y: 42, w: 100, h: 38 },
+    ],
+    textSlot: { x: 6, y: 84, w: 88, h: 12 },
+  },
+  {
     id: 'trioT',
     label: '3 · Feature',
     family: 'Minimal',
@@ -206,9 +219,19 @@ export const TEMPLATES: Template[] = [
     label: '1 · Polaroid',
     family: 'Portfolio',
     fits: ['square', 'tall'],
-    // The extra gap left at the bottom is the classic instant-photo frame —
-    // no caption text, since a real Polaroid's is handwritten per shot.
+    // The photo leaves the classic instant-photo frame empty at the bottom.
     slots: [{ x: 0, y: 0, w: 100, h: 74 }],
+  },
+  {
+    id: 'polaroidNote',
+    label: '1 · Polaroid + Note',
+    family: 'Portfolio',
+    fits: ['square', 'tall'],
+    // Same frame as Polaroid, but the blank strip actually holds your own
+    // note now rather than being purely decorative — the "handwritten"
+    // caption a real Polaroid has.
+    slots: [{ x: 0, y: 0, w: 100, h: 74 }],
+    textSlot: { x: 10, y: 82, w: 80, h: 14 },
   },
   {
     id: 'tallFeature',

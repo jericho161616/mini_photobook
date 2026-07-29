@@ -148,6 +148,15 @@ export const TEMPLATES: Template[] = [
     ],
   },
   {
+    id: 'polaroid',
+    label: '1 · Polaroid',
+    family: 'Portfolio',
+    fits: ['square', 'tall'],
+    // The extra gap left at the bottom is the classic instant-photo frame —
+    // no caption text, since a real Polaroid's is handwritten per shot.
+    slots: [{ x: 0, y: 0, w: 100, h: 74 }],
+  },
+  {
     id: 'tallFeature',
     label: '2 · Tall Feature',
     family: 'Portfolio',

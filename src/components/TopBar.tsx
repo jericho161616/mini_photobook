@@ -6,9 +6,11 @@ import { MAX_PAGES, MIN_PAGES } from '../types'
 interface TopBarProps {
   onExport: () => void
   exporting: boolean
+  theme: 'light' | 'dark'
+  onToggleTheme: () => void
 }
 
-export function TopBar({ onExport, exporting }: TopBarProps) {
+export function TopBar({ onExport, exporting, theme, onToggleTheme }: TopBarProps) {
   const title = useStore((s) => s.title)
   const setTitle = useStore((s) => s.setTitle)
   const sizeId = useStore((s) => s.sizeId)
@@ -25,7 +27,7 @@ export function TopBar({ onExport, exporting }: TopBarProps) {
   return (
     <header className="topbar">
       <div className="brand">
-        Folio <span>·</span> Editor
+        Moments <span>·</span> Editor
       </div>
 
       <input
@@ -72,6 +74,15 @@ export function TopBar({ onExport, exporting }: TopBarProps) {
 
         <button className="btn-primary" onClick={onExport} disabled={exporting}>
           {exporting ? 'Exporting…' : 'Export PDF'}
+        </button>
+
+        <button
+          className="btn theme-toggle"
+          onClick={onToggleTheme}
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {theme === 'dark' ? '☀' : '☾'}
         </button>
       </div>
     </header>

@@ -16,10 +16,35 @@ export const SIZES: BookSize[] = [
   { id: 'pt-l', name: 'Large Portrait', widthIn: 11, heightIn: 14, maxPhotosPerPage: 5 },
 ]
 
+/**
+ * ISO 216 paper, portrait — sized for a home printer rather than a print lab.
+ * A4 is what most inkjets take without adjusting the tray; A3 needs a
+ * printer that supports it, A5/A6 are what a normal sheet cuts down to.
+ */
+export const PAPER_SIZES: BookSize[] = [
+  { id: 'a6', name: 'A6', widthIn: 4.13, heightIn: 5.83, maxPhotosPerPage: 2 },
+  { id: 'a5', name: 'A5', widthIn: 5.83, heightIn: 8.27, maxPhotosPerPage: 3 },
+  { id: 'a4', name: 'A4', widthIn: 8.27, heightIn: 11.69, maxPhotosPerPage: 4 },
+  { id: 'a3', name: 'A3', widthIn: 11.69, heightIn: 16.54, maxPhotosPerPage: 5 },
+]
+
+/** A single instant-photo frame — deliberately tiny and single-shot per page. */
+export const NOVELTY_SIZES: BookSize[] = [
+  { id: 'polaroid', name: 'Polaroid', widthIn: 3.5, heightIn: 4.2, maxPhotosPerPage: 1 },
+]
+
+export const SIZE_GROUPS: { label: string; sizes: BookSize[] }[] = [
+  { label: 'Photobook', sizes: SIZES },
+  { label: 'Printer Paper', sizes: PAPER_SIZES },
+  { label: 'Novelty', sizes: NOVELTY_SIZES },
+]
+
+const ALL_SIZES = [...SIZES, ...PAPER_SIZES, ...NOVELTY_SIZES]
+
 export const DEFAULT_SIZE_ID = 'sq-m'
 
 export function getSize(id: string): BookSize {
-  return SIZES.find((s) => s.id === id) ?? SIZES[1]
+  return ALL_SIZES.find((s) => s.id === id) ?? SIZES[1]
 }
 
 export function sizeRatio(size: BookSize): number {

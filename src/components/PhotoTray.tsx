@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { usedPhotoIds } from '../lib/autoLayout'
 import { ACCEPTED_TYPES, photoUrl } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
+import { PhotoLibrary } from './PhotoLibrary'
 
 export function PhotoTray() {
   const photos = useStore((s) => s.photos)
@@ -12,6 +13,7 @@ export function PhotoTray() {
 
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
+  const [libraryOpen, setLibraryOpen] = useState(false)
 
   const used = usedPhotoIds(pages)
   const placedCount = photos.filter((p) => used.has(p.id)).length
@@ -30,29 +32,35 @@ export function PhotoTray() {
           No photos yet. Add some and the book lays itself out — you can rearrange from there.
         </p>
       ) : (
-        <div className="photo-tray">
-          {photos.map((photo) => (
-            <div
-              key={photo.id}
-              className={`photo-thumb${used.has(photo.id) ? ' used' : ''}`}
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData('text/photo-id', photo.id)
-                e.dataTransfer.effectAllowed = 'copy'
-              }}
-              title={photo.name}
-            >
-              <img src={photoUrl(photo)} alt={photo.name} draggable={false} />
-              <button
-                className="remove"
-                onClick={() => void removePhoto(photo.id)}
-                aria-label={`Remove ${photo.name}`}
+        <>
+          <div className="photo-tray">
+            {photos.map((photo) => (
+              <div
+                key={photo.id}
+                className={`photo-thumb${used.has(photo.id) ? ' used' : ''}`}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('text/photo-id', photo.id)
+                  e.dataTransfer.effectAllowed = 'copy'
+                }}
+                title={photo.name}
               >
-                ×
-              </button>
-            </div>
-          ))}
-        </div>
+                <img src={photoUrl(photo)} alt={photo.name} draggable={false} />
+                <button
+                  className="remove"
+                  onClick={() => void removePhoto(photo.id)}
+                  aria-label={`Remove ${photo.name}`}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <button className="btn expand-btn" onClick={() => setLibraryOpen(true)}>
+            ⤢ View & manage all photos
+          </button>
+        </>
       )}
 
       <button
@@ -84,6 +92,8 @@ export function PhotoTray() {
           e.target.value = ''
         }}
       />
+
+      {libraryOpen && <PhotoLibrary onClose={() => setLibraryOpen(false)} />}
     </section>
   )
 }

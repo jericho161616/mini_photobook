@@ -34,6 +34,10 @@ export async function deletePhoto(id: string): Promise<void> {
   await db.photos.delete(id)
 }
 
+export async function deletePhotos(ids: string[]): Promise<void> {
+  await db.photos.bulkDelete(ids)
+}
+
 export async function loadProject(): Promise<Project | undefined> {
   return db.projects.get(CURRENT_PROJECT_ID)
 }

@@ -1,4 +1,4 @@
-# Folio — Mini Photobook
+# Moments — Mini Photobook
 
 A local-first photobook layout generator. Point it at a folder of photos, pick a
 trim size, and it lays out a book you can then rearrange by hand and export as a
@@ -30,9 +30,11 @@ the slots available, so portraits land in upright slots and panoramas in wide
 ones. Consecutive pages are nudged toward different templates so the book doesn't
 read as one layout repeated.
 
-**Nine standard trim sizes**, from 6×6 to 14×11. Larger books allow denser pages;
-a 6×6 caps at three photos per page where a 14×11 allows five. Changing size
-re-fits any page whose layout no longer suits the trim.
+**Fourteen sizes across three groups.** Nine standard photobook trims (6×6 up to
+14×11), the ISO paper sizes a home printer actually takes (A6–A3), and a
+Polaroid-style 3.5×4.2 frame for a single instant-photo page. Larger sizes allow
+denser pages — a 6×6 caps at three photos per page where a 14×11 allows five.
+Changing size re-fits any page whose layout no longer suits the trim.
 
 **Two layout families.** *Minimal* is one to three photos with room around them.
 *Portfolio* is editorial — rows, collages, and covers. Filter either by page
@@ -47,6 +49,14 @@ you have already worked on and only adds or trims from the end.
 
 **Titled cover.** Page one uses a cover layout carrying the book title, which
 renders in the editor and in the exported PDF.
+
+**A photo library for managing the set.** The sidebar tray stays compact for
+dragging into slots; "View & manage all photos" opens a larger grid where you
+can check off several photos and remove them at once, and see at a glance
+which ones aren't placed on any page yet.
+
+**Light and dark themes**, matching your OS by default with a manual toggle in
+the top bar that's remembered next time you open the app.
 
 **300 DPI PDF export** at true trim dimensions. Pages are drawn programmatically
 onto a canvas rather than screenshotting the editor, so the output is genuinely

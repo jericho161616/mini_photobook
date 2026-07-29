@@ -33,6 +33,7 @@ interface StoreState {
   init: () => Promise<void>
   addFiles: (files: File[]) => Promise<void>
   removePhoto: (photoId: string) => Promise<void>
+  removePhotos: (photoIds: string[]) => Promise<void>
   setTitle: (title: string) => void
   setSize: (sizeId: string) => void
   setPageCount: (count: number) => void
@@ -138,14 +139,21 @@ export const useStore = create<StoreState>((set, get) => {
     },
 
     async removePhoto(photoId) {
-      await storage.deletePhoto(photoId)
-      releasePhotoUrl(photoId)
-      set((state) => ({ photos: state.photos.filter((p) => p.id !== photoId) }))
+      await get().removePhotos([photoId])
+    },
+
+    async removePhotos(photoIds) {
+      const idSet = new Set(photoIds)
+      if (idSet.size === 0) return
+
+      await storage.deletePhotos(photoIds)
+      for (const id of idSet) releasePhotoUrl(id)
+      set((state) => ({ photos: state.photos.filter((p) => !idSet.has(p.id)) }))
       mutatePages((pages) =>
         pages.map((page) => ({
           ...page,
           placements: page.placements.map((slot) =>
-            slot && slot.photoId === photoId ? null : slot,
+            slot && idSet.has(slot.photoId) ? null : slot,
           ),
         })),
       )

@@ -8,6 +8,7 @@ import { TemplatePanel } from './components/TemplatePanel'
 import { TopBar } from './components/TopBar'
 import { getSize } from './data/sizes'
 import { exportToPdf } from './lib/exportPdf'
+import { applyTheme, persistTheme, resolveInitialTheme, type ThemeChoice } from './lib/theme'
 import { useStore } from './state/useStore'
 
 export default function App() {
@@ -23,6 +24,16 @@ export default function App() {
   const [exporting, setExporting] = useState(false)
   const [progress, setProgress] = useState({ done: 0, total: 0 })
   const [error, setError] = useState<string | null>(null)
+  const [theme, setTheme] = useState<ThemeChoice>(() => resolveInitialTheme())
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark'
+      applyTheme(next)
+      persistTheme(next)
+      return next
+    })
+  }, [])
 
   useEffect(() => {
     void init()
@@ -71,7 +82,12 @@ export default function App() {
 
   return (
     <div className="app">
-      <TopBar onExport={() => void handleExport()} exporting={exporting} />
+      <TopBar
+        onExport={() => void handleExport()}
+        exporting={exporting}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
 
       {error && (
         <p className="hint warn" role="alert">

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { a4FamilyOptions, getSize, sizeRatio } from '../data/sizes'
+import { a4FamilyOptions, foldOrientationForSize, getSize, sizeRatio } from '../data/sizes'
 import { resolvePageSize } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
 import type { Page, Photo } from '../types'
@@ -75,6 +75,7 @@ export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
     const page: Page = pages[index]
     const pageSize = resolvePageSize(page, size)
     const { width, height } = dimsFor(sizeRatio(pageSize))
+    const foldOrientation = foldOrientationForSize(pageSize.id)
     const familyOptions = a4FamilyOptions(pageSize.id)
     const sizePicker = familyOptions
       ? {
@@ -100,6 +101,7 @@ export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
         }
         onToggleLock={() => togglePageLock(index)}
         sizePicker={sizePicker}
+        foldOrientation={foldOrientation}
       />
     )
   }

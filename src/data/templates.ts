@@ -296,7 +296,6 @@ export const TEMPLATES: Template[] = [
     family: 'Minimal',
     fits: ['wide'],
     onlyFor: ['a4-folded-portrait'],
-    foldLine: 'vertical',
     // Edge-to-edge and no gutter: the two halves are the same physical sheet,
     // meeting exactly at the fold rather than a designed page margin.
     bleed: true,
@@ -311,7 +310,6 @@ export const TEMPLATES: Template[] = [
     family: 'Minimal',
     fits: ['wide'],
     onlyFor: ['a4-folded-portrait'],
-    foldLine: 'vertical',
     bleed: true,
     slots: [{ x: 0, y: 0, w: 100, h: 100 }],
   },
@@ -321,7 +319,6 @@ export const TEMPLATES: Template[] = [
     family: 'Minimal',
     fits: ['tall'],
     onlyFor: ['a4-folded-landscape'],
-    foldLine: 'horizontal',
     bleed: true,
     slots: [
       { x: 0, y: 0, w: 100, h: 50 },
@@ -334,7 +331,6 @@ export const TEMPLATES: Template[] = [
     family: 'Minimal',
     fits: ['tall'],
     onlyFor: ['a4-folded-landscape'],
-    foldLine: 'horizontal',
     bleed: true,
     slots: [{ x: 0, y: 0, w: 100, h: 100 }],
   },

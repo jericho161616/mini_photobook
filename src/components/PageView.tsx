@@ -19,6 +19,12 @@ interface PageViewProps {
   onToggleLock: () => void
   /** Present only when this page's size belongs to the A4 family. */
   sizePicker?: { options: { id: string; label: string }[]; value: string; onChange: (sizeId: string) => void }
+  /**
+   * Present only when this page's size is one of the A4 Folded sizes — driven
+   * by the page's size, not its template, so the crease still shows even on a
+   * general layout that isn't fold-aware.
+   */
+  foldOrientation?: 'vertical' | 'horizontal'
 }
 
 export function PageView({
@@ -35,6 +41,7 @@ export function PageView({
   onPan,
   onToggleLock,
   sizePicker,
+  foldOrientation,
 }: PageViewProps) {
   if (!page) {
     // Odd page counts leave the final verso empty rather than inventing a page.
@@ -81,9 +88,7 @@ export function PageView({
           ))}
         </select>
       )}
-      {template.foldLine && (
-        <div className={`fold-guide ${template.foldLine}`} aria-hidden="true" />
-      )}
+      {foldOrientation && <div className={`fold-guide ${foldOrientation}`} aria-hidden="true" />}
       <div className="slots" style={{ inset: 0 }}>
         {captionRect && title.trim() && (
           <div

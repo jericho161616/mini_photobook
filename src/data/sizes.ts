@@ -93,6 +93,20 @@ export function a4FamilyOptions(sizeId: string): { id: string; label: string }[]
 /** Size ids for the two A4 Folded sizes — used to restrict fold-only templates. */
 export const FOLD_SIZE_IDS = new Set(BOOKLET_SIZES.map((s) => s.id))
 
+const FOLD_ORIENTATION_BY_SIZE_ID: Record<string, 'vertical' | 'horizontal'> = {
+  'a4-folded-portrait': 'vertical',
+  'a4-folded-landscape': 'horizontal',
+}
+
+/**
+ * Where the physical crease falls on this size, regardless of which template
+ * is applied — a page's own size decides this, not its layout, so the guide
+ * still shows even on a general (non-fold-aware) template.
+ */
+export function foldOrientationForSize(sizeId: string): 'vertical' | 'horizontal' | undefined {
+  return FOLD_ORIENTATION_BY_SIZE_ID[sizeId]
+}
+
 export const DEFAULT_SIZE_ID = 'sq-m'
 
 export function getSize(id: string): BookSize {

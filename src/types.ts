@@ -33,11 +33,6 @@ export interface Template {
    * were designed for.
    */
   onlyFor?: string[]
-  /**
-   * Draws a dashed guide across the page at the physical fold line, for the
-   * A4 Folded sizes. Editor-only — never rendered into the exported PDF.
-   */
-  foldLine?: 'vertical' | 'horizontal'
 }
 
 export interface BookSize {

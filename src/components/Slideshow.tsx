@@ -4,7 +4,7 @@ import { PAGE_MARGIN_RATIO } from '../lib/exportPdf'
 import { photoUrl, slotPixelRect } from '../lib/imageUtils'
 import type { BookSize, Page, Photo } from '../types'
 
-const ADVANCE_MS = 3000
+const ADVANCE_MS = 1500
 const MAX_W = 640
 const MAX_H = 640
 

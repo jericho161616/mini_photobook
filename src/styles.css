@@ -443,7 +443,11 @@ input:focus-visible,
 .photo-thumb img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  /* Contain, not cover: this is for recognizing which photo is which before
+     it's placed, so the whole frame matters more than a clean crop. The
+     actual page slots (and the filmstrip preview of them) still crop to fill,
+     since that's what will really print. */
+  object-fit: contain;
   display: block;
 }
 
@@ -1149,7 +1153,8 @@ input:focus-visible,
 .library-thumb img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  /* Same reasoning as the tray: show the whole photo, not a cropped square. */
+  object-fit: contain;
   display: block;
 }
 

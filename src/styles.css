@@ -700,6 +700,116 @@ input:focus-visible,
   inset: 9%;
 }
 
+.decoration {
+  position: absolute;
+  cursor: grab;
+  touch-action: none;
+  outline: 1px solid transparent;
+  outline-offset: 2px;
+  z-index: 5;
+}
+
+.decoration:hover {
+  outline-color: var(--navy-soft);
+}
+
+.decoration.selected {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+
+.decoration.dragging {
+  cursor: grabbing;
+}
+
+.decoration.locked {
+  cursor: default;
+}
+
+.decoration-delete {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: var(--navy);
+  color: var(--page-stock);
+  font-size: 13px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 6;
+}
+
+.decoration-resize {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--brass);
+  border: 2px solid var(--page-stock);
+  cursor: nwse-resize;
+  touch-action: none;
+  z-index: 6;
+}
+
+.sticker-glyph {
+  position: absolute;
+  inset: 0;
+}
+
+.sticker-heart svg,
+.sticker-star svg,
+.sticker-arrow svg {
+  width: 100%;
+  height: 100%;
+}
+
+.sticker-heart { color: var(--brass); }
+.sticker-star { color: var(--navy-soft); }
+.sticker-arrow { color: var(--ink-soft); }
+
+.sticker-tape-yellow,
+.sticker-tape-pink,
+.sticker-tape-sage {
+  position: absolute;
+  inset: 0;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  opacity: 0.85;
+}
+
+.sticker-tape-yellow {
+  background: repeating-linear-gradient(45deg, #e8d9a0, #e8d9a0 6px, #f2e8c4 6px, #f2e8c4 12px);
+}
+
+.sticker-tape-pink {
+  background: #e3b8b0;
+}
+
+.sticker-tape-sage {
+  background: repeating-linear-gradient(-45deg, #b9c4a8, #b9c4a8 5px, #d3dac6 5px, #d3dac6 10px);
+}
+
+.freetext-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 4%;
+  line-height: 1.25;
+  color: var(--ink);
+  outline: none;
+  cursor: text;
+  overflow-wrap: anywhere;
+}
+
 .slot {
   position: absolute;
   overflow: hidden;
@@ -1809,6 +1919,102 @@ input:focus-visible,
   justify-content: flex-end;
   gap: 8px;
   margin-top: 4px;
+}
+
+/* ---- Decorate panel ---- */
+.sticker-tray {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.sticker-tray-btn {
+  position: relative;
+  aspect-ratio: 1;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.sticker-tray-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sticker-glyph-preview {
+  position: absolute;
+  inset: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.sticker-glyph-preview.sticker-tape-yellow {
+  background: repeating-linear-gradient(45deg, #e8d9a0, #e8d9a0 4px, #f2e8c4 4px, #f2e8c4 8px);
+}
+
+.sticker-glyph-preview.sticker-tape-pink {
+  background: #e3b8b0;
+}
+
+.sticker-glyph-preview.sticker-tape-sage {
+  background: repeating-linear-gradient(-45deg, #b9c4a8, #b9c4a8 4px, #d3dac6 4px, #d3dac6 8px);
+}
+
+.sticker-glyph-preview.sticker-heart,
+.sticker-glyph-preview.sticker-star,
+.sticker-glyph-preview.sticker-arrow {
+  background: var(--linen-deep);
+}
+
+.sticker-glyph-preview svg {
+  width: 60%;
+  height: 60%;
+}
+
+.sticker-glyph-preview.sticker-heart { color: var(--brass); }
+.sticker-glyph-preview.sticker-star { color: var(--navy-soft); }
+.sticker-glyph-preview.sticker-arrow { color: var(--ink-soft); }
+
+.add-text-btn {
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+.decoration-editor {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.align-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.align-btn {
+  flex: 1;
+  padding: 6px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink-soft);
+}
+
+.align-btn.active {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: var(--page-stock);
+}
+
+.decoration-remove-btn {
+  width: 100%;
+  margin-top: 12px;
 }
 
 @media (prefers-reduced-motion: reduce) {

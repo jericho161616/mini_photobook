@@ -87,6 +87,11 @@ export function pagePlacements(page: Page): (Placement | null)[] {
   return page.halves ? [...page.halves[0].placements, ...page.halves[1].placements] : page.placements
 }
 
+/** Where a page's (or one half's) stickers/text boxes actually live. */
+export function decorationHost(page: Page, halfIndex?: 0 | 1): Page | HalfLayout {
+  return halfIndex !== undefined && page.halves ? page.halves[halfIndex] : page
+}
+
 /** A fresh half starts as a single photo — the simplest thing to build from. */
 const DEFAULT_HALF_TEMPLATE_ID = 'full'
 

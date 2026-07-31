@@ -3,6 +3,7 @@ import { getSize } from '../data/sizes'
 import { exportToPdf } from '../lib/exportPdf'
 import type { ThemeChoice } from '../lib/theme'
 import { useStore } from '../state/useStore'
+import { DecoratePanel } from './DecoratePanel'
 import { Filmstrip } from './Filmstrip'
 import { PageTextPanel } from './PageTextPanel'
 import { PhotoTray } from './PhotoTray'
@@ -113,6 +114,7 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
           <SlotInspector />
           <PageTextPanel />
           <TemplatePanel />
+          <DecoratePanel />
         </aside>
       </div>
 

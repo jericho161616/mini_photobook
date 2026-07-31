@@ -1,6 +1,6 @@
 import { DEFAULT_TEXT_STYLE, fontStack } from '../data/fonts'
 import { getTemplate } from '../data/templates'
-import { pagePlacements, resolvePageSize } from './autoLayout'
+import { decorationHost, pagePlacements, resolvePageSize } from './autoLayout'
 import {
   coverGeometry,
   FRAME_INSET_RATIO,
@@ -8,7 +8,7 @@ import {
   POSTER_ROTATION_DEG,
   slotPixelRect,
 } from './imageUtils'
-import type { BookSize, Page, Photo, Placement, TextStyle } from '../types'
+import type { BookSize, Page, Photo, Placement, Sticker, TextBox, TextStyle } from '../types'
 
 export const PAGE_MARGIN_RATIO = 0.09
 const DPI = 300
@@ -17,6 +17,19 @@ const JPEG_QUALITY = 0.92
 const FILTER_CANVAS: Record<string, string> = {
   bw: 'grayscale(1)',
   sepia: 'sepia(0.75) saturate(1.1)',
+}
+
+const TAPE_COLORS: Record<string, string> = {
+  'tape-yellow': 'rgba(232, 217, 160, 0.85)',
+  'tape-pink': 'rgba(227, 184, 176, 0.85)',
+  'tape-sage': 'rgba(185, 196, 168, 0.85)',
+}
+
+/** Mirrors StickerGlyph.tsx's paths — Path2D draws SVG path data directly. */
+const ICON_PATHS: Record<string, { d: string; color: string }> = {
+  heart: { d: 'M12 20s-7-4.6-9.3-9C1 7.7 2.3 4 6 4c2 0 3.3 1.2 4 2.4C10.7 5.2 12 4 14 4c3.7 0 5 3.7 3.3 7-2.3 4.4-9.3 9-9.3 9z', color: '#a8763f' },
+  star: { d: 'M12 2.8l2.7 6.1 6.6.6-5 4.5 1.5 6.5-5.8-3.5-5.8 3.5 1.5-6.5-5-4.5 6.6-.6z', color: '#3f5570' },
+  arrow: { d: 'M3 12h15M13 6l6 6-6 6', color: '#5b564c' },
 }
 
 /** Greedy word wrap so canvas text (which doesn't wrap on its own) matches the on-screen note. */
@@ -141,6 +154,74 @@ async function renderPage(
     })
   }
 
+  /** A sticker — either a flat piece of tape or a small line-drawn icon. */
+  const drawSticker = (rect: { x: number; y: number; w: number; h: number }, sticker: Sticker) => {
+    const tapeColor = TAPE_COLORS[sticker.type]
+    if (tapeColor) {
+      ctx.save()
+      ctx.shadowColor = 'rgba(0,0,0,0.15)'
+      ctx.shadowBlur = rect.h * 0.15
+      ctx.fillStyle = tapeColor
+      ctx.fillRect(rect.x, rect.y, rect.w, rect.h)
+      ctx.restore()
+      return
+    }
+    const icon = ICON_PATHS[sticker.type]
+    if (!icon) return
+    ctx.save()
+    const scale = Math.min(rect.w, rect.h) / 24
+    ctx.translate(rect.x + (rect.w - 24 * scale) / 2, rect.y + (rect.h - 24 * scale) / 2)
+    ctx.scale(scale, scale)
+    ctx.strokeStyle = icon.color
+    ctx.lineWidth = 1.6
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    ctx.stroke(new Path2D(icon.d))
+    ctx.restore()
+  }
+
+  /** A free-placed text box: wrapped, horizontally aligned, vertically centered in its box. */
+  const drawFreeText = (rect: { x: number; y: number; w: number; h: number }, box: TextBox) => {
+    if (!box.text.trim()) return
+    const fontSize = Math.max(10, rect.h * 0.28)
+    ctx.fillStyle = '#201f1c'
+    ctx.font = `${box.bold ? 'bold' : 'normal'} ${fontSize}px ${fontStack(box.font)}`
+    ctx.textAlign = box.align
+    ctx.textBaseline = 'top'
+    const innerW = rect.w * 0.92
+    const lineHeight = fontSize * 1.25
+    const lines = wrapText(ctx, box.text.trim(), innerW)
+    const blockH = lines.length * lineHeight
+    const startY = rect.y + Math.max(0, (rect.h - blockH) / 2)
+    const x = box.align === 'left' ? rect.x + rect.w * 0.04 : box.align === 'right' ? rect.x + rect.w * 0.96 : rect.x + rect.w / 2
+    lines.forEach((line, i) => ctx.fillText(line, x, startY + i * lineHeight, innerW))
+  }
+
+  const drawDecorations = (host: { stickers?: Sticker[]; textBoxes?: TextBox[] }, containerW: number, containerH: number, offsetX: number, offsetY: number) => {
+    for (const sticker of host.stickers ?? []) {
+      drawSticker(
+        {
+          x: offsetX + (sticker.x / 100) * containerW,
+          y: offsetY + (sticker.y / 100) * containerH,
+          w: (sticker.w / 100) * containerW,
+          h: (sticker.h / 100) * containerH,
+        },
+        sticker,
+      )
+    }
+    for (const box of host.textBoxes ?? []) {
+      drawFreeText(
+        {
+          x: offsetX + (box.x / 100) * containerW,
+          y: offsetY + (box.y / 100) * containerH,
+          w: (box.w / 100) * containerW,
+          h: (box.h / 100) * containerH,
+        },
+        box,
+      )
+    }
+  }
+
   if (template.halfSplit && page.halves) {
     template.slots.forEach((region, halfIndex) => {
       const half = page.halves![halfIndex as 0 | 1]
@@ -165,6 +246,7 @@ async function renderPage(
           halfTemplate.captionStyle === 'centered',
         )
       }
+      drawDecorations(decorationHost(page, halfIndex as 0 | 1), outer.w, outer.h, outer.x, outer.y)
     })
   } else {
     template.slots.forEach((slot, slotIndex) => {
@@ -194,6 +276,10 @@ async function renderPage(
       page.textStyle ?? DEFAULT_TEXT_STYLE,
       template.captionStyle === 'centered',
     )
+  }
+
+  if (!template.halfSplit) {
+    drawDecorations(page, pageW, pageH, 0, 0)
   }
 
   return canvas.toDataURL('image/jpeg', JPEG_QUALITY)

@@ -1,8 +1,11 @@
 import { DEFAULT_TEXT_STYLE, fontStack } from '../data/fonts'
 import { getTemplate } from '../data/templates'
+import { decorationHost } from '../lib/autoLayout'
 import { PAGE_MARGIN_RATIO } from '../lib/exportPdf'
 import { slotPixelRect } from '../lib/imageUtils'
-import type { Page, Photo } from '../types'
+import type { DecorationRef } from '../state/useStore'
+import type { Page, Photo, Sticker, TextBox } from '../types'
+import { DecorationLayer } from './DecorationLayer'
 import { SlotView } from './SlotView'
 
 interface PageViewProps {
@@ -28,6 +31,14 @@ interface PageViewProps {
    * general layout that isn't fold-aware.
    */
   foldOrientation?: 'vertical' | 'horizontal'
+  /** Stickers and free text boxes for this page — omitted where there's nothing to draw. */
+  decorations?: {
+    selected: DecorationRef | null
+    onSelect: (ref: DecorationRef) => void
+    onChangeSticker: (ref: DecorationRef, patch: Partial<Sticker>) => void
+    onChangeTextBox: (ref: DecorationRef, patch: Partial<TextBox>) => void
+    onDelete: (ref: DecorationRef) => void
+  }
 }
 
 export function PageView({
@@ -46,6 +57,7 @@ export function PageView({
   onToggleLock,
   sizePicker,
   foldOrientation,
+  decorations,
 }: PageViewProps) {
   if (!page) {
     // Odd page counts leave the final verso empty rather than inventing a page.
@@ -174,6 +186,41 @@ export function PageView({
                   </div>,
                 )
               }
+
+              if (decorations) {
+                const h = halfIndex as 0 | 1
+                const host = decorationHost(page, h)
+                nested.push(
+                  <div
+                    key={`${halfIndex}-decorations`}
+                    style={{ position: 'absolute', left: outer.x, top: outer.y, width: outer.w, height: outer.h }}
+                  >
+                    <DecorationLayer
+                      stickers={host.stickers ?? []}
+                      textBoxes={host.textBoxes ?? []}
+                      containerSize={{ w: outer.w, h: outer.h }}
+                      locked={page.locked}
+                      isSelected={(kind, id) =>
+                        decorations.selected?.pageIndex === pageIndex &&
+                        decorations.selected.halfIndex === h &&
+                        decorations.selected.kind === kind &&
+                        decorations.selected.id === id
+                      }
+                      onSelect={(kind, id) => decorations.onSelect({ pageIndex, halfIndex: h, kind, id })}
+                      onChangeSticker={(id, patch) =>
+                        decorations.onChangeSticker({ pageIndex, halfIndex: h, kind: 'sticker', id }, patch)
+                      }
+                      onChangeTextBox={(id, patch) =>
+                        decorations.onChangeTextBox({ pageIndex, halfIndex: h, kind: 'textBox', id }, patch)
+                      }
+                      onDelete={(kind, id) => decorations.onDelete({ pageIndex, halfIndex: h, kind, id })}
+                      onEditText={(id, text) =>
+                        decorations.onChangeTextBox({ pageIndex, halfIndex: h, kind: 'textBox', id }, { text })
+                      }
+                    />
+                  </div>,
+                )
+              }
               return nested
             })
           : template.slots.map((slot, slotIndex) => {
@@ -195,6 +242,27 @@ export function PageView({
                 />
               )
             })}
+        {!template.halfSplit && decorations && (
+          <DecorationLayer
+            stickers={page.stickers ?? []}
+            textBoxes={page.textBoxes ?? []}
+            containerSize={{ w: width, h: height }}
+            locked={page.locked}
+            isSelected={(kind, id) =>
+              decorations.selected?.pageIndex === pageIndex &&
+              decorations.selected.halfIndex === undefined &&
+              decorations.selected.kind === kind &&
+              decorations.selected.id === id
+            }
+            onSelect={(kind, id) => decorations.onSelect({ pageIndex, kind, id })}
+            onChangeSticker={(id, patch) => decorations.onChangeSticker({ pageIndex, kind: 'sticker', id }, patch)}
+            onChangeTextBox={(id, patch) => decorations.onChangeTextBox({ pageIndex, kind: 'textBox', id }, patch)}
+            onDelete={(kind, id) => decorations.onDelete({ pageIndex, kind, id })}
+            onEditText={(id, text) =>
+              decorations.onChangeTextBox({ pageIndex, kind: 'textBox', id }, { text })
+            }
+          />
+        )}
       </div>
     </div>
   )

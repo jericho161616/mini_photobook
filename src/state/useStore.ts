@@ -14,7 +14,18 @@ import {
 import * as storage from '../lib/db'
 import { clampOffset, clampZoom, importFiles, releasePhotoUrl } from '../lib/imageUtils'
 import { MIN_PAGES } from '../types'
-import type { HalfLayout, Page, Photo, Placement, Project, Shape, TextStyle } from '../types'
+import type {
+  HalfLayout,
+  Page,
+  Photo,
+  Placement,
+  Project,
+  Shape,
+  Sticker,
+  StickerType,
+  TextBox,
+  TextStyle,
+} from '../types'
 
 export interface SlotRef {
   pageIndex: number
@@ -22,6 +33,21 @@ export interface SlotRef {
   /** Set only when the slot belongs to one side of a Split at Fold page. */
   halfIndex?: 0 | 1
 }
+
+/** Identifies one freely placed sticker or text box, wherever it lives. */
+export interface DecorationRef {
+  pageIndex: number
+  halfIndex?: 0 | 1
+  kind: 'sticker' | 'textBox'
+  id: string
+}
+
+let decorationSeq = 0
+function nextDecorationId(): string {
+  decorationSeq += 1
+  return `deco-${Date.now().toString(36)}-${decorationSeq}`
+}
+
 
 interface StoreState {
   ready: boolean
@@ -34,6 +60,8 @@ interface StoreState {
   /** Which side of a Split at Fold page the sidebar is currently editing. */
   activeHalfIndex: 0 | 1
   selected: SlotRef | null
+  /** The one freely placed sticker or text box currently selected, if any. */
+  selectedDecoration: DecorationRef | null
   shapeFilter: Shape | 'all'
   importing: boolean
 
@@ -65,6 +93,12 @@ interface StoreState {
   /** Sets one half's own note style on a Split at Fold page. */
   setHalfTextStyle: (pageIndex: number, halfIndex: 0 | 1, style: TextStyle) => void
   movePage: (from: number, to: number) => void
+  addSticker: (pageIndex: number, halfIndex: 0 | 1 | undefined, type: StickerType) => void
+  addTextBox: (pageIndex: number, halfIndex: 0 | 1 | undefined) => void
+  updateSticker: (ref: DecorationRef, patch: Partial<Sticker>) => void
+  updateTextBox: (ref: DecorationRef, patch: Partial<TextBox>) => void
+  removeDecoration: (ref: DecorationRef) => void
+  selectDecoration: (ref: DecorationRef | null) => void
   reset: () => Promise<void>
   /** Writes immediately instead of waiting for the debounce — call before
    *  navigating away, so My Books never shows a moment-stale card. */
@@ -115,6 +149,7 @@ export const useStore = create<StoreState>((set, get) => {
     activePageIndex: 0,
     activeHalfIndex: 0,
     selected: null,
+    selectedDecoration: null,
     shapeFilter: 'all',
     importing: false,
 
@@ -249,17 +284,18 @@ export const useStore = create<StoreState>((set, get) => {
         // A new page starts on its first half, not wherever the last one was.
         activeHalfIndex: 0,
         selected: null,
+        selectedDecoration: null,
       })
     },
 
     setActiveHalf(halfIndex) {
-      set({ activeHalfIndex: halfIndex, selected: null })
+      set({ activeHalfIndex: halfIndex, selected: null, selectedDecoration: null })
     },
 
     select(ref) {
       // A locked page's slots aren't editable, so there's nothing to select.
       if (ref && get().pages[ref.pageIndex]?.locked) return
-      set({ selected: ref })
+      set({ selected: ref, selectedDecoration: null })
     },
 
     setShapeFilter(shapeFilter) {
@@ -429,6 +465,116 @@ export const useStore = create<StoreState>((set, get) => {
         return next
       })
       set({ activePageIndex: Math.max(0, Math.min(to, get().pages.length - 1)), selected: null })
+    },
+
+    addSticker(pageIndex, halfIndex, type) {
+      if (get().pages[pageIndex]?.locked) return
+      const id = nextDecorationId()
+      const sticker: Sticker = { id, type, x: 32, y: 32, w: 26, h: 12 }
+      mutatePages((pages) =>
+        pages.map((page, i) => {
+          if (i !== pageIndex) return page
+          if (halfIndex !== undefined && page.halves) {
+            const halves = [...page.halves] as [HalfLayout, HalfLayout]
+            const host = halves[halfIndex]
+            halves[halfIndex] = { ...host, stickers: [...(host.stickers ?? []), sticker] }
+            return { ...page, halves }
+          }
+          return { ...page, stickers: [...(page.stickers ?? []), sticker] }
+        }),
+      )
+      set({ selectedDecoration: { pageIndex, halfIndex, kind: 'sticker', id }, selected: null })
+    },
+
+    addTextBox(pageIndex, halfIndex) {
+      if (get().pages[pageIndex]?.locked) return
+      const id = nextDecorationId()
+      const textBox: TextBox = {
+        id,
+        x: 20,
+        y: 40,
+        w: 60,
+        h: 16,
+        text: 'Tap to edit',
+        font: 'hand1',
+        bold: false,
+        align: 'center',
+      }
+      mutatePages((pages) =>
+        pages.map((page, i) => {
+          if (i !== pageIndex) return page
+          if (halfIndex !== undefined && page.halves) {
+            const halves = [...page.halves] as [HalfLayout, HalfLayout]
+            const host = halves[halfIndex]
+            halves[halfIndex] = { ...host, textBoxes: [...(host.textBoxes ?? []), textBox] }
+            return { ...page, halves }
+          }
+          return { ...page, textBoxes: [...(page.textBoxes ?? []), textBox] }
+        }),
+      )
+      set({ selectedDecoration: { pageIndex, halfIndex, kind: 'textBox', id }, selected: null })
+    },
+
+    updateSticker(ref, patch) {
+      if (get().pages[ref.pageIndex]?.locked) return
+      mutatePages((pages) =>
+        pages.map((page, i) => {
+          if (i !== ref.pageIndex) return page
+          if (ref.halfIndex !== undefined && page.halves) {
+            const halves = [...page.halves] as [HalfLayout, HalfLayout]
+            const host = halves[ref.halfIndex]
+            const stickers = (host.stickers ?? []).map((s) => (s.id === ref.id ? { ...s, ...patch } : s))
+            halves[ref.halfIndex] = { ...host, stickers }
+            return { ...page, halves }
+          }
+          const stickers = (page.stickers ?? []).map((s) => (s.id === ref.id ? { ...s, ...patch } : s))
+          return { ...page, stickers }
+        }),
+      )
+    },
+
+    updateTextBox(ref, patch) {
+      if (get().pages[ref.pageIndex]?.locked) return
+      mutatePages((pages) =>
+        pages.map((page, i) => {
+          if (i !== ref.pageIndex) return page
+          if (ref.halfIndex !== undefined && page.halves) {
+            const halves = [...page.halves] as [HalfLayout, HalfLayout]
+            const host = halves[ref.halfIndex]
+            const textBoxes = (host.textBoxes ?? []).map((t) => (t.id === ref.id ? { ...t, ...patch } : t))
+            halves[ref.halfIndex] = { ...host, textBoxes }
+            return { ...page, halves }
+          }
+          const textBoxes = (page.textBoxes ?? []).map((t) => (t.id === ref.id ? { ...t, ...patch } : t))
+          return { ...page, textBoxes }
+        }),
+      )
+    },
+
+    removeDecoration(ref) {
+      if (get().pages[ref.pageIndex]?.locked) return
+      mutatePages((pages) =>
+        pages.map((page, i) => {
+          if (i !== ref.pageIndex) return page
+          if (ref.halfIndex !== undefined && page.halves) {
+            const halves = [...page.halves] as [HalfLayout, HalfLayout]
+            const host = halves[ref.halfIndex]
+            halves[ref.halfIndex] =
+              ref.kind === 'sticker'
+                ? { ...host, stickers: (host.stickers ?? []).filter((s) => s.id !== ref.id) }
+                : { ...host, textBoxes: (host.textBoxes ?? []).filter((t) => t.id !== ref.id) }
+            return { ...page, halves }
+          }
+          return ref.kind === 'sticker'
+            ? { ...page, stickers: (page.stickers ?? []).filter((s) => s.id !== ref.id) }
+            : { ...page, textBoxes: (page.textBoxes ?? []).filter((t) => t.id !== ref.id) }
+        }),
+      )
+      set({ selectedDecoration: null })
+    },
+
+    selectDecoration(ref) {
+      set({ selectedDecoration: ref, selected: null })
     },
 
     async reset() {

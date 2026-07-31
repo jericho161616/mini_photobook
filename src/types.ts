@@ -18,6 +18,33 @@ export interface TextStyle {
 /** Applied to a photo in its slot — the print itself is untouched, only the placement. */
 export type PhotoFilter = 'bw' | 'sepia'
 
+/** All drawn with CSS/SVG at render time — nothing downloaded, nothing to license. */
+export type StickerType = 'tape-yellow' | 'tape-pink' | 'tape-sage' | 'heart' | 'star' | 'arrow'
+
+/** A decorative element placed freely on a page (or one half of a folded page). */
+export interface Sticker {
+  id: string
+  type: StickerType
+  /** Percent of the page/half's own width and height. */
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+/** A free-form text box placed anywhere on a page — not tied to a template's textSlot. */
+export interface TextBox {
+  id: string
+  x: number
+  y: number
+  w: number
+  h: number
+  text: string
+  font: FontId
+  bold: boolean
+  align: 'left' | 'center' | 'right'
+}
+
 /** A slot rect in page-relative percentages, measured inside the page margin. */
 export interface SlotRect {
   x: number
@@ -109,6 +136,9 @@ export interface HalfLayout {
   text: string
   /** Undefined means the default font (serif) at normal weight. */
   textStyle?: TextStyle
+  /** Freely placed decorations, confined to this half so nothing crosses the fold. */
+  stickers?: Sticker[]
+  textBoxes?: TextBox[]
 }
 
 export interface Page {
@@ -131,6 +161,9 @@ export interface Page {
   sizeId?: string
   /** Set only when this page's template is one of the two "Split at Fold" ones. */
   halves?: [HalfLayout, HalfLayout]
+  /** Freely placed decorations — unused while `halves` is set; see HalfLayout. */
+  stickers?: Sticker[]
+  textBoxes?: TextBox[]
 }
 
 export interface Project {

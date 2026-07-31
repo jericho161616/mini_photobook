@@ -31,6 +31,11 @@ export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
   const updatePlacement = useStore((s) => s.updatePlacement)
   const togglePageLock = useStore((s) => s.togglePageLock)
   const setPageSize = useStore((s) => s.setPageSize)
+  const selectedDecoration = useStore((s) => s.selectedDecoration)
+  const selectDecoration = useStore((s) => s.selectDecoration)
+  const updateSticker = useStore((s) => s.updateSticker)
+  const updateTextBox = useStore((s) => s.updateTextBox)
+  const removeDecoration = useStore((s) => s.removeDecoration)
 
   const size = getSize(sizeId)
 
@@ -105,6 +110,13 @@ export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
         onToggleLock={() => togglePageLock(index)}
         sizePicker={sizePicker}
         foldOrientation={foldOrientation}
+        decorations={{
+          selected: selectedDecoration,
+          onSelect: selectDecoration,
+          onChangeSticker: updateSticker,
+          onChangeTextBox: updateTextBox,
+          onDelete: removeDecoration,
+        }}
       />
     )
   }

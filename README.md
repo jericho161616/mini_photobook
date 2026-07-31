@@ -99,6 +99,17 @@ small picker right under the text box. The three plain fonts are already on
 every computer; the two handwritten ones fall back to a similar system font
 if the exact one isn't installed — either way, nothing is ever downloaded.
 
+**Stickers and free-placed text.** A Decorate panel adds tape and simple
+line-drawn heart/star/arrow stickers, plus text boxes you can drop anywhere
+on a page — over a photo, off to the side, wherever — instead of being tied
+to a template's fixed caption slot. Drag a sticker or text box to move it,
+resize from the corner handle, click the × to remove it, and edit a text
+box's words, font, bold, and alignment right in place. On a Split at Fold
+page, stickers and text stay confined to whichever half they were added to,
+so nothing ever lands on the physical crease. Everything is drawn with plain
+CSS/SVG shapes — no downloaded images, icon packs, or fonts — so it stays
+just as free and offline as the rest of the app.
+
 **Two layout families, including full-bleed.** *Minimal* is one to a few photos
 with room around them — including an edge-to-edge Full Bleed option with no
 margin at all. *Portfolio* is editorial — rows, collages, covers, and a

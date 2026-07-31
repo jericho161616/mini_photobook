@@ -3,6 +3,21 @@ export type Shape = 'square' | 'tall' | 'wide'
 
 export type TemplateFamily = 'Minimal' | 'Portfolio'
 
+/**
+ * Every option is either already on every computer (no download, ever) or a
+ * small font file bundled inside the app itself under a free license — never
+ * fetched from anywhere, so the offline/free guarantee holds either way.
+ */
+export type FontId = 'serif' | 'sans' | 'mono' | 'hand1' | 'hand2'
+
+export interface TextStyle {
+  font: FontId
+  bold: boolean
+}
+
+/** Applied to a photo in its slot — the print itself is untouched, only the placement. */
+export type PhotoFilter = 'bw' | 'sepia'
+
 /** A slot rect in page-relative percentages, measured inside the page margin. */
 export interface SlotRect {
   x: number
@@ -40,6 +55,10 @@ export interface Template {
    * differently rather than always being one photo per side.
    */
   halfSplit?: boolean
+  /** Centers the note instead of the usual left-aligned strip under a photo. */
+  captionStyle?: 'centered'
+  /** A second photo taped at an angle over the first — Poster Overlay only. */
+  decoration?: 'poster'
 }
 
 export interface BookSize {
@@ -77,6 +96,8 @@ export interface Placement {
   zoom: number
   offsetX: number
   offsetY: number
+  /** Undefined means full color. */
+  filter?: PhotoFilter
 }
 
 /** One side of a "Split at Fold" page — its own independent layout and photos. */
@@ -86,6 +107,8 @@ export interface HalfLayout {
   placements: (Placement | null)[]
   /** This half's own note — blank unless its template reserves a textSlot. */
   text: string
+  /** Undefined means the default font (serif) at normal weight. */
+  textStyle?: TextStyle
 }
 
 export interface Page {
@@ -98,6 +121,8 @@ export interface Page {
   locked: boolean
   /** The designer's own note for this page — blank unless the template has a textSlot. */
   text: string
+  /** Undefined means the default font (serif) at normal weight. */
+  textStyle?: TextStyle
   /**
    * Overrides the book's size for this one page — used to mix portrait and
    * landscape pages within the A4 family. Undefined means "use the book's

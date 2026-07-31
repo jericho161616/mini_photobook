@@ -1,11 +1,23 @@
+import { DEFAULT_TEXT_STYLE, fontStack } from '../data/fonts'
 import { getTemplate } from '../data/templates'
 import { pagePlacements, resolvePageSize } from './autoLayout'
-import { coverGeometry, slotPixelRect } from './imageUtils'
-import type { BookSize, Page, Photo, Placement } from '../types'
+import {
+  coverGeometry,
+  FRAME_INSET_RATIO,
+  POSTER_BORDER_RATIO,
+  POSTER_ROTATION_DEG,
+  slotPixelRect,
+} from './imageUtils'
+import type { BookSize, Page, Photo, Placement, TextStyle } from '../types'
 
 export const PAGE_MARGIN_RATIO = 0.09
 const DPI = 300
 const JPEG_QUALITY = 0.92
+
+const FILTER_CANVAS: Record<string, string> = {
+  bw: 'grayscale(1)',
+  sepia: 'sepia(0.75) saturate(1.1)',
+}
 
 /** Greedy word wrap so canvas text (which doesn't wrap on its own) matches the on-screen note. */
 function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
@@ -53,33 +65,79 @@ async function renderPage(
   const template = getTemplate(page.templateId)
   const marginRatio = template.bleed ? 0 : PAGE_MARGIN_RATIO
 
-  const drawSlot = (rect: { x: number; y: number; w: number; h: number }, placement: Placement | null) => {
-    if (!placement) return
+  const drawPhoto = (rect: { x: number; y: number; w: number; h: number }, placement: Placement) => {
     const bitmap = photoMap.get(placement.photoId)
     if (!bitmap) return
     const geo = coverGeometry(bitmap.width / bitmap.height, rect.w, rect.h, placement)
-    // Clip to the slot so the overflow from cover-fit and zoom is trimmed
-    // exactly as it appears on screen.
     ctx.save()
     ctx.beginPath()
     ctx.rect(rect.x, rect.y, rect.w, rect.h)
     ctx.clip()
+    ctx.filter = placement.filter ? FILTER_CANVAS[placement.filter] : 'none'
     ctx.drawImage(bitmap, rect.x + geo.x, rect.y + geo.y, geo.drawWidth, geo.drawHeight)
+    ctx.filter = 'none'
     ctx.restore()
   }
 
-  /** The page note: left-aligned, wrapping, italic — matching the editor. */
-  const drawNote = (rect: { x: number; y: number; w: number; h: number }, text: string, scaleH: number) => {
+  /**
+   * A single photo slot, aware of the two decorative slot styles: Instant
+   * Grid's white card mount (an inset mat around the photo) and Poster
+   * Overlay's taped-on-top second photo (rotated, bordered, shadowed).
+   */
+  const drawSlot = (
+    rect: { x: number; y: number; w: number; h: number },
+    placement: Placement | null,
+    opts: { framed?: boolean; poster?: boolean } = {},
+  ) => {
+    if (!placement) return
+    if (opts.poster) {
+      const cx = rect.x + rect.w / 2
+      const cy = rect.y + rect.h / 2
+      ctx.save()
+      ctx.translate(cx, cy)
+      ctx.rotate((POSTER_ROTATION_DEG * Math.PI) / 180)
+      ctx.translate(-rect.w / 2, -rect.h / 2)
+      ctx.shadowColor = 'rgba(0,0,0,0.35)'
+      ctx.shadowBlur = rect.w * 0.05
+      ctx.shadowOffsetY = rect.h * 0.02
+      ctx.fillStyle = '#fdfaf1'
+      ctx.fillRect(0, 0, rect.w, rect.h)
+      ctx.shadowColor = 'transparent'
+      const border = rect.w * POSTER_BORDER_RATIO
+      drawPhoto({ x: border, y: border, w: rect.w - border * 2, h: rect.h - border * 2 }, placement)
+      ctx.restore()
+      return
+    }
+    if (opts.framed) {
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(rect.x, rect.y, rect.w, rect.h)
+      const inset = Math.min(rect.w, rect.h) * FRAME_INSET_RATIO
+      drawPhoto({ x: rect.x + inset, y: rect.y + inset, w: rect.w - inset * 2, h: rect.h - inset * 2 }, placement)
+      return
+    }
+    drawPhoto(rect, placement)
+  }
+
+  /** The page note: left- or center-aligned, wrapping, in its own font and weight. */
+  const drawNote = (
+    rect: { x: number; y: number; w: number; h: number },
+    text: string,
+    scaleH: number,
+    style: TextStyle,
+    centered: boolean,
+  ) => {
     const fontSize = Math.round(scaleH * 0.026)
+    const weight = style.bold ? 'bold' : 'normal'
     ctx.fillStyle = '#5b564c'
-    ctx.font = `italic ${fontSize}px -apple-system, "Segoe UI", sans-serif`
-    ctx.textAlign = 'left'
+    ctx.font = `${weight} ${fontSize}px ${fontStack(style.font)}`
+    ctx.textAlign = centered ? 'center' : 'left'
     ctx.textBaseline = 'top'
     const lineHeight = fontSize * 1.35
     const lines = wrapText(ctx, text.trim(), rect.w)
     const maxLines = Math.max(1, Math.floor(rect.h / lineHeight))
+    const x = centered ? rect.x + rect.w / 2 : rect.x
     lines.slice(0, maxLines).forEach((line, i) => {
-      ctx.fillText(line, rect.x, rect.y + i * lineHeight, rect.w)
+      ctx.fillText(line, x, rect.y + i * lineHeight, rect.w)
     })
   }
 
@@ -91,7 +149,11 @@ async function renderPage(
       const halfMargin = halfTemplate.bleed ? 0 : PAGE_MARGIN_RATIO
       halfTemplate.slots.forEach((slot, slotIndex) => {
         const inner = slotPixelRect(slot, outer.w, outer.h, halfMargin)
-        drawSlot({ x: outer.x + inner.x, y: outer.y + inner.y, w: inner.w, h: inner.h }, half.placements[slotIndex])
+        drawSlot(
+          { x: outer.x + inner.x, y: outer.y + inner.y, w: inner.w, h: inner.h },
+          half.placements[slotIndex],
+          { framed: halfTemplate.id === 'instantGrid', poster: halfTemplate.decoration === 'poster' && slotIndex === 1 },
+        )
       })
       if (halfTemplate.textSlot && half.text.trim()) {
         const inner = slotPixelRect(halfTemplate.textSlot, outer.w, outer.h, halfMargin)
@@ -99,13 +161,18 @@ async function renderPage(
           { x: outer.x + inner.x, y: outer.y + inner.y, w: inner.w, h: inner.h },
           half.text,
           outer.h,
+          half.textStyle ?? DEFAULT_TEXT_STYLE,
+          halfTemplate.captionStyle === 'centered',
         )
       }
     })
   } else {
     template.slots.forEach((slot, slotIndex) => {
       const rect = slotPixelRect(slot, pageW, pageH, marginRatio)
-      drawSlot(rect, page.placements[slotIndex])
+      drawSlot(rect, page.placements[slotIndex], {
+        framed: template.id === 'instantGrid',
+        poster: template.decoration === 'poster' && slotIndex === 1,
+      })
     })
   }
 
@@ -120,7 +187,13 @@ async function renderPage(
   }
 
   if (template.textSlot && page.text.trim()) {
-    drawNote(slotPixelRect(template.textSlot, pageW, pageH, marginRatio), page.text, pageH)
+    drawNote(
+      slotPixelRect(template.textSlot, pageW, pageH, marginRatio),
+      page.text,
+      pageH,
+      page.textStyle ?? DEFAULT_TEXT_STYLE,
+      template.captionStyle === 'centered',
+    )
   }
 
   return canvas.toDataURL('image/jpeg', JPEG_QUALITY)

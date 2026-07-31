@@ -8,6 +8,15 @@ function nextPhotoId(): string {
 
 export const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
 
+/**
+ * Shared with exportPdf so the editor and the printed page agree exactly on
+ * how much white mat surrounds an Instant Grid photo, and how much border and
+ * rotation the Poster Overlay's taped-on second photo gets.
+ */
+export const FRAME_INSET_RATIO = 0.1
+export const POSTER_BORDER_RATIO = 0.05
+export const POSTER_ROTATION_DEG = -6
+
 /** Read a file's intrinsic pixel dimensions without decoding it into the DOM. */
 async function measure(blob: Blob): Promise<{ width: number; height: number }> {
   if ('createImageBitmap' in window) {

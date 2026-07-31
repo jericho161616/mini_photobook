@@ -1,3 +1,4 @@
+import { DEFAULT_TEXT_STYLE, fontStack } from '../data/fonts'
 import { getTemplate } from '../data/templates'
 import { PAGE_MARGIN_RATIO } from '../lib/exportPdf'
 import { slotPixelRect } from '../lib/imageUtils'
@@ -110,13 +111,15 @@ export function PageView({
         )}
         {textRect && page.text.trim() && (
           <div
-            className="page-caption page-note"
+            className={`page-caption page-note${template.captionStyle === 'centered' ? ' centered' : ''}`}
             style={{
               left: textRect.x,
               top: textRect.y,
               width: textRect.w,
               height: textRect.h,
               fontSize: Math.max(6, height * 0.026),
+              fontFamily: fontStack((page.textStyle ?? DEFAULT_TEXT_STYLE).font),
+              fontWeight: (page.textStyle ?? DEFAULT_TEXT_STYLE).bold ? 700 : 400,
             }}
           >
             {page.text}
@@ -143,6 +146,8 @@ export function PageView({
                     onSelect={() => onSelectSlot(slotIndex, halfIndex as 0 | 1)}
                     onDropPhoto={(photoId) => onDropPhoto(slotIndex, photoId, halfIndex as 0 | 1)}
                     onPan={(x, y) => onPan(slotIndex, x, y, halfIndex as 0 | 1)}
+                    framed={halfTemplate.id === 'instantGrid'}
+                    poster={halfTemplate.decoration === 'poster' && slotIndex === 1}
                   />
                 )
               })
@@ -150,16 +155,19 @@ export function PageView({
               // This half's own note, positioned inside this half's region.
               if (halfTemplate.textSlot && half.text.trim()) {
                 const inner = slotPixelRect(halfTemplate.textSlot, outer.w, outer.h, halfMargin)
+                const halfStyle = half.textStyle ?? DEFAULT_TEXT_STYLE
                 nested.push(
                   <div
                     key={`${halfIndex}-note`}
-                    className="page-caption page-note"
+                    className={`page-caption page-note${halfTemplate.captionStyle === 'centered' ? ' centered' : ''}`}
                     style={{
                       left: outer.x + inner.x,
                       top: outer.y + inner.y,
                       width: inner.w,
                       height: inner.h,
                       fontSize: Math.max(6, outer.h * 0.026),
+                      fontFamily: fontStack(halfStyle.font),
+                      fontWeight: halfStyle.bold ? 700 : 400,
                     }}
                   >
                     {half.text}
@@ -182,6 +190,8 @@ export function PageView({
                   onSelect={() => onSelectSlot(slotIndex)}
                   onDropPhoto={(photoId) => onDropPhoto(slotIndex, photoId)}
                   onPan={(x, y) => onPan(slotIndex, x, y)}
+                  framed={template.id === 'instantGrid'}
+                  poster={template.decoration === 'poster' && slotIndex === 1}
                 />
               )
             })}

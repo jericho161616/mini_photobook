@@ -760,7 +760,6 @@ input:focus-visible,
 }
 
 .page-note {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-style: italic;
   color: #5b564c;
   text-align: left;
@@ -768,6 +767,37 @@ input:focus-visible,
   align-items: flex-start;
   white-space: normal;
   line-height: 1.35;
+}
+
+.page-note.centered {
+  text-align: center;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.slot-framed {
+  background: #fff;
+}
+
+.slot-poster {
+  background: #fdfaf1;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
+  transform: rotate(-6deg);
+  z-index: 2;
+}
+
+.poster-tape {
+  position: absolute;
+  top: -6%;
+  left: 30%;
+  width: 40%;
+  height: 16%;
+  background: #e8d9a0;
+  opacity: 0.85;
+  transform: rotate(-6deg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  z-index: 3;
+  pointer-events: none;
 }
 
 .slot-hint {
@@ -1019,6 +1049,79 @@ input:focus-visible,
 .page-text-input:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.text-style-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.font-picker {
+  flex: 1;
+  font-size: 12px;
+  padding: 7px 8px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.bold-btn {
+  width: 32px;
+  flex: 0 0 auto;
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink-soft);
+}
+
+.bold-btn.active {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: var(--page-stock);
+}
+
+.bold-btn:disabled,
+.font-picker:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.text-style-preview {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  background: var(--paper);
+  border: 1px dashed var(--line);
+  border-radius: 7px;
+  font-size: 13px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.filter-chips-row {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+}
+
+.filter-chip-btn {
+  flex: 1;
+  font-size: 11.5px;
+  padding: 6px 4px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink-soft);
+}
+
+.filter-chip-btn.active {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: var(--page-stock);
+  font-weight: 600;
 }
 
 /* ---- Filmstrip ---- */

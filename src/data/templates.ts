@@ -338,6 +338,56 @@ export const TEMPLATES: Template[] = [
     bleed: true,
     slots: [{ x: 0, y: 0, w: 100, h: 100 }],
   },
+  {
+    id: 'instantGrid',
+    label: '6 · Instant Grid',
+    family: 'Minimal',
+    fits: ['square', 'wide'],
+    // A contact-sheet wall of small framed shots — each slot leaves room for
+    // its own white card mount, drawn around the photo rather than cropped into it.
+    slots: [
+      { x: 2, y: 2, w: 30, h: 30 },
+      { x: 35, y: 2, w: 30, h: 30 },
+      { x: 68, y: 2, w: 30, h: 30 },
+      { x: 2, y: 35, w: 30, h: 30 },
+      { x: 35, y: 35, w: 30, h: 30 },
+      { x: 68, y: 35, w: 30, h: 30 },
+    ],
+  },
+  {
+    id: 'posterOverlay',
+    label: '2 · Poster Overlay',
+    family: 'Portfolio',
+    fits: ['square', 'tall', 'wide'],
+    bleed: true,
+    // The background fills the page; the second slot is drawn taped on top at
+    // an angle by PageView/exportPdf rather than sitting in a fixed rect.
+    decoration: 'poster',
+    slots: [
+      { x: 0, y: 0, w: 100, h: 100 },
+      { x: 26, y: 16, w: 46, h: 56 },
+    ],
+  },
+  {
+    id: 'fullCaption',
+    label: '1 · Full + Caption',
+    family: 'Minimal',
+    fits: ['square', 'tall', 'wide'],
+    slots: [{ x: 0, y: 0, w: 100, h: 82 }],
+    textSlot: { x: 10, y: 86, w: 80, h: 10 },
+    captionStyle: 'centered',
+  },
+  {
+    id: 'noteCover',
+    label: '1 · Note Cover',
+    family: 'Portfolio',
+    fits: ['square', 'tall'],
+    // A quiet closing page: one small centered photo, your own note beneath
+    // it instead of the book title — the "so the point is" cover in mind.
+    slots: [{ x: 32, y: 14, w: 36, h: 44 }],
+    textSlot: { x: 15, y: 64, w: 70, h: 20 },
+    captionStyle: 'centered',
+  },
 ]
 
 export const SHAPE_FILTERS: { id: Shape | 'all'; label: string }[] = [

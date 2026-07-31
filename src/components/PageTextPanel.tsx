@@ -1,7 +1,9 @@
+import { DEFAULT_TEXT_STYLE, FONT_OPTIONS, fontStack } from '../data/fonts'
 import { foldOrientationForSize, getSize } from '../data/sizes'
 import { getTemplate } from '../data/templates'
 import { resolvePageSize } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
+import type { TextStyle } from '../types'
 
 /**
  * A free-form note for the active page — a date, a place, a line of text.
@@ -18,6 +20,8 @@ export function PageTextPanel() {
   const activeHalfIndex = useStore((s) => s.activeHalfIndex)
   const setPageText = useStore((s) => s.setPageText)
   const setHalfText = useStore((s) => s.setHalfText)
+  const setPageTextStyle = useStore((s) => s.setPageTextStyle)
+  const setHalfTextStyle = useStore((s) => s.setHalfTextStyle)
 
   const page = pages[activePageIndex]
   if (!page) return null
@@ -34,6 +38,13 @@ export function PageTextPanel() {
         : ['the left half', 'the right half'])[activeHalfIndex]
     : null
 
+  const text = (half ? half.text : page.text) ?? ''
+  const style = (half ? half.textStyle : page.textStyle) ?? DEFAULT_TEXT_STYLE
+  const setText = (value: string) =>
+    half ? setHalfText(activePageIndex, activeHalfIndex, value) : setPageText(activePageIndex, value)
+  const setStyle = (next: TextStyle) =>
+    half ? setHalfTextStyle(activePageIndex, activeHalfIndex, next) : setPageTextStyle(activePageIndex, next)
+
   return (
     <section className="panel">
       <h2>Page Note</h2>
@@ -44,17 +55,46 @@ export function PageTextPanel() {
       </p>
       <textarea
         className="page-text-input"
-        value={(half ? half.text : page.text) ?? ''}
-        onChange={(e) =>
-          half
-            ? setHalfText(activePageIndex, activeHalfIndex, e.target.value)
-            : setPageText(activePageIndex, e.target.value)
-        }
+        value={text}
+        onChange={(e) => setText(e.target.value)}
         placeholder="e.g. Santorini, June 2024"
         disabled={page.locked}
         rows={2}
         maxLength={120}
       />
+
+      <div className="text-style-row">
+        <select
+          className="font-picker"
+          value={style.font}
+          onChange={(e) => setStyle({ ...style, font: e.target.value as TextStyle['font'] })}
+          disabled={page.locked}
+          aria-label="Note font"
+        >
+          {FONT_OPTIONS.map((f) => (
+            <option key={f.id} value={f.id} style={{ fontFamily: f.stack }}>
+              {f.label}
+            </option>
+          ))}
+        </select>
+        <button
+          className={`bold-btn${style.bold ? ' active' : ''}`}
+          onClick={() => setStyle({ ...style, bold: !style.bold })}
+          disabled={page.locked}
+          aria-pressed={style.bold}
+          title={style.bold ? 'Remove bold' : 'Make bold'}
+        >
+          B
+        </button>
+      </div>
+      {text.trim() && (
+        <p
+          className="text-style-preview"
+          style={{ fontFamily: fontStack(style.font), fontWeight: style.bold ? 700 : 400 }}
+        >
+          {text}
+        </p>
+      )}
     </section>
   )
 }

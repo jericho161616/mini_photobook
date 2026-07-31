@@ -14,7 +14,7 @@ import {
 import * as storage from '../lib/db'
 import { clampOffset, clampZoom, importFiles, releasePhotoUrl } from '../lib/imageUtils'
 import { MIN_PAGES } from '../types'
-import type { HalfLayout, Page, Photo, Placement, Project, Shape } from '../types'
+import type { HalfLayout, Page, Photo, Placement, Project, Shape, TextStyle } from '../types'
 
 export interface SlotRef {
   pageIndex: number
@@ -61,6 +61,9 @@ interface StoreState {
   setPageText: (pageIndex: number, text: string) => void
   /** Sets one half's own note on a Split at Fold page. */
   setHalfText: (pageIndex: number, halfIndex: 0 | 1, text: string) => void
+  setPageTextStyle: (pageIndex: number, style: TextStyle) => void
+  /** Sets one half's own note style on a Split at Fold page. */
+  setHalfTextStyle: (pageIndex: number, halfIndex: 0 | 1, style: TextStyle) => void
   movePage: (from: number, to: number) => void
   reset: () => Promise<void>
   /** Writes immediately instead of waiting for the debounce — call before
@@ -392,6 +395,25 @@ export const useStore = create<StoreState>((set, get) => {
           if (i !== pageIndex || !page.halves) return page
           const halves = [...page.halves] as [HalfLayout, HalfLayout]
           halves[halfIndex] = { ...halves[halfIndex], text }
+          return { ...page, halves }
+        }),
+      )
+    },
+
+    setPageTextStyle(pageIndex, style) {
+      if (get().pages[pageIndex]?.locked) return
+      mutatePages((pages) =>
+        pages.map((page, i) => (i === pageIndex ? { ...page, textStyle: style } : page)),
+      )
+    },
+
+    setHalfTextStyle(pageIndex, halfIndex, style) {
+      if (get().pages[pageIndex]?.locked) return
+      mutatePages((pages) =>
+        pages.map((page, i) => {
+          if (i !== pageIndex || !page.halves) return page
+          const halves = [...page.halves] as [HalfLayout, HalfLayout]
+          halves[halfIndex] = { ...halves[halfIndex], textStyle: style }
           return { ...page, halves }
         }),
       )

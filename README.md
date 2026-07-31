@@ -83,6 +83,22 @@ single book can freely combine a plain full-sheet page, a landscape page, and
 a folded-card page wherever you want them — not just two fixed orientations.
 Locking a page also locks in whichever of the four it's currently set to.
 
+**Four more layouts, and a black & white / sepia filter per photo.** Instant Grid
+(six small photos, each in its own white card mount), Poster Overlay (a second
+photo taped on top of the first at an angle), Full + Caption (a full photo with
+a quiet centered line underneath), and Note Cover (a small centered photo with
+your own note below, no title) round out the template library. Any photo in any
+slot can also be set to black & white or sepia from the Selected Photo panel —
+useful on its own, or paired with Poster Overlay so the background photo goes
+muted while the one taped on top stays in color.
+
+**Fonts and bold, on every note.** The Page Note — and a Split at Fold half's
+own note — can be set to any of five fonts (a serif, the plain system font, a
+typewriter face, and two handwritten-style scripts) and toggled bold, from a
+small picker right under the text box. The three plain fonts are already on
+every computer; the two handwritten ones fall back to a similar system font
+if the exact one isn't installed — either way, nothing is ever downloaded.
+
 **Two layout families, including full-bleed.** *Minimal* is one to a few photos
 with room around them — including an edge-to-edge Full Bleed option with no
 margin at all. *Portfolio* is editorial — rows, collages, covers, and a

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { coverGeometry, photoUrl } from '../lib/imageUtils'
+import { coverGeometry, FRAME_INSET_RATIO, photoUrl, POSTER_BORDER_RATIO } from '../lib/imageUtils'
 import type { Photo, Placement } from '../types'
 
 interface SlotViewProps {
@@ -10,6 +10,15 @@ interface SlotViewProps {
   onSelect: () => void
   onDropPhoto: (photoId: string) => void
   onPan: (offsetX: number, offsetY: number) => void
+  /** A small white card mount around the photo — the Instant Grid look. */
+  framed?: boolean
+  /** Taped-on-top styling for the Poster Overlay's second slot. */
+  poster?: boolean
+}
+
+const FILTER_CSS: Record<string, string> = {
+  bw: 'grayscale(1)',
+  sepia: 'sepia(0.75) saturate(1.1)',
 }
 
 export function SlotView({
@@ -20,15 +29,26 @@ export function SlotView({
   onSelect,
   onDropPhoto,
   onPan,
+  framed,
+  poster,
 }: SlotViewProps) {
   const [dragOver, setDragOver] = useState(false)
   const [panning, setPanning] = useState(false)
   const panStart = useRef<{ x: number; y: number; offsetX: number; offsetY: number } | null>(null)
 
+  // The photo itself may sit inside a decorative inset (a white mat for
+  // Instant Grid, a border for the taped Poster Overlay photo) — computed in
+  // JS rather than CSS padding, so it stays exact regardless of the
+  // containing block, and matches exportPdf's math pixel for pixel.
+  const inset = framed
+    ? Math.min(rect.w, rect.h) * FRAME_INSET_RATIO
+    : poster
+      ? rect.w * POSTER_BORDER_RATIO
+      : 0
+  const photoBox = { w: rect.w - inset * 2, h: rect.h - inset * 2 }
+
   const geo =
-    photo && placement
-      ? coverGeometry(photo.width / photo.height, rect.w, rect.h, placement)
-      : null
+    photo && placement ? coverGeometry(photo.width / photo.height, photoBox.w, photoBox.h, placement) : null
 
   // Only worth dragging if the photo actually overflows the slot somewhere.
   const pannable = !!geo && (geo.slackX > 0.5 || geo.slackY > 0.5)
@@ -71,6 +91,8 @@ export function SlotView({
     dragOver && 'drop-target',
     pannable && 'pannable',
     panning && 'panning',
+    framed && 'slot-framed',
+    poster && 'slot-poster',
   ]
     .filter(Boolean)
     .join(' ')
@@ -92,16 +114,18 @@ export function SlotView({
         if (photoId) onDropPhoto(photoId)
       }}
     >
+      {poster && <span className="poster-tape" aria-hidden="true" />}
       {photo && geo ? (
         <img
           src={photoUrl(photo)}
           alt={photo.name}
           draggable={false}
           style={{
-            left: geo.x,
-            top: geo.y,
+            left: inset + geo.x,
+            top: inset + geo.y,
             width: geo.drawWidth,
             height: geo.drawHeight,
+            filter: placement?.filter ? FILTER_CSS[placement.filter] : undefined,
           }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}

@@ -7,13 +7,13 @@ import type { BookSize, Shape } from '../types'
 export const SIZES: BookSize[] = [
   { id: 'sq-s', name: 'Small Square', widthIn: 6, heightIn: 6, maxPhotosPerPage: 3 },
   { id: 'sq-m', name: 'Medium Square', widthIn: 8, heightIn: 8, maxPhotosPerPage: 4 },
-  { id: 'sq-l', name: 'Large Square', widthIn: 10, heightIn: 10, maxPhotosPerPage: 5 },
+  { id: 'sq-l', name: 'Large Square', widthIn: 10, heightIn: 10, maxPhotosPerPage: 6 },
   { id: 'ls-s', name: 'Small Landscape', widthIn: 7, heightIn: 5, maxPhotosPerPage: 3 },
   { id: 'ls-m', name: 'Standard Landscape', widthIn: 11, heightIn: 8.5, maxPhotosPerPage: 4 },
-  { id: 'ls-l', name: 'Large Landscape', widthIn: 14, heightIn: 11, maxPhotosPerPage: 5 },
+  { id: 'ls-l', name: 'Large Landscape', widthIn: 14, heightIn: 11, maxPhotosPerPage: 6 },
   { id: 'pt-s', name: 'Small Portrait', widthIn: 5, heightIn: 7, maxPhotosPerPage: 3 },
   { id: 'pt-m', name: 'Standard Portrait', widthIn: 8, heightIn: 10, maxPhotosPerPage: 4 },
-  { id: 'pt-l', name: 'Large Portrait', widthIn: 11, heightIn: 14, maxPhotosPerPage: 5 },
+  { id: 'pt-l', name: 'Large Portrait', widthIn: 11, heightIn: 14, maxPhotosPerPage: 6 },
 ]
 
 /**

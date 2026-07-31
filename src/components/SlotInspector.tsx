@@ -1,5 +1,12 @@
 import { MAX_ZOOM, MIN_ZOOM } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
+import type { PhotoFilter } from '../types'
+
+const FILTERS: { id: PhotoFilter | 'none'; label: string }[] = [
+  { id: 'none', label: 'Color' },
+  { id: 'bw', label: 'B&W' },
+  { id: 'sepia', label: 'Sepia' },
+]
 
 export function SlotInspector() {
   const pages = useStore((s) => s.pages)
@@ -48,6 +55,22 @@ export function SlotInspector() {
               onChange={(e) => updatePlacement(selected, { zoom: Number(e.target.value) })}
             />
             <span className="value mono">{placement.zoom.toFixed(2)}×</span>
+          </div>
+
+          <div className="inspector-row">
+            <label>Filter</label>
+            <div className="filter-chips-row">
+              {FILTERS.map((f) => (
+                <button
+                  key={f.id}
+                  className={`filter-chip-btn${(placement.filter ?? 'none') === f.id ? ' active' : ''}`}
+                  onClick={() => updatePlacement(selected, { filter: f.id === 'none' ? undefined : f.id })}
+                  aria-pressed={(placement.filter ?? 'none') === f.id}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="slot-controls">

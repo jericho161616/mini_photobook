@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { DEFAULT_TEXT_STYLE, fontStack } from '../data/fonts'
 import { getTemplate } from '../data/templates'
 import { resolvePageSize } from '../lib/autoLayout'
 import { PAGE_MARGIN_RATIO } from '../lib/exportPdf'
 import { photoUrl, slotPixelRect } from '../lib/imageUtils'
 import type { BookSize, Page, Photo } from '../types'
+
+const FILTER_CSS: Record<string, string> = {
+  bw: 'grayscale(1)',
+  sepia: 'sepia(0.75) saturate(1.1)',
+}
 
 const ADVANCE_MS = 1500
 const MAX_W = 640
@@ -96,13 +102,15 @@ export function Slideshow({ pages, photos, size, title, startIndex, onClose }: S
             )}
             {textRect && page.text.trim() && (
               <div
-                className="page-caption page-note"
+                className={`page-caption page-note${template.captionStyle === 'centered' ? ' centered' : ''}`}
                 style={{
                   left: textRect.x,
                   top: textRect.y,
                   width: textRect.w,
                   height: textRect.h,
                   fontSize: Math.max(6, pageHeight * 0.026),
+                  fontFamily: fontStack((page.textStyle ?? DEFAULT_TEXT_STYLE).font),
+                  fontWeight: (page.textStyle ?? DEFAULT_TEXT_STYLE).bold ? 700 : 400,
                 }}
               >
                 {page.text}
@@ -121,16 +129,19 @@ export function Slideshow({ pages, photos, size, title, startIndex, onClose }: S
                   outer.h,
                   halfTemplate.bleed ? 0 : PAGE_MARGIN_RATIO,
                 )
+                const halfStyle = half.textStyle ?? DEFAULT_TEXT_STYLE
                 return (
                   <div
                     key={`note-${halfIndex}`}
-                    className="page-caption page-note"
+                    className={`page-caption page-note${halfTemplate.captionStyle === 'centered' ? ' centered' : ''}`}
                     style={{
                       left: outer.x + inner.x,
                       top: outer.y + inner.y,
                       width: inner.w,
                       height: inner.h,
                       fontSize: Math.max(6, outer.h * 0.026),
+                      fontFamily: fontStack(halfStyle.font),
+                      fontWeight: halfStyle.bold ? 700 : 400,
                     }}
                   >
                     {half.text}
@@ -175,6 +186,7 @@ export function Slideshow({ pages, photos, size, title, startIndex, onClose }: S
                         width: '100%',
                         height: '100%',
                         objectFit: 'cover',
+                        filter: placement?.filter ? FILTER_CSS[placement.filter] : undefined,
                       }}
                     />
                   )}

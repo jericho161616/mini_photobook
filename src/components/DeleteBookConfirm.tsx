@@ -25,8 +25,8 @@ export function DeleteBookConfirm({ title, onConfirm, onClose }: DeleteBookConfi
     >
       <div className="overlay-card" onClick={(e) => e.stopPropagation()}>
         <p>
-          Delete <strong>{title}</strong>? Every photo and page in it goes with it — this can't be
-          undone.
+          Move <strong>{title}</strong> to Trash? It'll stay there for 30 days in case you change
+          your mind, and you can restore it any time before then.
         </p>
         <div className="slot-controls">
           <button className="btn" onClick={onClose} autoFocus>
@@ -39,7 +39,7 @@ export function DeleteBookConfirm({ title, onConfirm, onClose }: DeleteBookConfi
               onClose()
             }}
           >
-            Delete book
+            Move to Trash
           </button>
         </div>
       </div>

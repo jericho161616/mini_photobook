@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
+import { TRASH_RETENTION_MS } from '../types'
 import type { Photo, Placement, Project } from '../types'
 
 /**
@@ -71,7 +72,32 @@ export async function deletePhotos(ids: string[]): Promise<void> {
 }
 
 export async function listProjects(): Promise<Project[]> {
-  return db.projects.orderBy('updatedAt').reverse().toArray()
+  const all = await db.projects.orderBy('updatedAt').reverse().toArray()
+  return all.filter((p) => !p.deletedAt)
+}
+
+export async function listTrashedProjects(): Promise<Project[]> {
+  const all = await db.projects.toArray()
+  return all.filter((p) => p.deletedAt).sort((a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0))
+}
+
+/** Soft-delete: hides the book from My Books but keeps it (and its photos) in Trash. */
+export async function trashProject(id: string): Promise<void> {
+  await db.projects.update(id, { deletedAt: Date.now() })
+}
+
+/** Brings a trashed book back to My Books. */
+export async function restoreProject(id: string): Promise<void> {
+  await db.projects.update(id, { deletedAt: undefined })
+}
+
+/** Removes every trashed book older than the retention window for good. */
+export async function purgeExpiredTrash(): Promise<void> {
+  const trashed = await listTrashedProjects()
+  const cutoff = Date.now() - TRASH_RETENTION_MS
+  for (const project of trashed) {
+    if ((project.deletedAt ?? 0) < cutoff) await deleteProjectCascade(project.id)
+  }
 }
 
 export async function loadProject(id: string): Promise<Project | undefined> {

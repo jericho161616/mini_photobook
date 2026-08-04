@@ -1490,6 +1490,12 @@ input:focus-visible,
   white-space: nowrap;
 }
 
+.library-filter-row {
+  flex: 0 0 auto;
+  max-width: 320px;
+  margin-bottom: 2px;
+}
+
 .library-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -1653,6 +1659,45 @@ input:focus-visible,
 
 .new-book-btn:hover {
   background: var(--navy-soft);
+}
+
+.library-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.trash-btn {
+  font-size: 13px;
+}
+
+.trash-card {
+  gap: 8px;
+}
+
+.trash-card .cover {
+  opacity: 0.7;
+}
+
+.trash-card-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.trash-card-actions .btn {
+  flex: 1;
+  font-size: 11.5px;
+  padding: 6px 4px;
+}
+
+.trash-shelf {
+  margin-top: 4px;
+}
+
+.trash-footer {
+  justify-content: flex-end;
+  margin-top: 14px;
 }
 
 .shelf {

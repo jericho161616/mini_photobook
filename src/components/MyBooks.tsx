@@ -4,6 +4,7 @@ import { photoThumbUrl } from '../lib/imageUtils'
 import { useLibraryStore, type BookSummary } from '../state/useLibraryStore'
 import { DeleteBookConfirm } from './DeleteBookConfirm'
 import { NewBookModal } from './NewBookModal'
+import { TrashView } from './TrashView'
 
 function relativeTime(ms: number): string {
   const diff = Date.now() - ms
@@ -130,7 +131,7 @@ function BookCard({ book, onOpen, onRename, onDuplicate, onDelete }: BookCardPro
                     onDelete()
                   }}
                 >
-                  Delete
+                  Move to Trash
                 </button>
               </div>
             )}
@@ -152,6 +153,7 @@ interface MyBooksProps {
 export function MyBooks({ onOpenBook }: MyBooksProps) {
   const ready = useLibraryStore((s) => s.ready)
   const books = useLibraryStore((s) => s.books)
+  const trashedBooks = useLibraryStore((s) => s.trashedBooks)
   const refresh = useLibraryStore((s) => s.refresh)
   const createBook = useLibraryStore((s) => s.createBook)
   const renameBook = useLibraryStore((s) => s.renameBook)
@@ -159,6 +161,7 @@ export function MyBooks({ onOpenBook }: MyBooksProps) {
   const deleteBook = useLibraryStore((s) => s.deleteBook)
 
   const [newBookOpen, setNewBookOpen] = useState(false)
+  const [trashOpen, setTrashOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<BookSummary | null>(null)
 
   useEffect(() => {
@@ -192,9 +195,14 @@ export function MyBooks({ onOpenBook }: MyBooksProps) {
           <h1>My Books</h1>
           <p>Every book you've started, saved automatically. Pick one up where you left off, or start another.</p>
         </div>
-        <button className="new-book-btn" onClick={() => setNewBookOpen(true)}>
-          + New Book
-        </button>
+        <div className="library-head-actions">
+          <button className="btn trash-btn" onClick={() => setTrashOpen(true)}>
+            Trash{trashedBooks.length > 0 ? ` (${trashedBooks.length})` : ''}
+          </button>
+          <button className="new-book-btn" onClick={() => setNewBookOpen(true)}>
+            + New Book
+          </button>
+        </div>
       </div>
 
       {books.length === 0 && <p className="empty-note">No books yet — create your first one below.</p>}
@@ -227,6 +235,8 @@ export function MyBooks({ onOpenBook }: MyBooksProps) {
           onClose={() => setPendingDelete(null)}
         />
       )}
+
+      {trashOpen && <TrashView onClose={() => setTrashOpen(false)} />}
     </div>
   )
 }

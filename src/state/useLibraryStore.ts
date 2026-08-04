@@ -14,12 +14,18 @@ export interface BookSummary {
 interface LibraryState {
   ready: boolean
   books: BookSummary[]
+  trashedBooks: BookSummary[]
 
   refresh: () => Promise<void>
   createBook: (title: string, sizeId: string) => Promise<string>
   renameBook: (id: string, title: string) => Promise<void>
   duplicateBook: (id: string) => Promise<string>
+  /** Moves a book to Trash — recoverable with restoreBook for 30 days. */
   deleteBook: (id: string) => Promise<void>
+  restoreBook: (id: string) => Promise<void>
+  /** Removes a trashed book for good — cannot be undone. */
+  permanentlyDeleteBook: (id: string) => Promise<void>
+  emptyTrash: () => Promise<void>
 }
 
 /** The first photo actually placed on a page, in reading order — used as the cover art. */
@@ -41,11 +47,16 @@ async function toSummary(project: Project): Promise<BookSummary> {
 export const useLibraryStore = create<LibraryState>((set, get) => ({
   ready: false,
   books: [],
+  trashedBooks: [],
 
   async refresh() {
-    const projects = await storage.listProjects()
-    const books = await Promise.all(projects.map(toSummary))
-    set({ ready: true, books })
+    await storage.purgeExpiredTrash()
+    const [projects, trashed] = await Promise.all([storage.listProjects(), storage.listTrashedProjects()])
+    const [books, trashedBooks] = await Promise.all([
+      Promise.all(projects.map(toSummary)),
+      Promise.all(trashed.map(toSummary)),
+    ])
+    set({ ready: true, books, trashedBooks })
   },
 
   async createBook(title, sizeId) {
@@ -84,7 +95,23 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   },
 
   async deleteBook(id) {
+    await storage.trashProject(id)
+    await get().refresh()
+  },
+
+  async restoreBook(id) {
+    await storage.restoreProject(id)
+    await get().refresh()
+  },
+
+  async permanentlyDeleteBook(id) {
     await storage.deleteProjectCascade(id)
-    set((state) => ({ books: state.books.filter((b) => b.project.id !== id) }))
+    set((state) => ({ trashedBooks: state.trashedBooks.filter((b) => b.project.id !== id) }))
+  },
+
+  async emptyTrash() {
+    const ids = get().trashedBooks.map((b) => b.project.id)
+    await Promise.all(ids.map((id) => storage.deleteProjectCascade(id)))
+    set({ trashedBooks: [] })
   },
 }))

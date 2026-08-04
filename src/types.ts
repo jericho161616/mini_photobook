@@ -173,7 +173,12 @@ export interface Project {
   pages: Page[]
   createdAt: number
   updatedAt: number
+  /** Set when the book is sitting in Trash — undefined means it's active. */
+  deletedAt?: number
 }
+
+/** How long a trashed book is kept before it's purged for good. */
+export const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000
 
 export const MIN_PAGES = 10
 export const MAX_PAGES = 30

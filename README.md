@@ -32,6 +32,13 @@ independent copy — editing the duplicate never touches the original), or
 delete it. There's no limit on how many books you can keep beyond your
 browser's own IndexedDB storage quota.
 
+**Undo a mistaken delete.** Deleting a book doesn't erase it — it moves to
+Trash (the button next to "+ New Book"), stays there for 30 days, and can be
+restored back to My Books at any time before that. "Delete Forever" on a
+trashed book (or "Empty Trash") skips the wait for when you're sure. Past 30
+days a trashed book is quietly cleaned up on its own the next time you open
+the app.
+
 **You decide where every photo goes.** Importing photos only adds them to your
 library — nothing gets placed automatically. A new book opens at the minimum
 10 pages, empty, and you drag each photo onto the slot you want it in. An
@@ -135,7 +142,8 @@ renders in the editor and in the exported PDF.
 on a page it drops out of the tray — there's no reason to keep dragging past
 photos you've already used. "View & manage all photos" opens a larger grid
 of the full library, where you can check off several photos and remove them
-at once, and see which ones aren't placed anywhere yet.
+at once, filter it down to just Placed or just Unplaced (or All), and see
+which ones aren't placed anywhere yet.
 
 **Book size is a one-time decision.** The sidebar shows your current size and
 a "Change" button rather than the full picker sitting there permanently —

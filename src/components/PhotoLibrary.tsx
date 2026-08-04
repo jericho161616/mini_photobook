@@ -18,6 +18,7 @@ export function PhotoLibrary({ onClose }: PhotoLibraryProps) {
   const removePhotos = useStore((s) => s.removePhotos)
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [filter, setFilter] = useState<'all' | 'placed' | 'unplaced'>('all')
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -28,6 +29,11 @@ export function PhotoLibrary({ onClose }: PhotoLibraryProps) {
   }, [onClose])
 
   const used = usedPhotoIds(pages)
+  const visiblePhotos = photos.filter((p) => {
+    if (filter === 'placed') return used.has(p.id)
+    if (filter === 'unplaced') return !used.has(p.id)
+    return true
+  })
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -65,8 +71,8 @@ export function PhotoLibrary({ onClose }: PhotoLibraryProps) {
             ) : (
               <button
                 className="btn"
-                onClick={() => setSelected(new Set(photos.map((p) => p.id)))}
-                disabled={photos.length === 0}
+                onClick={() => setSelected(new Set(visiblePhotos.map((p) => p.id)))}
+                disabled={visiblePhotos.length === 0}
               >
                 Select All
               </button>
@@ -77,11 +83,34 @@ export function PhotoLibrary({ onClose }: PhotoLibraryProps) {
           </div>
         </div>
 
+        <div className="filter-chips-row library-filter-row">
+          <button
+            className={`filter-chip-btn${filter === 'all' ? ' active' : ''}`}
+            onClick={() => setFilter('all')}
+          >
+            All {photos.length}
+          </button>
+          <button
+            className={`filter-chip-btn${filter === 'placed' ? ' active' : ''}`}
+            onClick={() => setFilter('placed')}
+          >
+            Placed {photos.filter((p) => used.has(p.id)).length}
+          </button>
+          <button
+            className={`filter-chip-btn${filter === 'unplaced' ? ' active' : ''}`}
+            onClick={() => setFilter('unplaced')}
+          >
+            Unplaced {photos.filter((p) => !used.has(p.id)).length}
+          </button>
+        </div>
+
         {photos.length === 0 ? (
           <p className="empty-note">No photos yet.</p>
+        ) : visiblePhotos.length === 0 ? (
+          <p className="empty-note">No {filter} photos.</p>
         ) : (
           <div className="library-grid">
-            {photos.map((photo) => {
+            {visiblePhotos.map((photo) => {
               const isSelected = selected.has(photo.id)
               return (
                 <button

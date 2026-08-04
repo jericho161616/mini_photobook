@@ -27,6 +27,7 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
   const init = useStore((s) => s.init)
   const flushPending = useStore((s) => s.flushPending)
   const photos = useStore((s) => s.photos)
+  const customStickers = useStore((s) => s.customStickers)
   const pages = useStore((s) => s.pages)
   const sizeId = useStore((s) => s.sizeId)
   const title = useStore((s) => s.title)
@@ -65,6 +66,7 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
       await exportToPdf({
         pages,
         photos,
+        customStickers,
         size: getSize(sizeId),
         title,
         onProgress: (done, total) => setProgress({ done, total }),
@@ -74,7 +76,7 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
     } finally {
       setExporting(false)
     }
-  }, [pages, photos, sizeId, title])
+  }, [pages, photos, customStickers, sizeId, title])
 
   if (!ready) {
     return (

@@ -23,18 +23,35 @@ export interface TextStyle {
 /** Applied to a photo in its slot — the print itself is untouched, only the placement. */
 export type PhotoFilter = 'bw' | 'sepia'
 
-/** All drawn with CSS/SVG at render time — nothing downloaded, nothing to license. */
-export type StickerType = 'tape-yellow' | 'tape-pink' | 'tape-sage' | 'heart' | 'star' | 'arrow'
+/**
+ * The built-ins are drawn with CSS/SVG at render time — nothing downloaded,
+ * nothing to license. 'custom' is the user's own drawing (see CustomSticker)
+ * — still never downloaded or shared anywhere, just kept on this device.
+ */
+export type StickerType = 'tape-yellow' | 'tape-pink' | 'tape-sage' | 'heart' | 'star' | 'arrow' | 'custom'
 
 /** A decorative element placed freely on a page (or one half of a folded page). */
 export interface Sticker {
   id: string
   type: StickerType
+  /** Which drawing from the book's custom sticker library — set only when type is 'custom'. */
+  customId?: string
   /** Percent of the page/half's own width and height. */
   x: number
   y: number
   w: number
   h: number
+}
+
+/**
+ * A doodle drawn in the Decorate panel and saved so it can be stamped onto
+ * any number of pages, like the built-in stickers — kept at the book level
+ * rather than per-page since the same drawing is meant to be reused.
+ */
+export interface CustomSticker {
+  id: string
+  /** A small transparent PNG data URL, trimmed to the drawing's own bounds. */
+  dataUrl: string
 }
 
 /** A free-form text box placed anywhere on a page — not tied to a template's textSlot. */
@@ -185,6 +202,8 @@ export interface Project {
   updatedAt: number
   /** Set when the book is sitting in Trash — undefined means it's active. */
   deletedAt?: number
+  /** This book's own library of hand-drawn stickers — undefined on older books means none yet. */
+  customStickers?: CustomSticker[]
 }
 
 /** How long a trashed book is kept before it's purged for good. */

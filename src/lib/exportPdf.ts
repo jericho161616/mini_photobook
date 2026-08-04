@@ -9,7 +9,7 @@ import {
   POSTER_ROTATION_DEG,
   slotPixelRect,
 } from './imageUtils'
-import type { BookSize, Page, Photo, Placement, Sticker, TextBox, TextStyle } from '../types'
+import type { BookSize, CustomSticker, Page, Photo, Placement, Sticker, TextBox, TextStyle } from '../types'
 
 export const PAGE_MARGIN_RATIO = 0.09
 const DPI = 300
@@ -60,6 +60,7 @@ async function renderPage(
   page: Page,
   size: BookSize,
   photoMap: Map<string, ImageBitmap>,
+  customStickerMap: Map<string, ImageBitmap>,
   background: string,
   title: string,
 ): Promise<string> {
@@ -178,8 +179,18 @@ async function renderPage(
     })
   }
 
-  /** A sticker — either a flat piece of tape or a small line-drawn icon. */
+  /** A sticker — a flat piece of tape, a small line-drawn icon, or the user's own drawing. */
   const drawSticker = (rect: { x: number; y: number; w: number; h: number }, sticker: Sticker) => {
+    if (sticker.type === 'custom') {
+      const bitmap = sticker.customId ? customStickerMap.get(sticker.customId) : undefined
+      if (!bitmap) return
+      // object-fit: contain — scale to fit inside rect without distorting, centered.
+      const scale = Math.min(rect.w / bitmap.width, rect.h / bitmap.height)
+      const drawW = bitmap.width * scale
+      const drawH = bitmap.height * scale
+      ctx.drawImage(bitmap, rect.x + (rect.w - drawW) / 2, rect.y + (rect.h - drawH) / 2, drawW, drawH)
+      return
+    }
     const tapeColor = TAPE_COLORS[sticker.type]
     if (tapeColor) {
       ctx.save()
@@ -314,9 +325,16 @@ async function renderPage(
   return canvas.toDataURL('image/jpeg', JPEG_QUALITY)
 }
 
+/** Every sticker on a page, whichever half (if any) it belongs to. */
+function allStickers(page: Page): Sticker[] {
+  if (page.halves) return page.halves.flatMap((half) => half.stickers ?? [])
+  return page.stickers ?? []
+}
+
 export interface ExportOptions {
   pages: Page[]
   photos: Photo[]
+  customStickers: CustomSticker[]
   size: BookSize
   title: string
   background?: string
@@ -326,6 +344,7 @@ export interface ExportOptions {
 export async function exportToPdf({
   pages,
   photos,
+  customStickers,
   size,
   title,
   background = '#ffffff',
@@ -345,6 +364,23 @@ export async function exportToPdf({
       .filter((p) => needed.has(p.id))
       .map(async (photo) => {
         photoMap.set(photo.id, await createImageBitmap(photo.blob))
+      }),
+  )
+
+  const neededStickers = new Set<string>()
+  for (const page of pages) {
+    for (const sticker of allStickers(page)) {
+      if (sticker.type === 'custom' && sticker.customId) neededStickers.add(sticker.customId)
+    }
+  }
+
+  const customStickerMap = new Map<string, ImageBitmap>()
+  await Promise.all(
+    customStickers
+      .filter((c) => neededStickers.has(c.id))
+      .map(async (custom) => {
+        const blob = await (await fetch(custom.dataUrl)).blob()
+        customStickerMap.set(custom.id, await createImageBitmap(blob))
       }),
   )
 
@@ -371,7 +407,7 @@ export async function exportToPdf({
           pageSize.widthIn >= pageSize.heightIn ? 'landscape' : 'portrait',
         )
       }
-      const dataUrl = await renderPage(pages[i], pageSize, photoMap, background, title)
+      const dataUrl = await renderPage(pages[i], pageSize, photoMap, customStickerMap, background, title)
       pdf.addImage(dataUrl, 'JPEG', 0, 0, pageSize.widthIn, pageSize.heightIn)
       onProgress?.(i + 1, pages.length)
       // Yield so the progress indicator can actually paint between pages.
@@ -382,5 +418,6 @@ export async function exportToPdf({
     pdf.save(`${safeTitle}.pdf`)
   } finally {
     for (const bitmap of photoMap.values()) bitmap.close()
+    for (const bitmap of customStickerMap.values()) bitmap.close()
   }
 }

@@ -30,6 +30,7 @@ interface SpreadCanvasProps {
 
 export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
   const allPhotos = useStore((s) => s.photos)
+  const customStickers = useStore((s) => s.customStickers)
   const pages = useStore((s) => s.pages)
   const sizeId = useStore((s) => s.sizeId)
   const activePageIndex = useStore((s) => s.activePageIndex)
@@ -162,6 +163,7 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
         page={page}
         pageIndex={index}
         photos={photos}
+        customStickers={customStickers}
         width={width}
         height={height}
         side={side}

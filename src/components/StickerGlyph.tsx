@@ -1,8 +1,16 @@
 import type { StickerType } from '../types'
 
-/** Drawn with inline SVG paths — no image assets, nothing to fetch or license. */
-export function StickerGlyph({ type }: { type: StickerType }) {
+/**
+ * Drawn with inline SVG paths — no image assets, nothing to fetch or license
+ * — except 'custom', which renders the user's own drawing (customUrl), kept
+ * entirely on this device like everything else here.
+ */
+export function StickerGlyph({ type, customUrl }: { type: StickerType; customUrl?: string }) {
   switch (type) {
+    case 'custom':
+      return customUrl ? (
+        <img src={customUrl} alt="" draggable={false} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+      ) : null
     case 'heart':
       return (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">

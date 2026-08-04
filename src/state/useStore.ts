@@ -15,6 +15,7 @@ import * as storage from '../lib/db'
 import { clampOffset, clampZoom, importFiles, releasePhotoUrl } from '../lib/imageUtils'
 import { MIN_PAGES } from '../types'
 import type {
+  CustomSticker,
   HalfLayout,
   Page,
   Photo,
@@ -48,6 +49,12 @@ function nextDecorationId(): string {
   return `deco-${Date.now().toString(36)}-${decorationSeq}`
 }
 
+let customStickerSeq = 0
+function nextCustomStickerId(): string {
+  customStickerSeq += 1
+  return `doodle-${Date.now().toString(36)}-${customStickerSeq}`
+}
+
 
 interface StoreState {
   ready: boolean
@@ -56,6 +63,8 @@ interface StoreState {
   title: string
   sizeId: string
   pages: Page[]
+  /** This book's own drawn-sticker library — reused across as many pages as you like. */
+  customStickers: CustomSticker[]
   activePageIndex: number
   /** Which side of a Split at Fold page the sidebar is currently editing. */
   activeHalfIndex: 0 | 1
@@ -117,8 +126,13 @@ interface StoreState {
   /** Sets one half's own note style on a Split at Fold page. */
   setHalfTextStyle: (pageIndex: number, halfIndex: 0 | 1, style: TextStyle) => void
   movePage: (from: number, to: number) => void
-  addSticker: (pageIndex: number, halfIndex: 0 | 1 | undefined, type: StickerType) => void
+  /** customId is required (and only meaningful) when type is 'custom'. */
+  addSticker: (pageIndex: number, halfIndex: 0 | 1 | undefined, type: StickerType, customId?: string) => void
   addTextBox: (pageIndex: number, halfIndex: 0 | 1 | undefined) => void
+  /** Saves a drawing to this book's sticker library; returns its new id. */
+  addCustomSticker: (dataUrl: string) => string
+  /** Removes a drawing from the library and strips any already-placed copies of it. */
+  removeCustomSticker: (id: string) => void
   updateSticker: (ref: DecorationRef, patch: Partial<Sticker>) => void
   updateTextBox: (ref: DecorationRef, patch: Partial<TextBox>) => void
   removeDecoration: (ref: DecorationRef) => void
@@ -130,7 +144,7 @@ interface StoreState {
 }
 
 function projectFrom(
-  state: Pick<StoreState, 'projectId' | 'title' | 'sizeId' | 'pages'>,
+  state: Pick<StoreState, 'projectId' | 'title' | 'sizeId' | 'pages' | 'customStickers'>,
   createdAt: number,
 ): Project {
   return {
@@ -138,6 +152,7 @@ function projectFrom(
     title: state.title,
     sizeId: state.sizeId,
     pages: state.pages,
+    customStickers: state.customStickers,
     createdAt,
     updatedAt: Date.now(),
   }
@@ -148,9 +163,9 @@ export const useStore = create<StoreState>((set, get) => {
   let saveTimer: number | undefined
   let openedAt = Date.now()
   const writeNow = () => {
-    const { projectId, title, sizeId, pages } = get()
+    const { projectId, title, sizeId, pages, customStickers } = get()
     if (!projectId) return
-    void storage.saveProject(projectFrom({ projectId, title, sizeId, pages }, openedAt))
+    void storage.saveProject(projectFrom({ projectId, title, sizeId, pages, customStickers }, openedAt))
   }
   const persist = () => {
     window.clearTimeout(saveTimer)
@@ -170,6 +185,7 @@ export const useStore = create<StoreState>((set, get) => {
     title: 'Untitled Book',
     sizeId: DEFAULT_SIZE_ID,
     pages: [],
+    customStickers: [],
     activePageIndex: 0,
     activeHalfIndex: 0,
     selected: null,
@@ -193,6 +209,7 @@ export const useStore = create<StoreState>((set, get) => {
           title: project.title,
           sizeId: project.sizeId,
           pages: normalizePages(project.pages),
+          customStickers: project.customStickers ?? [],
           activePageIndex: 0,
           selected: null,
           armedPhotoIds: [],
@@ -209,6 +226,7 @@ export const useStore = create<StoreState>((set, get) => {
           title: 'Untitled Book',
           sizeId: DEFAULT_SIZE_ID,
           pages,
+          customStickers: [],
           activePageIndex: 0,
           selected: null,
         })
@@ -537,10 +555,15 @@ export const useStore = create<StoreState>((set, get) => {
       set({ activePageIndex: Math.max(0, Math.min(to, get().pages.length - 1)), selected: null })
     },
 
-    addSticker(pageIndex, halfIndex, type) {
+    addSticker(pageIndex, halfIndex, type, customId) {
       if (get().pages[pageIndex]?.locked) return
       const id = nextDecorationId()
-      const sticker: Sticker = { id, type, x: 32, y: 32, w: 26, h: 12 }
+      // A doodle is usually closer to square than the built-in tape/icon
+      // stickers, which read better in a wider box.
+      const sticker: Sticker =
+        type === 'custom'
+          ? { id, type, customId, x: 34, y: 32, w: 22, h: 18 }
+          : { id, type, x: 32, y: 32, w: 26, h: 12 }
       mutatePages((pages) =>
         pages.map((page, i) => {
           if (i !== pageIndex) return page
@@ -583,6 +606,33 @@ export const useStore = create<StoreState>((set, get) => {
         }),
       )
       set({ selectedDecoration: { pageIndex, halfIndex, kind: 'textBox', id }, selected: null })
+    },
+
+    addCustomSticker(dataUrl) {
+      const id = nextCustomStickerId()
+      set((state) => ({ customStickers: [...state.customStickers, { id, dataUrl }] }))
+      persist()
+      return id
+    },
+
+    removeCustomSticker(id) {
+      set((state) => ({ customStickers: state.customStickers.filter((c) => c.id !== id) }))
+      // Any already-placed copies of this drawing would otherwise linger as
+      // invisible, still-draggable boxes once the artwork behind them is gone.
+      mutatePages((pages) =>
+        pages.map((page) => {
+          const stripFrom = (stickers: Sticker[] | undefined) =>
+            stickers?.filter((s) => !(s.type === 'custom' && s.customId === id))
+          if (page.halves) {
+            const halves = page.halves.map((half) => ({ ...half, stickers: stripFrom(half.stickers) })) as [
+              HalfLayout,
+              HalfLayout,
+            ]
+            return { ...page, halves }
+          }
+          return { ...page, stickers: stripFrom(page.stickers) }
+        }),
+      )
     },
 
     updateSticker(ref, patch) {
@@ -659,6 +709,7 @@ export const useStore = create<StoreState>((set, get) => {
         title: 'Untitled Book',
         sizeId: DEFAULT_SIZE_ID,
         pages: autoLayout({ photos: [], size, pageCount: MIN_PAGES }),
+        customStickers: [],
         activePageIndex: 0,
         selected: null,
       })

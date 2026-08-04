@@ -2,6 +2,7 @@ import { FONT_OPTIONS, FONT_SIZE_OPTIONS, fontSizeScale, fontStack } from '../da
 import { getTemplate } from '../data/templates'
 import { decorationHost } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
+import { DoodlePad } from './DoodlePad'
 import { StickerGlyph } from './StickerGlyph'
 import type { StickerType, TextBox, TextStyle } from '../types'
 
@@ -84,6 +85,8 @@ export function DecoratePanel() {
           </button>
         ))}
       </div>
+
+      <DoodlePad pageIndex={activePageIndex} targetHalf={targetHalf} locked={page.locked} />
 
       <button
         className="btn add-text-btn"

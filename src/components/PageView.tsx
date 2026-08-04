@@ -4,7 +4,7 @@ import { decorationHost } from '../lib/autoLayout'
 import { PAGE_MARGIN_RATIO } from '../lib/exportPdf'
 import { slotPixelRect } from '../lib/imageUtils'
 import type { DecorationRef } from '../state/useStore'
-import type { Page, Photo, Sticker, TextBox } from '../types'
+import type { CustomSticker, Page, Photo, Sticker, TextBox } from '../types'
 import { DecorationLayer } from './DecorationLayer'
 import { SlotView } from './SlotView'
 
@@ -51,6 +51,8 @@ interface PageViewProps {
     onChangeTextBox: (ref: DecorationRef, patch: Partial<TextBox>) => void
     onDelete: (ref: DecorationRef) => void
   }
+  /** The book's own drawn-sticker library, for resolving a placed 'custom' sticker's artwork. */
+  customStickers: CustomSticker[]
 }
 
 export function PageView({
@@ -72,6 +74,7 @@ export function PageView({
   sizePicker,
   foldOrientation,
   decorations,
+  customStickers,
 }: PageViewProps) {
   if (!page) {
     // Odd page counts leave the final verso empty rather than inventing a page.
@@ -237,6 +240,7 @@ export function PageView({
                     <DecorationLayer
                       stickers={host.stickers ?? []}
                       textBoxes={host.textBoxes ?? []}
+                      customStickers={customStickers}
                       containerSize={{ w: outer.w, h: outer.h }}
                       locked={page.locked}
                       isSelected={(kind, id) =>
@@ -300,6 +304,7 @@ export function PageView({
           <DecorationLayer
             stickers={page.stickers ?? []}
             textBoxes={page.textBoxes ?? []}
+            customStickers={customStickers}
             containerSize={{ w: width, h: height }}
             locked={page.locked}
             isSelected={(kind, id) =>

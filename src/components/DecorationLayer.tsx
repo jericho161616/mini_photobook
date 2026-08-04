@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { fontSizeScale, fontStack } from '../data/fonts'
 import { StickerGlyph } from './StickerGlyph'
-import type { Sticker, TextBox } from '../types'
+import type { CustomSticker, Sticker, TextBox } from '../types'
 
 interface Box {
   id: string
@@ -104,6 +104,8 @@ function DecorationBox({ box, containerSize, selected, locked, onSelect, onChang
 interface DecorationLayerProps {
   stickers: Sticker[]
   textBoxes: TextBox[]
+  /** The book's own drawn-sticker library — looked up by a sticker's customId. */
+  customStickers: CustomSticker[]
   containerSize: { w: number; h: number }
   locked: boolean
   isSelected: (kind: 'sticker' | 'textBox', id: string) => boolean
@@ -117,6 +119,7 @@ interface DecorationLayerProps {
 export function DecorationLayer({
   stickers,
   textBoxes,
+  customStickers,
   containerSize,
   locked,
   isSelected,
@@ -140,7 +143,10 @@ export function DecorationLayer({
           onDelete={() => onDelete('sticker', sticker.id)}
         >
           <div className={`sticker-glyph sticker-${sticker.type}`}>
-            <StickerGlyph type={sticker.type} />
+            <StickerGlyph
+              type={sticker.type}
+              customUrl={sticker.type === 'custom' ? customStickers.find((c) => c.id === sticker.customId)?.dataUrl : undefined}
+            />
           </div>
         </DecorationBox>
       ))}

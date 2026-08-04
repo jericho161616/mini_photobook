@@ -131,6 +131,16 @@ so nothing ever lands on the physical crease. Everything is drawn with plain
 CSS/SVG shapes — no downloaded images, icon packs, or fonts — so it stays
 just as free and offline as the rest of the app.
 
+**Draw your own sticker.** "✏️ Draw a Sticker" in the Decorate panel opens a
+small pad — pick from 8 colors, draw with mouse, touch, or stylus, then "Save
+as Sticker" trims it to your drawing and adds it to this book's own sticker
+library, right alongside the built-in tape/heart/star/arrow ones. Click it
+from the tray any time to stamp another copy onto a page — draw once, reuse
+everywhere. Deleting a drawing from the library also clears out any copies
+already placed on a page, so nothing is left behind pointing at artwork that
+no longer exists. Saved as a plain PNG on your own device — nothing is ever
+uploaded anywhere.
+
 **Two layout families, including full-bleed.** *Minimal* is one to a few photos
 with room around them — including an edge-to-edge Full Bleed option with no
 margin at all. *Portfolio* is editorial — rows, collages, covers, and a

@@ -65,11 +65,13 @@ interface StoreState {
   shapeFilter: Shape | 'all'
   importing: boolean
   /**
-   * A photo "picked up" by clicking it rather than dragging it — the next
-   * slot clicked receives it. Exists for when dragging is awkward (a long
-   * scroll to find the right photo, a trackpad, a small screen).
+   * Photos "picked up" by clicking them rather than dragging — each slot
+   * clicked takes the next one off the front of this list, in the order they
+   * were picked up, so several photos can be stamped into consecutive slots
+   * in one go. Exists for when dragging is awkward (a long scroll to find
+   * the right photo, a trackpad, a small screen).
    */
-  armedPhotoId: string | null
+  armedPhotoIds: string[]
 
   init: (projectId: string) => Promise<void>
   addFiles: (files: File[]) => Promise<void>
@@ -96,9 +98,13 @@ interface StoreState {
    */
   fillNextEmptySlots: (photoIds: string[]) => void
   clearSlot: (ref: SlotRef) => void
-  /** Arms a photo for click-to-place; passing the already-armed id, or null, disarms it. */
+  /**
+   * Toggles a photo into (or out of) the pick-up list for click-to-place —
+   * clicking more than one queues them in click order. Passing null clears
+   * the whole list (used by Cancel/Escape).
+   */
   armPhoto: (photoId: string | null) => void
-  /** Places the armed photo (if any) into a slot, then disarms it. */
+  /** Places the front of the pick-up list into a slot, then advances the queue. */
   placeArmedPhoto: (ref: SlotRef) => void
   updatePlacement: (ref: SlotRef, patch: Partial<Placement>) => void
   togglePageLock: (pageIndex: number) => void
@@ -170,7 +176,7 @@ export const useStore = create<StoreState>((set, get) => {
     selectedDecoration: null,
     shapeFilter: 'all',
     importing: false,
-    armedPhotoId: null,
+    armedPhotoIds: [],
 
     async init(projectId) {
       set({ ready: false })
@@ -189,7 +195,7 @@ export const useStore = create<StoreState>((set, get) => {
           pages: normalizePages(project.pages),
           activePageIndex: 0,
           selected: null,
-          armedPhotoId: null,
+          armedPhotoIds: [],
         })
       } else {
         // Shouldn't normally happen — My Books always creates the project
@@ -240,7 +246,7 @@ export const useStore = create<StoreState>((set, get) => {
       for (const id of idSet) releasePhotoUrl(id)
       set((state) => ({
         photos: state.photos.filter((p) => !idSet.has(p.id)),
-        armedPhotoId: state.armedPhotoId && idSet.has(state.armedPhotoId) ? null : state.armedPhotoId,
+        armedPhotoIds: state.armedPhotoIds.filter((id) => !idSet.has(id)),
       }))
       const strip = (placements: (Placement | null)[]) =>
         placements.map((slot) => (slot && idSet.has(slot.photoId) ? null : slot))
@@ -394,14 +400,22 @@ export const useStore = create<StoreState>((set, get) => {
     },
 
     armPhoto(photoId) {
-      set((state) => ({ armedPhotoId: state.armedPhotoId === photoId ? null : photoId }))
+      set((state) => {
+        if (photoId === null) return { armedPhotoIds: [] }
+        const already = state.armedPhotoIds.includes(photoId)
+        return {
+          armedPhotoIds: already
+            ? state.armedPhotoIds.filter((id) => id !== photoId)
+            : [...state.armedPhotoIds, photoId],
+        }
+      })
     },
 
     placeArmedPhoto(ref) {
-      const { armedPhotoId } = get()
-      if (!armedPhotoId) return
-      get().assignPhoto(ref, armedPhotoId)
-      set({ armedPhotoId: null })
+      const [next, ...rest] = get().armedPhotoIds
+      if (!next) return
+      get().assignPhoto(ref, next)
+      set({ armedPhotoIds: rest })
     },
 
     clearSlot({ pageIndex, slotIndex, halfIndex }) {

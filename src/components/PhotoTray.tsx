@@ -13,7 +13,7 @@ export function PhotoTray({ onOpenLibrary }: PhotoTrayProps) {
   const addFiles = useStore((s) => s.addFiles)
   const removePhoto = useStore((s) => s.removePhoto)
   const importing = useStore((s) => s.importing)
-  const armedPhotoId = useStore((s) => s.armedPhotoId)
+  const armedPhotoIds = useStore((s) => s.armedPhotoIds)
   const armPhoto = useStore((s) => s.armPhoto)
 
   const inputRef = useRef<HTMLInputElement>(null)
@@ -33,8 +33,8 @@ export function PhotoTray({ onOpenLibrary }: PhotoTrayProps) {
 
       {photos.length === 0 ? (
         <p className="empty-note">
-          No photos yet. Add some, then drag them onto a slot — or click a photo, then click a
-          slot to place it there.
+          No photos yet. Add some, then drag them onto a slot — or click one or more photos, then
+          click slots in order to place them.
         </p>
       ) : available.length === 0 ? (
         <p className="empty-note">
@@ -43,7 +43,8 @@ export function PhotoTray({ onOpenLibrary }: PhotoTrayProps) {
       ) : (
         <div className="photo-tray">
           {available.map((photo) => {
-            const armed = armedPhotoId === photo.id
+            const armedPosition = armedPhotoIds.indexOf(photo.id)
+            const armed = armedPosition !== -1
             return (
               <div
                 key={photo.id}
@@ -54,7 +55,11 @@ export function PhotoTray({ onOpenLibrary }: PhotoTrayProps) {
                   e.dataTransfer.effectAllowed = 'copy'
                 }}
                 onClick={() => armPhoto(photo.id)}
-                title={armed ? 'Click a slot to place it (or click here to cancel)' : `Click to pick up ${photo.name}, or drag it`}
+                title={
+                  armed
+                    ? `#${armedPosition + 1} to be placed — click again to remove it from the list`
+                    : `Click to pick up ${photo.name} (add more, then click slots in order), or drag it`
+                }
               >
                 <div className="photo-thumb-frame">
                   <img
@@ -64,7 +69,11 @@ export function PhotoTray({ onOpenLibrary }: PhotoTrayProps) {
                     loading="lazy"
                     decoding="async"
                   />
-                  {armed && <span className="photo-armed-badge" aria-hidden="true">✓ Picked up</span>}
+                  {armed && (
+                    <span className="photo-armed-badge" aria-hidden="true">
+                      #{armedPosition + 1}
+                    </span>
+                  )}
                 </div>
                 <button
                   className="remove"

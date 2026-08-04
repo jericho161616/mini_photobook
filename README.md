@@ -46,7 +46,10 @@ it; click the empty slot for a quick picker of your still-unplaced photos
 (newest first, with an "Open full library" way out for anything further
 back); or click a photo first — in the tray, or via a "Place" button on each
 thumbnail in "View & manage all photos" — then click the slot to drop it
-there. Esc, or clicking the photo again, cancels a pick-up. Click a filled
+there. Clicking more than one photo before placing queues them in the order
+you clicked, so clicking a run of empty slots afterward — say, both halves
+of a Split at Fold page — fills them one after another instead of one at a
+time. Esc, or clicking a photo again, clears the pick-up list. Click a filled
 slot to select it, then press Delete or Backspace to clear it (same as the
 Remove button) — ignored while you're typing in a note, so it never eats a
 keystroke by accident. An auto-layout engine exists (the "Re-flow" button)

@@ -37,7 +37,7 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
   const selected = useStore((s) => s.selected)
   const select = useStore((s) => s.select)
   const assignPhoto = useStore((s) => s.assignPhoto)
-  const armedPhotoId = useStore((s) => s.armedPhotoId)
+  const armedPhotoIds = useStore((s) => s.armedPhotoIds)
   const armPhoto = useStore((s) => s.armPhoto)
   const placeArmedPhoto = useStore((s) => s.placeArmedPhoto)
   const clearSlot = useStore((s) => s.clearSlot)
@@ -80,13 +80,13 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
   }, [])
 
   useEffect(() => {
-    if (!armedPhotoId) return
+    if (armedPhotoIds.length === 0) return
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') armPhoto(null)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [armedPhotoId, armPhoto])
+  }, [armedPhotoIds.length, armPhoto])
 
   useEffect(() => {
     if (!quickPickKey) return
@@ -100,8 +100,8 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
   // Picking up a photo to place by hand takes priority over the picker —
   // don't leave both open at once.
   useEffect(() => {
-    if (armedPhotoId) setQuickPickKey(null)
-  }, [armedPhotoId])
+    if (armedPhotoIds.length > 0) setQuickPickKey(null)
+  }, [armedPhotoIds.length])
 
   useEffect(() => {
     if (!selected) return
@@ -169,7 +169,7 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
         selectedSlot={selected?.pageIndex === index ? selected.slotIndex : null}
         selectedHalfIndex={selected?.pageIndex === index ? selected.halfIndex : undefined}
         onSelectSlot={(slotIndex, halfIndex) =>
-          armedPhotoId
+          armedPhotoIds.length > 0
             ? placeArmedPhoto({ pageIndex: index, slotIndex, halfIndex })
             : select({ pageIndex: index, slotIndex, halfIndex })
         }
@@ -182,7 +182,7 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
         onToggleLock={() => togglePageLock(index)}
         sizePicker={sizePicker}
         foldOrientation={foldOrientation}
-        hasArmedPhoto={Boolean(armedPhotoId)}
+        hasArmedPhoto={armedPhotoIds.length > 0}
         quickPick={{
           openKey: quickPickKey,
           keyFor: (slotIndex, halfIndex) => `${index}:${halfIndex ?? 'p'}:${slotIndex}`,
@@ -210,15 +210,21 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
   }
 
   return (
-    <main className={`canvas-area${armedPhotoId ? ' armed' : ''}`} ref={areaRef}>
+    <main className={`canvas-area${armedPhotoIds.length > 0 ? ' armed' : ''}`} ref={areaRef}>
       <div className="spread">
         {renderSide(leftIndex, 'left')}
         <div className="gutter" />
         {renderSide(rightIndex !== null && rightIndex < pages.length ? rightIndex : null, 'right')}
       </div>
-      {armedPhotoId ? (
+      {armedPhotoIds.length > 0 ? (
         <p className="canvas-note armed-note">
-          Photo picked up — click any slot to drop it there. <button className="link-btn" onClick={() => armPhoto(null)}>Cancel</button> (or press Esc)
+          {armedPhotoIds.length === 1
+            ? 'Photo picked up — click a slot to drop it there.'
+            : `${armedPhotoIds.length} photos picked up — click slots one after another to drop them in, in order.`}{' '}
+          <button className="link-btn" onClick={() => armPhoto(null)}>
+            Cancel
+          </button>{' '}
+          (or press Esc)
         </p>
       ) : (
         <p className="canvas-note">

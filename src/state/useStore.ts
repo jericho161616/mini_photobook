@@ -64,6 +64,12 @@ interface StoreState {
   selectedDecoration: DecorationRef | null
   shapeFilter: Shape | 'all'
   importing: boolean
+  /**
+   * A photo "picked up" by clicking it rather than dragging it — the next
+   * slot clicked receives it. Exists for when dragging is awkward (a long
+   * scroll to find the right photo, a trackpad, a small screen).
+   */
+  armedPhotoId: string | null
 
   init: (projectId: string) => Promise<void>
   addFiles: (files: File[]) => Promise<void>
@@ -82,6 +88,10 @@ interface StoreState {
   applyHalfTemplate: (pageIndex: number, halfIndex: 0 | 1, templateId: string) => void
   assignPhoto: (ref: SlotRef, photoId: string) => void
   clearSlot: (ref: SlotRef) => void
+  /** Arms a photo for click-to-place; passing the already-armed id, or null, disarms it. */
+  armPhoto: (photoId: string | null) => void
+  /** Places the armed photo (if any) into a slot, then disarms it. */
+  placeArmedPhoto: (ref: SlotRef) => void
   updatePlacement: (ref: SlotRef, patch: Partial<Placement>) => void
   togglePageLock: (pageIndex: number) => void
   /** Overrides one page's size within the A4 family (e.g. A4 <-> A4 Folded — Landscape). */
@@ -152,6 +162,7 @@ export const useStore = create<StoreState>((set, get) => {
     selectedDecoration: null,
     shapeFilter: 'all',
     importing: false,
+    armedPhotoId: null,
 
     async init(projectId) {
       set({ ready: false })
@@ -170,6 +181,7 @@ export const useStore = create<StoreState>((set, get) => {
           pages: normalizePages(project.pages),
           activePageIndex: 0,
           selected: null,
+          armedPhotoId: null,
         })
       } else {
         // Shouldn't normally happen — My Books always creates the project
@@ -218,7 +230,10 @@ export const useStore = create<StoreState>((set, get) => {
 
       await storage.deletePhotos(photoIds)
       for (const id of idSet) releasePhotoUrl(id)
-      set((state) => ({ photos: state.photos.filter((p) => !idSet.has(p.id)) }))
+      set((state) => ({
+        photos: state.photos.filter((p) => !idSet.has(p.id)),
+        armedPhotoId: state.armedPhotoId && idSet.has(state.armedPhotoId) ? null : state.armedPhotoId,
+      }))
       const strip = (placements: (Placement | null)[]) =>
         placements.map((slot) => (slot && idSet.has(slot.photoId) ? null : slot))
       mutatePages((pages) =>
@@ -346,6 +361,17 @@ export const useStore = create<StoreState>((set, get) => {
           return { ...page, placements }
         }),
       )
+    },
+
+    armPhoto(photoId) {
+      set((state) => ({ armedPhotoId: state.armedPhotoId === photoId ? null : photoId }))
+    },
+
+    placeArmedPhoto(ref) {
+      const { armedPhotoId } = get()
+      if (!armedPhotoId) return
+      get().assignPhoto(ref, armedPhotoId)
+      set({ armedPhotoId: null })
     },
 
     clearSlot({ pageIndex, slotIndex, halfIndex }) {

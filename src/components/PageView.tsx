@@ -193,7 +193,17 @@ export function PageView({
                 nested.push(
                   <div
                     key={`${halfIndex}-decorations`}
-                    style={{ position: 'absolute', left: outer.x, top: outer.y, width: outer.w, height: outer.h }}
+                    // pointerEvents: none so this full-half overlay never blocks clicks/drops
+                    // on the slots beneath it — only the actual decorations inside (which
+                    // opt back in via .decoration's own pointer-events) should be interactive.
+                    style={{
+                      position: 'absolute',
+                      left: outer.x,
+                      top: outer.y,
+                      width: outer.w,
+                      height: outer.h,
+                      pointerEvents: 'none',
+                    }}
                   >
                     <DecorationLayer
                       stickers={host.stickers ?? []}

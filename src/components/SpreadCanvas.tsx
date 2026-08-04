@@ -28,6 +28,9 @@ export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
   const selected = useStore((s) => s.selected)
   const select = useStore((s) => s.select)
   const assignPhoto = useStore((s) => s.assignPhoto)
+  const armedPhotoId = useStore((s) => s.armedPhotoId)
+  const armPhoto = useStore((s) => s.armPhoto)
+  const placeArmedPhoto = useStore((s) => s.placeArmedPhoto)
   const updatePlacement = useStore((s) => s.updatePlacement)
   const togglePageLock = useStore((s) => s.togglePageLock)
   const setPageSize = useStore((s) => s.setPageSize)
@@ -54,6 +57,15 @@ export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
     observer.observe(el)
     return () => observer.disconnect()
   }, [])
+
+  useEffect(() => {
+    if (!armedPhotoId) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') armPhoto(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [armedPhotoId, armPhoto])
 
   const dimsFor = useMemo(() => {
     const availableW = Math.max(160, (area.width - SPREAD_CHROME_X) / 2)
@@ -100,7 +112,11 @@ export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
         title={title}
         selectedSlot={selected?.pageIndex === index ? selected.slotIndex : null}
         selectedHalfIndex={selected?.pageIndex === index ? selected.halfIndex : undefined}
-        onSelectSlot={(slotIndex, halfIndex) => select({ pageIndex: index, slotIndex, halfIndex })}
+        onSelectSlot={(slotIndex, halfIndex) =>
+          armedPhotoId
+            ? placeArmedPhoto({ pageIndex: index, slotIndex, halfIndex })
+            : select({ pageIndex: index, slotIndex, halfIndex })
+        }
         onDropPhoto={(slotIndex, photoId, halfIndex) =>
           assignPhoto({ pageIndex: index, slotIndex, halfIndex }, photoId)
         }
@@ -122,16 +138,22 @@ export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
   }
 
   return (
-    <main className="canvas-area" ref={areaRef}>
+    <main className={`canvas-area${armedPhotoId ? ' armed' : ''}`} ref={areaRef}>
       <div className="spread">
         {renderSide(leftIndex, 'left')}
         <div className="gutter" />
         {renderSide(rightIndex !== null && rightIndex < pages.length ? rightIndex : null, 'right')}
       </div>
-      <p className="canvas-note">
-        Drag photos from the tray into a slot. Click a slot to adjust it, then drag the photo inside
-        to reframe.
-      </p>
+      {armedPhotoId ? (
+        <p className="canvas-note armed-note">
+          Photo picked up — click any slot to drop it there. <button className="link-btn" onClick={() => armPhoto(null)}>Cancel</button> (or press Esc)
+        </p>
+      ) : (
+        <p className="canvas-note">
+          Drag photos from the tray into a slot, or click a photo then click a slot to place it.
+          Click a slot to adjust it, then drag the photo inside to reframe.
+        </p>
+      )}
     </main>
   )
 }

@@ -454,6 +454,25 @@ input:focus-visible,
 .photo-thumb {
   position: relative;
   padding: 0;
+  cursor: pointer;
+}
+
+.photo-thumb.armed .photo-thumb-frame {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+
+.photo-armed-badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(20, 30, 45, 0.55);
 }
 
 /*
@@ -702,6 +721,9 @@ input:focus-visible,
 
 .decoration {
   position: absolute;
+  /* The half-split wrapper this sits in is pointer-events: none so it never
+     blocks the photo slots underneath — decorations opt back in here. */
+  pointer-events: auto;
   cursor: grab;
   touch-action: none;
   outline: 1px solid transparent;
@@ -926,6 +948,30 @@ input:focus-visible,
   color: var(--ink-soft);
   margin: 0;
   text-align: center;
+}
+
+.canvas-note.armed-note {
+  color: var(--navy);
+  font-weight: 600;
+}
+
+.canvas-note .link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--navy-soft);
+  text-decoration: underline;
+}
+
+.canvas-area.armed .slot {
+  cursor: copy;
+}
+
+.canvas-area.armed .slot:hover {
+  outline: 2px dashed var(--brass);
+  outline-offset: -2px;
 }
 
 /* ---- Template picker ---- */
@@ -1576,6 +1622,33 @@ input:focus-visible,
   background: rgba(0, 0, 0, 0.5);
   color: #fff;
   z-index: 1;
+}
+
+.library-place-btn {
+  position: absolute;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  z-index: 2;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(20, 30, 45, 0.75);
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+  white-space: nowrap;
+}
+
+.library-thumb:hover .library-place-btn,
+.library-thumb:focus-within .library-place-btn {
+  opacity: 1;
+}
+
+.library-place-btn:hover {
+  background: var(--navy);
 }
 
 .library-caption {

@@ -10,6 +10,8 @@ export function PhotoTray() {
   const addFiles = useStore((s) => s.addFiles)
   const removePhoto = useStore((s) => s.removePhoto)
   const importing = useStore((s) => s.importing)
+  const armedPhotoId = useStore((s) => s.armedPhotoId)
+  const armPhoto = useStore((s) => s.armPhoto)
 
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
@@ -29,7 +31,8 @@ export function PhotoTray() {
 
       {photos.length === 0 ? (
         <p className="empty-note">
-          No photos yet. Add some, then drag them onto a slot wherever you want them.
+          No photos yet. Add some, then drag them onto a slot — or click a photo, then click a
+          slot to place it there.
         </p>
       ) : available.length === 0 ? (
         <p className="empty-note">
@@ -37,35 +40,43 @@ export function PhotoTray() {
         </p>
       ) : (
         <div className="photo-tray">
-          {available.map((photo) => (
-            <div
-              key={photo.id}
-              className="photo-thumb"
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData('text/photo-id', photo.id)
-                e.dataTransfer.effectAllowed = 'copy'
-              }}
-              title={photo.name}
-            >
-              <div className="photo-thumb-frame">
-                <img
-                  src={photoThumbUrl(photo)}
-                  alt={photo.name}
-                  draggable={false}
-                  loading="lazy"
-                  decoding="async"
-                />
-              </div>
-              <button
-                className="remove"
-                onClick={() => void removePhoto(photo.id)}
-                aria-label={`Remove ${photo.name}`}
+          {available.map((photo) => {
+            const armed = armedPhotoId === photo.id
+            return (
+              <div
+                key={photo.id}
+                className={`photo-thumb${armed ? ' armed' : ''}`}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('text/photo-id', photo.id)
+                  e.dataTransfer.effectAllowed = 'copy'
+                }}
+                onClick={() => armPhoto(photo.id)}
+                title={armed ? 'Click a slot to place it (or click here to cancel)' : `Click to pick up ${photo.name}, or drag it`}
               >
-                ×
-              </button>
-            </div>
-          ))}
+                <div className="photo-thumb-frame">
+                  <img
+                    src={photoThumbUrl(photo)}
+                    alt={photo.name}
+                    draggable={false}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  {armed && <span className="photo-armed-badge" aria-hidden="true">✓ Picked up</span>}
+                </div>
+                <button
+                  className="remove"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    void removePhoto(photo.id)
+                  }}
+                  aria-label={`Remove ${photo.name}`}
+                >
+                  ×
+                </button>
+              </div>
+            )
+          })}
         </div>
       )}
 

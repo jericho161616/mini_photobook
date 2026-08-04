@@ -16,6 +16,7 @@ export function PhotoLibrary({ onClose }: PhotoLibraryProps) {
   const photos = useStore((s) => s.photos)
   const pages = useStore((s) => s.pages)
   const removePhotos = useStore((s) => s.removePhotos)
+  const armPhoto = useStore((s) => s.armPhoto)
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [filter, setFilter] = useState<'all' | 'placed' | 'unplaced'>('all')
@@ -113,10 +114,18 @@ export function PhotoLibrary({ onClose }: PhotoLibraryProps) {
             {visiblePhotos.map((photo) => {
               const isSelected = selected.has(photo.id)
               return (
-                <button
+                <div
                   key={photo.id}
+                  role="button"
+                  tabIndex={0}
                   className={`library-thumb${isSelected ? ' selected' : ''}`}
                   onClick={() => toggle(photo.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      toggle(photo.id)
+                    }
+                  }}
                   aria-pressed={isSelected}
                   title={photo.name}
                 >
@@ -132,6 +141,17 @@ export function PhotoLibrary({ onClose }: PhotoLibraryProps) {
                       {isSelected ? '✓' : ''}
                     </span>
                     {!used.has(photo.id) && <span className="library-unused">Unplaced</span>}
+                    <button
+                      className="library-place-btn"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        armPhoto(photo.id)
+                        onClose()
+                      }}
+                      title="Pick up this photo — click a slot on the page to place it"
+                    >
+                      ✋ Place
+                    </button>
                     <span className="library-caption">
                       {photo.name}
                       <br />
@@ -140,7 +160,7 @@ export function PhotoLibrary({ onClose }: PhotoLibraryProps) {
                       </span>
                     </span>
                   </div>
-                </button>
+                </div>
               )
             })}
           </div>

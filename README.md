@@ -41,16 +41,18 @@ the app.
 
 **You decide where every photo goes.** Importing photos only adds them to your
 library — nothing gets placed automatically. A new book opens at the minimum
-10 pages, empty, and you drag each photo onto the slot you want it in — or,
-if dragging is awkward (a long scroll to find the right photo, a trackpad),
-just click the photo to pick it up and click the slot to drop it there; the
-same click-to-place works from "View & manage all photos" too, via a "Place"
-button on each thumbnail that picks it up and brings you back to the page.
-Esc, or clicking the photo again, cancels a pick-up. An auto-layout engine
-exists (the "Re-flow" button) for when you want a starting point or want to
-fill in the rest quickly: it picks a template per page by comparing each
-photo's aspect ratio to the shape of the slots available, and it skips any
-page you've locked.
+10 pages, empty, and there are three ways to fill a slot: drag a photo onto
+it; click the empty slot for a quick picker of your still-unplaced photos
+(newest first, with an "Open full library" way out for anything further
+back); or click a photo first — in the tray, or via a "Place" button on each
+thumbnail in "View & manage all photos" — then click the slot to drop it
+there. Esc, or clicking the photo again, cancels a pick-up. Click a filled
+slot to select it, then press Delete or Backspace to clear it (same as the
+Remove button) — ignored while you're typing in a note, so it never eats a
+keystroke by accident. An auto-layout engine exists (the "Re-flow" button)
+for when you want a starting point or want to fill in the rest quickly: it
+picks a template per page by comparing each photo's aspect ratio to the
+shape of the slots available, and it skips any page you've locked.
 
 **Sizes across five groups.** Nine standard photobook trims (6×6 up to 14×11),
 the ISO paper sizes a home printer actually takes (A6–A3, including A4

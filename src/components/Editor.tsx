@@ -6,6 +6,7 @@ import { useStore } from '../state/useStore'
 import { DecoratePanel } from './DecoratePanel'
 import { Filmstrip } from './Filmstrip'
 import { PageTextPanel } from './PageTextPanel'
+import { PhotoLibrary } from './PhotoLibrary'
 import { PhotoTray } from './PhotoTray'
 import { SizePanel } from './SizePanel'
 import { Slideshow } from './Slideshow'
@@ -36,6 +37,7 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
   const [progress, setProgress] = useState({ done: 0, total: 0 })
   const [error, setError] = useState<string | null>(null)
   const [slideshowOpen, setSlideshowOpen] = useState(false)
+  const [libraryOpen, setLibraryOpen] = useState(false)
 
   useEffect(() => {
     void init(projectId)
@@ -105,10 +107,10 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
       <div className="workspace">
         <aside className="sidebar">
           <SizePanel />
-          <PhotoTray />
+          <PhotoTray onOpenLibrary={() => setLibraryOpen(true)} />
         </aside>
 
-        <SpreadCanvas photos={photoMap} />
+        <SpreadCanvas photos={photoMap} onOpenLibrary={() => setLibraryOpen(true)} />
 
         <aside className="sidebar">
           <SlotInspector />
@@ -119,6 +121,8 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
       </div>
 
       <Filmstrip photos={photoMap} />
+
+      {libraryOpen && <PhotoLibrary onClose={() => setLibraryOpen(false)} />}
 
       {slideshowOpen && (
         <Slideshow

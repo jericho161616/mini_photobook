@@ -31,7 +31,8 @@ export function SlotInspector() {
         <p className="empty-note">Click a slot on the page to adjust the photo inside it.</p>
       ) : !placement || !photo ? (
         <p className="empty-note">
-          This slot is empty. Drag a photo from the tray onto it.
+          This slot is empty. Drag a photo onto it, or click it for a quick picker of your
+          unplaced photos.
         </p>
       ) : (
         <>
@@ -84,6 +85,9 @@ export function SlotInspector() {
               Remove
             </button>
           </div>
+          <p className="del-hint">
+            or press <kbd>Delete</kbd> / <kbd>Backspace</kbd>
+          </p>
         </>
       )}
     </section>

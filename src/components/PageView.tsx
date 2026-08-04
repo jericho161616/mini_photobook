@@ -23,6 +23,18 @@ interface PageViewProps {
   onDropPhoto: (slotIndex: number, photoId: string, halfIndex?: 0 | 1) => void
   onPan: (slotIndex: number, offsetX: number, offsetY: number, halfIndex?: 0 | 1) => void
   onToggleLock: () => void
+  /** True while a photo is picked up for click-to-place — an empty slot places it instead of opening the quick picker. */
+  hasArmedPhoto: boolean
+  /** Lets an empty slot pop open a small picker of recently-unplaced photos instead of requiring a drag. */
+  quickPick: {
+    openKey: string | null
+    keyFor: (slotIndex: number, halfIndex?: 0 | 1) => string
+    photos: Photo[]
+    onOpen: (key: string) => void
+    onClose: () => void
+    onPick: (slotIndex: number, photoId: string, halfIndex?: 0 | 1) => void
+    onOpenLibrary: () => void
+  }
   /** Present only when this page's size belongs to the A4 family. */
   sizePicker?: { options: { id: string; label: string }[]; value: string; onChange: (sizeId: string) => void }
   /**
@@ -55,6 +67,8 @@ export function PageView({
   onDropPhoto,
   onPan,
   onToggleLock,
+  hasArmedPhoto,
+  quickPick,
   sizePicker,
   foldOrientation,
   decorations,
@@ -148,6 +162,7 @@ export function PageView({
                 const rect = { x: outer.x + inner.x, y: outer.y + inner.y, w: inner.w, h: inner.h }
                 const placement = half.placements[slotIndex] ?? null
                 const photo = placement ? photos.get(placement.photoId) : undefined
+                const key = quickPick.keyFor(slotIndex, halfIndex as 0 | 1)
                 return (
                   <SlotView
                     key={`${halfIndex}-${slotIndex}`}
@@ -160,6 +175,19 @@ export function PageView({
                     onPan={(x, y) => onPan(slotIndex, x, y, halfIndex as 0 | 1)}
                     framed={halfTemplate.id === 'instantGrid'}
                     poster={halfTemplate.decoration === 'poster' && slotIndex === 1}
+                    hasArmedPhoto={hasArmedPhoto}
+                    quickPick={
+                      photo
+                        ? undefined
+                        : {
+                            open: quickPick.openKey === key,
+                            photos: quickPick.photos,
+                            onOpen: () => quickPick.onOpen(key),
+                            onClose: quickPick.onClose,
+                            onPick: (photoId) => quickPick.onPick(slotIndex, photoId, halfIndex as 0 | 1),
+                            onOpenLibrary: quickPick.onOpenLibrary,
+                          }
+                    }
                   />
                 )
               })
@@ -237,6 +265,7 @@ export function PageView({
               const rect = slotPixelRect(slot, width, height, marginRatio)
               const placement = page.placements[slotIndex] ?? null
               const photo = placement ? photos.get(placement.photoId) : undefined
+              const key = quickPick.keyFor(slotIndex)
               return (
                 <SlotView
                   key={slotIndex}
@@ -249,6 +278,19 @@ export function PageView({
                   onPan={(x, y) => onPan(slotIndex, x, y)}
                   framed={template.id === 'instantGrid'}
                   poster={template.decoration === 'poster' && slotIndex === 1}
+                  hasArmedPhoto={hasArmedPhoto}
+                  quickPick={
+                    photo
+                      ? undefined
+                      : {
+                          open: quickPick.openKey === key,
+                          photos: quickPick.photos,
+                          onOpen: () => quickPick.onOpen(key),
+                          onClose: quickPick.onClose,
+                          onPick: (photoId) => quickPick.onPick(slotIndex, photoId),
+                          onOpenLibrary: quickPick.onOpenLibrary,
+                        }
+                  }
                 />
               )
             })}

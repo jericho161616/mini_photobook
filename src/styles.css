@@ -943,6 +943,97 @@ input:focus-visible,
   pointer-events: none;
 }
 
+/* ---- Quick picker: pops open on an empty slot instead of requiring a drag ---- */
+.quick-picker {
+  position: absolute;
+  z-index: 10;
+  width: 168px;
+  background: var(--page-stock);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  padding: 8px;
+}
+
+.quick-picker-title {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  margin: 0 0 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.quick-picker-title button {
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.quick-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+
+.quick-picker-thumb {
+  position: relative;
+  aspect-ratio: 1;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  padding: 0;
+  background: var(--linen-deep);
+}
+
+.quick-picker-thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.quick-picker-thumb:hover {
+  outline: 2px solid var(--brass-soft);
+  outline-offset: -2px;
+}
+
+.quick-picker-empty {
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  text-align: center;
+  padding: 6px 0;
+  margin: 0;
+}
+
+.quick-picker-more {
+  margin-top: 7px;
+  width: 100%;
+  background: none;
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  padding: 5px;
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.quick-picker-more:hover {
+  border-color: var(--navy-soft);
+  color: var(--navy-soft);
+}
+
 .canvas-note {
   font-size: 11.5px;
   color: var(--ink-soft);
@@ -1187,6 +1278,23 @@ input:focus-visible,
   min-width: 62px;
   padding: 7px 6px;
   font-size: 11.5px;
+}
+
+.del-hint {
+  margin: 6px 0 0;
+  font-size: 10.5px;
+  color: var(--ink-soft);
+}
+
+kbd {
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  background: var(--page-stock);
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--ink-soft);
 }
 
 .page-text-input {

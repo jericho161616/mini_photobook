@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { a4FamilyOptions, foldOrientationForSize, getSize, sizeRatio } from '../data/sizes'
-import { resolvePageSize } from '../lib/autoLayout'
+import { resolvePageSize, usedPhotoIds } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
 import type { Page, Photo } from '../types'
 import { PageView } from './PageView'
+
+/** How many unplaced photos the quick picker offers before pointing at the full library. */
+const QUICK_PICK_COUNT = 6
 
 /** Frame around the spread: padding, the gutter, and breathing room. */
 const SPREAD_CHROME_X = 56
@@ -20,7 +23,13 @@ export function spreadFor(activeIndex: number): [number, number | null] {
   return [left, left + 1]
 }
 
-export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
+interface SpreadCanvasProps {
+  photos: Map<string, Photo>
+  onOpenLibrary: () => void
+}
+
+export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
+  const allPhotos = useStore((s) => s.photos)
   const pages = useStore((s) => s.pages)
   const sizeId = useStore((s) => s.sizeId)
   const activePageIndex = useStore((s) => s.activePageIndex)
@@ -31,6 +40,7 @@ export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
   const armedPhotoId = useStore((s) => s.armedPhotoId)
   const armPhoto = useStore((s) => s.armPhoto)
   const placeArmedPhoto = useStore((s) => s.placeArmedPhoto)
+  const clearSlot = useStore((s) => s.clearSlot)
   const updatePlacement = useStore((s) => s.updatePlacement)
   const togglePageLock = useStore((s) => s.togglePageLock)
   const setPageSize = useStore((s) => s.setPageSize)
@@ -41,6 +51,17 @@ export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
   const removeDecoration = useStore((s) => s.removeDecoration)
 
   const size = getSize(sizeId)
+
+  // Which empty slot's quick picker is open, if any — identified by a string
+  // key rather than a SlotRef so it's trivial to compare across renders.
+  const [quickPickKey, setQuickPickKey] = useState<string | null>(null)
+  const unplacedPhotos = useMemo(() => {
+    const used = usedPhotoIds(pages)
+    return allPhotos
+      .filter((p) => !used.has(p.id))
+      .slice(-QUICK_PICK_COUNT)
+      .reverse()
+  }, [allPhotos, pages])
 
   // The spread should use whatever room the window gives it, so a tall book
   // isn't shown at postage-stamp size just because a wide one fits differently.
@@ -66,6 +87,41 @@ export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [armedPhotoId, armPhoto])
+
+  useEffect(() => {
+    if (!quickPickKey) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setQuickPickKey(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [quickPickKey])
+
+  // Picking up a photo to place by hand takes priority over the picker —
+  // don't leave both open at once.
+  useEffect(() => {
+    if (armedPhotoId) setQuickPickKey(null)
+  }, [armedPhotoId])
+
+  useEffect(() => {
+    if (!selected) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== 'Delete' && e.key !== 'Backspace') return
+      const target = e.target as HTMLElement | null
+      if (target && (['INPUT', 'TEXTAREA'].includes(target.tagName) || target.isContentEditable)) return
+      const ref = selected as NonNullable<typeof selected>
+      const page = pages[ref.pageIndex]
+      const placement =
+        ref.halfIndex !== undefined && page?.halves
+          ? page.halves[ref.halfIndex].placements[ref.slotIndex]
+          : page?.placements[ref.slotIndex]
+      if (!placement) return
+      e.preventDefault()
+      clearSlot(ref)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selected, pages, clearSlot])
 
   const dimsFor = useMemo(() => {
     const availableW = Math.max(160, (area.width - SPREAD_CHROME_X) / 2)
@@ -126,6 +182,22 @@ export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
         onToggleLock={() => togglePageLock(index)}
         sizePicker={sizePicker}
         foldOrientation={foldOrientation}
+        hasArmedPhoto={Boolean(armedPhotoId)}
+        quickPick={{
+          openKey: quickPickKey,
+          keyFor: (slotIndex, halfIndex) => `${index}:${halfIndex ?? 'p'}:${slotIndex}`,
+          photos: unplacedPhotos,
+          onOpen: (key) => setQuickPickKey(key),
+          onClose: () => setQuickPickKey(null),
+          onPick: (slotIndex, photoId, halfIndex) => {
+            assignPhoto({ pageIndex: index, slotIndex, halfIndex }, photoId)
+            setQuickPickKey(null)
+          },
+          onOpenLibrary: () => {
+            setQuickPickKey(null)
+            onOpenLibrary()
+          },
+        }}
         decorations={{
           selected: selectedDecoration,
           onSelect: selectDecoration,
@@ -150,8 +222,9 @@ export function SpreadCanvas({ photos }: { photos: Map<string, Photo> }) {
         </p>
       ) : (
         <p className="canvas-note">
-          Drag photos from the tray into a slot, or click a photo then click a slot to place it.
-          Click a slot to adjust it, then drag the photo inside to reframe.
+          Drag a photo onto an empty slot, click one for a quick picker, or click a photo in the
+          tray first and then the slot. Click a filled slot to adjust it, or press Delete to clear
+          it.
         </p>
       )}
     </main>

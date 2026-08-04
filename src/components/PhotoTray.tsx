@@ -2,9 +2,12 @@ import { useMemo, useRef, useState } from 'react'
 import { usedPhotoIds } from '../lib/autoLayout'
 import { ACCEPTED_TYPES, photoThumbUrl } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
-import { PhotoLibrary } from './PhotoLibrary'
 
-export function PhotoTray() {
+interface PhotoTrayProps {
+  onOpenLibrary: () => void
+}
+
+export function PhotoTray({ onOpenLibrary }: PhotoTrayProps) {
   const photos = useStore((s) => s.photos)
   const pages = useStore((s) => s.pages)
   const addFiles = useStore((s) => s.addFiles)
@@ -15,7 +18,6 @@ export function PhotoTray() {
 
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
-  const [libraryOpen, setLibraryOpen] = useState(false)
 
   const used = usedPhotoIds(pages)
   // A photo already placed on a page won't be dragged onto a second one, so
@@ -81,7 +83,7 @@ export function PhotoTray() {
       )}
 
       {photos.length > 0 && (
-        <button className="btn expand-btn" onClick={() => setLibraryOpen(true)}>
+        <button className="btn expand-btn" onClick={onOpenLibrary}>
           ⤢ View & manage all photos
         </button>
       )}
@@ -115,8 +117,6 @@ export function PhotoTray() {
           e.target.value = ''
         }}
       />
-
-      {libraryOpen && <PhotoLibrary onClose={() => setLibraryOpen(false)} />}
     </section>
   )
 }

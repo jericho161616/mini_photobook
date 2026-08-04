@@ -1,6 +1,16 @@
-import { useRef, useState } from 'react'
-import { coverGeometry, FRAME_INSET_RATIO, photoUrl, POSTER_BORDER_RATIO } from '../lib/imageUtils'
+import { useEffect, useRef, useState } from 'react'
+import { coverGeometry, FRAME_INSET_RATIO, photoThumbUrl, photoUrl, POSTER_BORDER_RATIO } from '../lib/imageUtils'
 import type { Photo, Placement } from '../types'
+
+/** Wires an empty slot's little "pick from here" popover — see SpreadCanvas. */
+export interface QuickPick {
+  open: boolean
+  photos: Photo[]
+  onOpen: () => void
+  onClose: () => void
+  onPick: (photoId: string) => void
+  onOpenLibrary: () => void
+}
 
 interface SlotViewProps {
   rect: { x: number; y: number; w: number; h: number }
@@ -14,6 +24,10 @@ interface SlotViewProps {
   framed?: boolean
   /** Taped-on-top styling for the Poster Overlay's second slot. */
   poster?: boolean
+  /** True while a photo is picked up for click-to-place — takes priority over the quick picker. */
+  hasArmedPhoto?: boolean
+  /** Present only for empty slots — omitted once a photo occupies the slot. */
+  quickPick?: QuickPick
 }
 
 const FILTER_CSS: Record<string, string> = {
@@ -31,10 +45,22 @@ export function SlotView({
   onPan,
   framed,
   poster,
+  hasArmedPhoto,
+  quickPick,
 }: SlotViewProps) {
   const [dragOver, setDragOver] = useState(false)
   const [panning, setPanning] = useState(false)
   const panStart = useRef<{ x: number; y: number; offsetX: number; offsetY: number } | null>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!quickPick?.open) return
+    function onDocMouseDown(e: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) quickPick?.onClose()
+    }
+    document.addEventListener('mousedown', onDocMouseDown)
+    return () => document.removeEventListener('mousedown', onDocMouseDown)
+  }, [quickPick?.open, quickPick])
 
   // The photo itself may sit inside a decorative inset (a white mat for
   // Instant Grid, a border for the taped Poster Overlay photo) — computed in
@@ -97,43 +123,94 @@ export function SlotView({
     .filter(Boolean)
     .join(' ')
 
+  function handleClick() {
+    // A filled slot, or one being handed an armed photo, behaves exactly as
+    // before — onSelect already knows to place the armed photo instead of
+    // just selecting when one is picked up (see SpreadCanvas).
+    if (photo || hasArmedPhoto || !quickPick) {
+      onSelect()
+      return
+    }
+    if (quickPick.open) quickPick.onClose()
+    else quickPick.onOpen()
+  }
+
   return (
-    <div
-      className={classes}
-      style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
-      onClick={onSelect}
-      onDragOver={(e) => {
-        e.preventDefault()
-        setDragOver(true)
-      }}
-      onDragLeave={() => setDragOver(false)}
-      onDrop={(e) => {
-        e.preventDefault()
-        setDragOver(false)
-        const photoId = e.dataTransfer.getData('text/photo-id')
-        if (photoId) onDropPhoto(photoId)
-      }}
-    >
-      {poster && <span className="poster-tape" aria-hidden="true" />}
-      {photo && geo ? (
-        <img
-          src={photoUrl(photo)}
-          alt={photo.name}
-          draggable={false}
-          style={{
-            left: inset + geo.x,
-            top: inset + geo.y,
-            width: geo.drawWidth,
-            height: geo.drawHeight,
-            filter: placement?.filter ? FILTER_CSS[placement.filter] : undefined,
-          }}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={endPan}
-          onPointerCancel={endPan}
-        />
-      ) : (
-        <span className="slot-hint">Drop a photo</span>
+    // display: contents keeps this wrapper out of layout entirely — it exists
+    // only so the popover (which must sit outside .slot's own overflow:hidden
+    // to be visible) can still be found by the click-outside-closes check.
+    <div ref={rootRef} style={{ display: 'contents' }}>
+      <div
+        className={classes}
+        style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
+        onClick={handleClick}
+        onDragOver={(e) => {
+          e.preventDefault()
+          setDragOver(true)
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault()
+          setDragOver(false)
+          const photoId = e.dataTransfer.getData('text/photo-id')
+          if (photoId) onDropPhoto(photoId)
+        }}
+      >
+        {poster && <span className="poster-tape" aria-hidden="true" />}
+        {photo && geo ? (
+          <img
+            src={photoUrl(photo)}
+            alt={photo.name}
+            draggable={false}
+            style={{
+              left: inset + geo.x,
+              top: inset + geo.y,
+              width: geo.drawWidth,
+              height: geo.drawHeight,
+              filter: placement?.filter ? FILTER_CSS[placement.filter] : undefined,
+            }}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={endPan}
+            onPointerCancel={endPan}
+          />
+        ) : (
+          <span className="slot-hint">Drop a photo</span>
+        )}
+      </div>
+
+      {quickPick?.open && (
+        <div
+          className="quick-picker open"
+          style={{ left: rect.x, top: rect.y + rect.h + 6 }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <p className="quick-picker-title">
+            Unplaced photos
+            <button onClick={() => quickPick.onClose()} aria-label="Close">
+              ×
+            </button>
+          </p>
+          {quickPick.photos.length === 0 ? (
+            <p className="quick-picker-empty">All photos are placed.</p>
+          ) : (
+            <div className="quick-picker-grid">
+              {quickPick.photos.map((p) => (
+                <button
+                  key={p.id}
+                  className="quick-picker-thumb"
+                  onClick={() => quickPick.onPick(p.id)}
+                  title={p.name}
+                >
+                  <img src={photoThumbUrl(p)} alt={p.name} draggable={false} loading="lazy" decoding="async" />
+                </button>
+              ))}
+            </div>
+          )}
+          <button className="quick-picker-more" onClick={() => quickPick.onOpenLibrary()}>
+            Open full library →
+          </button>
+        </div>
       )}
     </div>
   )

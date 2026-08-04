@@ -175,6 +175,7 @@ export function PageView({
                     onPan={(x, y) => onPan(slotIndex, x, y, halfIndex as 0 | 1)}
                     framed={halfTemplate.id === 'instantGrid'}
                     poster={halfTemplate.decoration === 'poster' && slotIndex === 1}
+                    circle={halfTemplate.decoration === 'circle' && slotIndex === 1}
                     hasArmedPhoto={hasArmedPhoto}
                     quickPick={
                       photo
@@ -278,6 +279,7 @@ export function PageView({
                   onPan={(x, y) => onPan(slotIndex, x, y)}
                   framed={template.id === 'instantGrid'}
                   poster={template.decoration === 'poster' && slotIndex === 1}
+                  circle={template.decoration === 'circle' && slotIndex === 1}
                   hasArmedPhoto={hasArmedPhoto}
                   quickPick={
                     photo

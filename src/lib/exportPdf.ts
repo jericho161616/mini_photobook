@@ -2,6 +2,7 @@ import { DEFAULT_TEXT_STYLE, fontSizeScale, fontStack } from '../data/fonts'
 import { getTemplate } from '../data/templates'
 import { decorationHost, pagePlacements, resolvePageSize } from './autoLayout'
 import {
+  CIRCLE_BORDER_RATIO,
   coverGeometry,
   FRAME_INSET_RATIO,
   POSTER_BORDER_RATIO,
@@ -93,14 +94,14 @@ async function renderPage(
   }
 
   /**
-   * A single photo slot, aware of the two decorative slot styles: Instant
-   * Grid's white card mount (an inset mat around the photo) and Poster
-   * Overlay's taped-on-top second photo (rotated, bordered, shadowed).
+   * A single photo slot, aware of the decorative slot styles: Instant Grid's
+   * white card mount, Poster Overlay's taped-on-top second photo (rotated,
+   * bordered, shadowed), and Circle Inset's centered circular portrait.
    */
   const drawSlot = (
     rect: { x: number; y: number; w: number; h: number },
     placement: Placement | null,
-    opts: { framed?: boolean; poster?: boolean } = {},
+    opts: { framed?: boolean; poster?: boolean; circle?: boolean } = {},
   ) => {
     if (!placement) return
     if (opts.poster) {
@@ -118,6 +119,29 @@ async function renderPage(
       ctx.shadowColor = 'transparent'
       const border = rect.w * POSTER_BORDER_RATIO
       drawPhoto({ x: border, y: border, w: rect.w - border * 2, h: rect.h - border * 2 }, placement)
+      ctx.restore()
+      return
+    }
+    if (opts.circle) {
+      // Always a true circle, regardless of the book's own aspect ratio —
+      // same Math.min(w, h) rule SlotView uses on screen.
+      const size = Math.min(rect.w, rect.h)
+      const cx = rect.x + rect.w / 2
+      const cy = rect.y + rect.h / 2
+      ctx.save()
+      ctx.shadowColor = 'rgba(0,0,0,0.3)'
+      ctx.shadowBlur = size * 0.06
+      ctx.fillStyle = '#ffffff'
+      ctx.beginPath()
+      ctx.arc(cx, cy, size / 2, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.shadowColor = 'transparent'
+      ctx.clip()
+      const border = size * CIRCLE_BORDER_RATIO
+      drawPhoto(
+        { x: cx - size / 2 + border, y: cy - size / 2 + border, w: size - border * 2, h: size - border * 2 },
+        placement,
+      )
       ctx.restore()
       return
     }
@@ -233,7 +257,11 @@ async function renderPage(
         drawSlot(
           { x: outer.x + inner.x, y: outer.y + inner.y, w: inner.w, h: inner.h },
           half.placements[slotIndex],
-          { framed: halfTemplate.id === 'instantGrid', poster: halfTemplate.decoration === 'poster' && slotIndex === 1 },
+          {
+            framed: halfTemplate.id === 'instantGrid',
+            poster: halfTemplate.decoration === 'poster' && slotIndex === 1,
+            circle: halfTemplate.decoration === 'circle' && slotIndex === 1,
+          },
         )
       })
       if (halfTemplate.textSlot && half.text.trim()) {
@@ -254,6 +282,7 @@ async function renderPage(
       drawSlot(rect, page.placements[slotIndex], {
         framed: template.id === 'instantGrid',
         poster: template.decoration === 'poster' && slotIndex === 1,
+        circle: template.decoration === 'circle' && slotIndex === 1,
       })
     })
   }

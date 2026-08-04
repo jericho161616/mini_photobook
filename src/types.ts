@@ -91,8 +91,11 @@ export interface Template {
   halfSplit?: boolean
   /** Centers the note instead of the usual left-aligned strip under a photo. */
   captionStyle?: 'centered'
-  /** A second photo taped at an angle over the first — Poster Overlay only. */
-  decoration?: 'poster'
+  /**
+   * Second-slot styling for a two-photo overlay template: 'poster' tapes it
+   * on top at an angle; 'circle' insets it as a centered circular portrait.
+   */
+  decoration?: 'poster' | 'circle'
 }
 
 export interface BookSize {

@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { coverGeometry, FRAME_INSET_RATIO, photoThumbUrl, photoUrl, POSTER_BORDER_RATIO } from '../lib/imageUtils'
+import {
+  CIRCLE_BORDER_RATIO,
+  coverGeometry,
+  FRAME_INSET_RATIO,
+  photoThumbUrl,
+  photoUrl,
+  POSTER_BORDER_RATIO,
+} from '../lib/imageUtils'
 import type { Photo, Placement } from '../types'
 
 /** Wires an empty slot's little "pick from here" popover — see SpreadCanvas. */
@@ -24,6 +31,8 @@ interface SlotViewProps {
   framed?: boolean
   /** Taped-on-top styling for the Poster Overlay's second slot. */
   poster?: boolean
+  /** Centered circular portrait with a white ring — Circle Inset's second slot. */
+  circle?: boolean
   /** True while a photo is picked up for click-to-place — takes priority over the quick picker. */
   hasArmedPhoto?: boolean
   /** Present only for empty slots — omitted once a photo occupies the slot. */
@@ -45,6 +54,7 @@ export function SlotView({
   onPan,
   framed,
   poster,
+  circle,
   hasArmedPhoto,
   quickPick,
 }: SlotViewProps) {
@@ -62,16 +72,29 @@ export function SlotView({
     return () => document.removeEventListener('mousedown', onDocMouseDown)
   }, [quickPick?.open, quickPick])
 
+  // Circle Inset's second slot is always a true circle regardless of the
+  // book's own aspect ratio — its diameter is the smaller of the passed
+  // rect's own width and height, centered within that rect.
+  const box = circle
+    ? (() => {
+        const size = Math.min(rect.w, rect.h)
+        return { x: rect.x + (rect.w - size) / 2, y: rect.y + (rect.h - size) / 2, w: size, h: size }
+      })()
+    : rect
+
   // The photo itself may sit inside a decorative inset (a white mat for
-  // Instant Grid, a border for the taped Poster Overlay photo) — computed in
-  // JS rather than CSS padding, so it stays exact regardless of the
-  // containing block, and matches exportPdf's math pixel for pixel.
+  // Instant Grid, a border for the taped Poster Overlay photo, a ring for
+  // Circle Inset) — computed in JS rather than CSS padding, so it stays
+  // exact regardless of the containing block, and matches exportPdf's math
+  // pixel for pixel.
   const inset = framed
-    ? Math.min(rect.w, rect.h) * FRAME_INSET_RATIO
+    ? Math.min(box.w, box.h) * FRAME_INSET_RATIO
     : poster
-      ? rect.w * POSTER_BORDER_RATIO
-      : 0
-  const photoBox = { w: rect.w - inset * 2, h: rect.h - inset * 2 }
+      ? box.w * POSTER_BORDER_RATIO
+      : circle
+        ? box.w * CIRCLE_BORDER_RATIO
+        : 0
+  const photoBox = { w: box.w - inset * 2, h: box.h - inset * 2 }
 
   const geo =
     photo && placement ? coverGeometry(photo.width / photo.height, photoBox.w, photoBox.h, placement) : null
@@ -119,6 +142,7 @@ export function SlotView({
     panning && 'panning',
     framed && 'slot-framed',
     poster && 'slot-poster',
+    circle && 'slot-circle',
   ]
     .filter(Boolean)
     .join(' ')
@@ -142,7 +166,7 @@ export function SlotView({
     <div ref={rootRef} style={{ display: 'contents' }}>
       <div
         className={classes}
-        style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
+        style={{ left: box.x, top: box.y, width: box.w, height: box.h }}
         onClick={handleClick}
         onDragOver={(e) => {
           e.preventDefault()
@@ -182,7 +206,7 @@ export function SlotView({
       {quickPick?.open && (
         <div
           className="quick-picker open"
-          style={{ left: rect.x, top: rect.y + rect.h + 6 }}
+          style={{ left: box.x, top: box.y + box.h + 6 }}
           onMouseDown={(e) => e.stopPropagation()}
         >
           <p className="quick-picker-title">

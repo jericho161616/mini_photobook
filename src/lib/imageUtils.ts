@@ -16,6 +16,8 @@ export const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/a
 export const FRAME_INSET_RATIO = 0.1
 export const POSTER_BORDER_RATIO = 0.05
 export const POSTER_ROTATION_DEG = -6
+/** Thickness of the white ring around Circle Inset's second photo, relative to its own diameter. */
+export const CIRCLE_BORDER_RATIO = 0.045
 
 /** Read a file's intrinsic pixel dimensions without decoding it into the DOM. */
 async function measure(blob: Blob): Promise<{ width: number; height: number }> {

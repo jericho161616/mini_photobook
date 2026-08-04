@@ -369,6 +369,22 @@ export const TEMPLATES: Template[] = [
     ],
   },
   {
+    id: 'circleInset',
+    label: '2 · Circle Inset',
+    family: 'Portfolio',
+    fits: ['square', 'tall', 'wide'],
+    bleed: true,
+    // The second photo is drawn as a centered circle with a white ring by
+    // PageView/exportPdf — its slot rect below just bounds that circle, the
+    // actual diameter is the smaller of the rect's own width and height so
+    // it's a true circle regardless of the book's own aspect ratio.
+    decoration: 'circle',
+    slots: [
+      { x: 0, y: 0, w: 100, h: 100 },
+      { x: 28, y: 28, w: 44, h: 44 },
+    ],
+  },
+  {
     id: 'fullCaption',
     label: '1 · Full + Caption',
     family: 'Minimal',

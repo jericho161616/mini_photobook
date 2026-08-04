@@ -1,4 +1,4 @@
-import type { FontId, TextStyle } from '../types'
+import type { FontId, FontSize, TextStyle } from '../types'
 
 /**
  * Every option is either already on virtually every Windows/Mac install (no
@@ -15,6 +15,18 @@ export const FONT_OPTIONS: { id: FontId; label: string; stack: string }[] = [
 
 export function fontStack(id: FontId | undefined): string {
   return FONT_OPTIONS.find((f) => f.id === id)?.stack ?? FONT_OPTIONS[0].stack
+}
+
+/** 'md' (1x) is the size every note and text box already rendered at before this option existed. */
+export const FONT_SIZE_OPTIONS: { id: FontSize; label: string; scale: number }[] = [
+  { id: 'sm', label: 'S', scale: 0.75 },
+  { id: 'md', label: 'M', scale: 1 },
+  { id: 'lg', label: 'L', scale: 1.35 },
+  { id: 'xl', label: 'XL', scale: 1.75 },
+]
+
+export function fontSizeScale(size: FontSize | undefined): number {
+  return FONT_SIZE_OPTIONS.find((f) => f.id === size)?.scale ?? 1
 }
 
 export const DEFAULT_TEXT_STYLE: TextStyle = { font: 'serif', bold: false }

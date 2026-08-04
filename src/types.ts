@@ -10,9 +10,14 @@ export type TemplateFamily = 'Minimal' | 'Portfolio'
  */
 export type FontId = 'serif' | 'sans' | 'mono' | 'hand1' | 'hand2'
 
+/** A relative size, not a pixel value — the actual font size is always computed from the space available. */
+export type FontSize = 'sm' | 'md' | 'lg' | 'xl'
+
 export interface TextStyle {
   font: FontId
   bold: boolean
+  /** Undefined means 'md', the original default size. */
+  size?: FontSize
 }
 
 /** Applied to a photo in its slot — the print itself is untouched, only the placement. */
@@ -43,6 +48,8 @@ export interface TextBox {
   font: FontId
   bold: boolean
   align: 'left' | 'center' | 'right'
+  /** Undefined means 'md', the original default size. */
+  size?: FontSize
 }
 
 /** A slot rect in page-relative percentages, measured inside the page margin. */

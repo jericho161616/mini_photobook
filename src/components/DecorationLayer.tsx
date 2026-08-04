@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { fontStack } from '../data/fonts'
+import { fontSizeScale, fontStack } from '../data/fonts'
 import { StickerGlyph } from './StickerGlyph'
 import type { Sticker, TextBox } from '../types'
 
@@ -164,7 +164,7 @@ export function DecorationLayer({
               fontWeight: box.bold ? 700 : 400,
               textAlign: box.align,
               justifyContent: box.align === 'left' ? 'flex-start' : box.align === 'right' ? 'flex-end' : 'center',
-              fontSize: Math.max(10, containerSize.h * (box.h / 100) * 0.28),
+              fontSize: Math.max(10, containerSize.h * (box.h / 100) * 0.28) * fontSizeScale(box.size),
             }}
             onMouseDown={(e) => e.stopPropagation()}
             onBlur={(e) => onEditText(box.id, e.currentTarget.textContent ?? '')}

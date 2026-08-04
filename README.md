@@ -106,12 +106,14 @@ slot can also be set to black & white or sepia from the Selected Photo panel —
 useful on its own, or paired with Poster Overlay so the background photo goes
 muted while the one taped on top stays in color.
 
-**Fonts and bold, on every note.** The Page Note — and a Split at Fold half's
-own note — can be set to any of five fonts (a serif, the plain system font, a
-typewriter face, and two handwritten-style scripts) and toggled bold, from a
-small picker right under the text box. The three plain fonts are already on
-every computer; the two handwritten ones fall back to a similar system font
-if the exact one isn't installed — either way, nothing is ever downloaded.
+**Fonts, bold, and size, on every note.** The Page Note — and a Split at Fold
+half's own note — can be set to any of five fonts (a serif, the plain system
+font, a typewriter face, and two handwritten-style scripts), toggled bold,
+and sized from S to XL, all from a small picker right under the text box.
+The three plain fonts are already on every computer; the two handwritten
+ones fall back to a similar system font if the exact one isn't installed —
+either way, nothing is ever downloaded. Free-placed text boxes (below) get
+the same size control.
 
 **Stickers and free-placed text.** A Decorate panel adds tape and simple
 line-drawn heart/star/arrow stickers, plus text boxes you can drop anywhere
@@ -148,9 +150,12 @@ renders in the editor and in the exported PDF.
 **A photo tray that only shows what you still need.** Once a photo is placed
 on a page it drops out of the tray — there's no reason to keep dragging past
 photos you've already used. "View & manage all photos" opens a larger grid
-of the full library, where you can check off several photos and remove them
-at once, filter it down to just Placed or just Unplaced (or All), and see
-which ones aren't placed anywhere yet.
+of the full library, defaulting to the Unplaced filter (since that's almost
+always what you're there to find), with Placed and All alongside it. Check
+off several photos to remove them at once — or to place them all in one go
+with "Fill Next", which drops them into the next empty slots in order,
+starting from the page you're on and continuing into later pages as needed,
+skipping locked pages and slots that already have a photo.
 
 **Book size is a one-time decision.** The sidebar shows your current size and
 a "Change" button rather than the full picker sitting there permanently —

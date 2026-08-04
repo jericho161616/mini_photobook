@@ -1,4 +1,4 @@
-import { DEFAULT_TEXT_STYLE, fontStack } from '../data/fonts'
+import { DEFAULT_TEXT_STYLE, fontSizeScale, fontStack } from '../data/fonts'
 import { getTemplate } from '../data/templates'
 import { decorationHost } from '../lib/autoLayout'
 import { PAGE_MARGIN_RATIO } from '../lib/exportPdf'
@@ -143,7 +143,7 @@ export function PageView({
               top: textRect.y,
               width: textRect.w,
               height: textRect.h,
-              fontSize: Math.max(6, height * 0.026),
+              fontSize: Math.max(6, height * 0.026) * fontSizeScale((page.textStyle ?? DEFAULT_TEXT_STYLE).size),
               fontFamily: fontStack((page.textStyle ?? DEFAULT_TEXT_STYLE).font),
               fontWeight: (page.textStyle ?? DEFAULT_TEXT_STYLE).bold ? 700 : 400,
             }}
@@ -205,7 +205,7 @@ export function PageView({
                       top: outer.y + inner.y,
                       width: inner.w,
                       height: inner.h,
-                      fontSize: Math.max(6, outer.h * 0.026),
+                      fontSize: Math.max(6, outer.h * 0.026) * fontSizeScale(halfStyle.size),
                       fontFamily: fontStack(halfStyle.font),
                       fontWeight: halfStyle.bold ? 700 : 400,
                     }}

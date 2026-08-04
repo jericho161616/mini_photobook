@@ -1,4 +1,4 @@
-import { DEFAULT_TEXT_STYLE, fontStack } from '../data/fonts'
+import { DEFAULT_TEXT_STYLE, fontSizeScale, fontStack } from '../data/fonts'
 import { getTemplate } from '../data/templates'
 import { decorationHost, pagePlacements, resolvePageSize } from './autoLayout'
 import {
@@ -139,7 +139,7 @@ async function renderPage(
     style: TextStyle,
     centered: boolean,
   ) => {
-    const fontSize = Math.round(scaleH * 0.026)
+    const fontSize = Math.round(scaleH * 0.026 * fontSizeScale(style.size))
     const weight = style.bold ? 'bold' : 'normal'
     ctx.fillStyle = '#5b564c'
     ctx.font = `${weight} ${fontSize}px ${fontStack(style.font)}`
@@ -183,7 +183,7 @@ async function renderPage(
   /** A free-placed text box: wrapped, horizontally aligned, vertically centered in its box. */
   const drawFreeText = (rect: { x: number; y: number; w: number; h: number }, box: TextBox) => {
     if (!box.text.trim()) return
-    const fontSize = Math.max(10, rect.h * 0.28)
+    const fontSize = Math.max(10, rect.h * 0.28) * fontSizeScale(box.size)
     ctx.fillStyle = '#201f1c'
     ctx.font = `${box.bold ? 'bold' : 'normal'} ${fontSize}px ${fontStack(box.font)}`
     ctx.textAlign = box.align

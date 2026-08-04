@@ -17,9 +17,12 @@ export function PhotoLibrary({ onClose }: PhotoLibraryProps) {
   const pages = useStore((s) => s.pages)
   const removePhotos = useStore((s) => s.removePhotos)
   const armPhoto = useStore((s) => s.armPhoto)
+  const fillNextEmptySlots = useStore((s) => s.fillNextEmptySlots)
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [filter, setFilter] = useState<'all' | 'placed' | 'unplaced'>('all')
+  // Defaults to Unplaced — the library is almost always opened to find
+  // something not on a page yet, whether via the tray or the quick picker.
+  const [filter, setFilter] = useState<'all' | 'placed' | 'unplaced'>('unplaced')
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -51,6 +54,12 @@ export function PhotoLibrary({ onClose }: PhotoLibraryProps) {
     await removePhotos(ids)
   }
 
+  function fillSelected() {
+    fillNextEmptySlots([...selected])
+    setSelected(new Set())
+    onClose()
+  }
+
   return (
     <div className="overlay" role="dialog" aria-modal="true" aria-label="Photo library" onClick={onClose}>
       <div className="library-card" onClick={(e) => e.stopPropagation()}>
@@ -64,6 +73,9 @@ export function PhotoLibrary({ onClose }: PhotoLibraryProps) {
                 <span className="hint">{selected.size} selected</span>
                 <button className="btn" onClick={() => setSelected(new Set())}>
                   Clear
+                </button>
+                <button className="btn" onClick={fillSelected} title="Fill the next empty slots, starting from the current page">
+                  Fill Next {selected.size}
                 </button>
                 <button className="btn btn-danger" onClick={() => void removeSelected()}>
                   Remove {selected.size}

@@ -1,4 +1,4 @@
-import { DEFAULT_TEXT_STYLE, FONT_OPTIONS, fontStack } from '../data/fonts'
+import { DEFAULT_TEXT_STYLE, FONT_OPTIONS, FONT_SIZE_OPTIONS, fontSizeScale, fontStack } from '../data/fonts'
 import { foldOrientationForSize, getSize } from '../data/sizes'
 import { getTemplate } from '../data/templates'
 import { resolvePageSize } from '../lib/autoLayout'
@@ -87,10 +87,28 @@ export function PageTextPanel() {
           B
         </button>
       </div>
+      <div className="filter-chips-row size-picker-row">
+        {FONT_SIZE_OPTIONS.map((s) => (
+          <button
+            key={s.id}
+            className={`filter-chip-btn${(style.size ?? 'md') === s.id ? ' active' : ''}`}
+            onClick={() => setStyle({ ...style, size: s.id })}
+            disabled={page.locked}
+            aria-pressed={(style.size ?? 'md') === s.id}
+            title={`${s.label === 'S' ? 'Small' : s.label === 'M' ? 'Medium' : s.label === 'L' ? 'Large' : 'Extra large'} text`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
       {text.trim() && (
         <p
           className="text-style-preview"
-          style={{ fontFamily: fontStack(style.font), fontWeight: style.bold ? 700 : 400 }}
+          style={{
+            fontFamily: fontStack(style.font),
+            fontWeight: style.bold ? 700 : 400,
+            fontSize: 13 * fontSizeScale(style.size),
+          }}
         >
           {text}
         </p>

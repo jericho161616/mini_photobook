@@ -1321,6 +1321,10 @@ kbd {
   margin-top: 8px;
 }
 
+.size-picker-row {
+  margin-top: 6px;
+}
+
 .font-picker {
   flex: 1;
   font-size: 12px;

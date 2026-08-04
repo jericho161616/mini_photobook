@@ -87,6 +87,14 @@ interface StoreState {
   /** Sets one half's own layout on a Split at Fold page. */
   applyHalfTemplate: (pageIndex: number, halfIndex: 0 | 1, templateId: string) => void
   assignPhoto: (ref: SlotRef, photoId: string) => void
+  /**
+   * Drops several photos into the next empty slots in reading order, starting
+   * at the active page — for filling a run of upcoming layouts in one go
+   * instead of placing each one by hand. Locked pages and already-filled
+   * slots are skipped; leftover photos beyond the last empty slot just stay
+   * in the tray.
+   */
+  fillNextEmptySlots: (photoIds: string[]) => void
   clearSlot: (ref: SlotRef) => void
   /** Arms a photo for click-to-place; passing the already-armed id, or null, disarms it. */
   armPhoto: (photoId: string | null) => void
@@ -359,6 +367,28 @@ export const useStore = create<StoreState>((set, get) => {
           const placements = [...page.placements]
           placements[slotIndex] = placementFor(photoId)
           return { ...page, placements }
+        }),
+      )
+    },
+
+    fillNextEmptySlots(photoIds) {
+      if (photoIds.length === 0) return
+      const startIndex = get().activePageIndex
+      const queue = [...photoIds]
+      mutatePages((pages) =>
+        pages.map((page, i) => {
+          if (i < startIndex || page.locked || queue.length === 0) return page
+          if (page.halves) {
+            const halves = page.halves.map((half) => ({
+              ...half,
+              placements: half.placements.map((p) => (p || queue.length === 0 ? p : placementFor(queue.shift()!))),
+            })) as [HalfLayout, HalfLayout]
+            return { ...page, halves }
+          }
+          return {
+            ...page,
+            placements: page.placements.map((p) => (p || queue.length === 0 ? p : placementFor(queue.shift()!))),
+          }
         }),
       )
     },

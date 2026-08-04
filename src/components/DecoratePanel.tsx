@@ -1,4 +1,4 @@
-import { FONT_OPTIONS, fontStack } from '../data/fonts'
+import { FONT_OPTIONS, FONT_SIZE_OPTIONS, fontSizeScale, fontStack } from '../data/fonts'
 import { getTemplate } from '../data/templates'
 import { decorationHost } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
@@ -116,6 +116,19 @@ export function DecoratePanel() {
               B
             </button>
           </div>
+          <div className="filter-chips-row size-picker-row">
+            {FONT_SIZE_OPTIONS.map((s) => (
+              <button
+                key={s.id}
+                className={`filter-chip-btn${(selectedTextBox.size ?? 'md') === s.id ? ' active' : ''}`}
+                onClick={() => setStyle({ size: s.id })}
+                aria-pressed={(selectedTextBox.size ?? 'md') === s.id}
+                title={`${s.label === 'S' ? 'Small' : s.label === 'M' ? 'Medium' : s.label === 'L' ? 'Large' : 'Extra large'} text`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
           <div className="align-row">
             {ALIGNS.map((a) => (
               <button
@@ -130,7 +143,11 @@ export function DecoratePanel() {
           </div>
           <p
             className="text-style-preview"
-            style={{ fontFamily: fontStack(selectedTextBox.font), fontWeight: selectedTextBox.bold ? 700 : 400 }}
+            style={{
+              fontFamily: fontStack(selectedTextBox.font),
+              fontWeight: selectedTextBox.bold ? 700 : 400,
+              fontSize: 13 * fontSizeScale(selectedTextBox.size),
+            }}
           >
             {selectedTextBox.text}
           </p>

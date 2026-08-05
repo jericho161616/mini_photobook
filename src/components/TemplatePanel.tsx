@@ -11,6 +11,15 @@ import { resolvePageSize } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
 import type { Shape, Template, TemplateFamily } from '../types'
 
+/** A handful of tinted "cardstock" options — swatches, not a full color picker, to keep this simple. */
+const PAGE_TINTS: { id: string; color: string; label: string }[] = [
+  { id: 'warm', color: '#e8ded0', label: 'Warm' },
+  { id: 'sage', color: '#dfe3d8', label: 'Sage' },
+  { id: 'blush', color: '#e3d6d0', label: 'Blush' },
+  { id: 'dusty-blue', color: '#d8dfe3', label: 'Dusty blue' },
+  { id: 'deep-linen', color: '#cabb92', label: 'Deep linen' },
+]
+
 /** A grid of template swatches — reused for both the whole-page picker and each half's own. */
 function TemplateGrid({
   templates,
@@ -79,6 +88,8 @@ export function TemplatePanel() {
   const applyHalfTemplate = useStore((s) => s.applyHalfTemplate)
   const activeHalfIndex = useStore((s) => s.activeHalfIndex)
   const setActiveHalf = useStore((s) => s.setActiveHalf)
+  const setPageBackground = useStore((s) => s.setPageBackground)
+  const setPageMarginScale = useStore((s) => s.setPageMarginScale)
 
   const bookSize = getSize(sizeId)
   const currentPage = pages[activePageIndex]
@@ -145,6 +156,48 @@ export function TemplatePanel() {
               {shape.label}
             </button>
           ))}
+        </div>
+      )}
+
+      {currentPage && (
+        <div className="inspector-row">
+          <label>Background</label>
+          <div className="filter-chips-row">
+            <button
+              className={`filter-chip-btn${!currentPage.backgroundColor ? ' active' : ''}`}
+              onClick={() => setPageBackground(activePageIndex, undefined)}
+              aria-pressed={!currentPage.backgroundColor}
+            >
+              None
+            </button>
+            {PAGE_TINTS.map((tint) => (
+              <button
+                key={tint.id}
+                className={`filter-chip-btn${currentPage.backgroundColor === tint.color ? ' active' : ''}`}
+                onClick={() => setPageBackground(activePageIndex, tint.color)}
+                aria-pressed={currentPage.backgroundColor === tint.color}
+                title={tint.label}
+              >
+                <span className="tint-swatch" style={{ background: tint.color }} aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {currentPage && (
+        <div className="inspector-row">
+          <label htmlFor="margin-scale">Margin</label>
+          <input
+            id="margin-scale"
+            type="range"
+            min={0.3}
+            max={2}
+            step={0.05}
+            value={currentPage.marginScale ?? 1}
+            onChange={(e) => setPageMarginScale(activePageIndex, Number(e.target.value))}
+          />
+          <span className="value mono">{Math.round((currentPage.marginScale ?? 1) * 100)}%</span>
         </div>
       )}
 

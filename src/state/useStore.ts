@@ -125,6 +125,10 @@ interface StoreState {
   setPageTextStyle: (pageIndex: number, style: TextStyle) => void
   /** Sets one half's own note style on a Split at Fold page. */
   setHalfTextStyle: (pageIndex: number, halfIndex: 0 | 1, style: TextStyle) => void
+  /** A tinted "cardstock" background for one page — undefined restores the default paper color. */
+  setPageBackground: (pageIndex: number, color: string | undefined) => void
+  /** Multiplies the template's own margin for one page — 1 restores the default. */
+  setPageMarginScale: (pageIndex: number, scale: number) => void
   movePage: (from: number, to: number) => void
   /** customId is required (and only meaningful) when type is 'custom'. */
   addSticker: (pageIndex: number, halfIndex: 0 | 1 | undefined, type: StickerType, customId?: string) => void
@@ -528,6 +532,20 @@ export const useStore = create<StoreState>((set, get) => {
       if (get().pages[pageIndex]?.locked) return
       mutatePages((pages) =>
         pages.map((page, i) => (i === pageIndex ? { ...page, textStyle: style } : page)),
+      )
+    },
+
+    setPageBackground(pageIndex, color) {
+      if (get().pages[pageIndex]?.locked) return
+      mutatePages((pages) =>
+        pages.map((page, i) => (i === pageIndex ? { ...page, backgroundColor: color } : page)),
+      )
+    },
+
+    setPageMarginScale(pageIndex, scale) {
+      if (get().pages[pageIndex]?.locked) return
+      mutatePages((pages) =>
+        pages.map((page, i) => (i === pageIndex ? { ...page, marginScale: scale } : page)),
       )
     },
 

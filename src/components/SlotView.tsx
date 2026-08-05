@@ -33,6 +33,10 @@ interface SlotViewProps {
   poster?: boolean
   /** Centered circular portrait with a white ring — Circle Inset's second slot. */
   circle?: boolean
+  /** A thin outline around the photo — independent of, and combinable with, the template's own styling. */
+  hairline?: boolean
+  /** The template's own fixed tilt for this slot (Confetti Scatter) plus the photo's manual tilt, combined. */
+  rotationDeg?: number
   /** True while a photo is picked up for click-to-place — takes priority over the quick picker. */
   hasArmedPhoto?: boolean
   /** Present only for empty slots — omitted once a photo occupies the slot. */
@@ -55,6 +59,8 @@ export function SlotView({
   framed,
   poster,
   circle,
+  hairline,
+  rotationDeg,
   hasArmedPhoto,
   quickPick,
 }: SlotViewProps) {
@@ -143,6 +149,7 @@ export function SlotView({
     framed && 'slot-framed',
     poster && 'slot-poster',
     circle && 'slot-circle',
+    hairline && 'slot-hairline',
   ]
     .filter(Boolean)
     .join(' ')
@@ -166,7 +173,15 @@ export function SlotView({
     <div ref={rootRef} style={{ display: 'contents' }}>
       <div
         className={classes}
-        style={{ left: box.x, top: box.y, width: box.w, height: box.h }}
+        style={{
+          left: box.x,
+          top: box.y,
+          width: box.w,
+          height: box.h,
+          // Poster Overlay applies its own fixed rotation via CSS class instead —
+          // an inline transform here would win specificity and clobber it.
+          ...(!poster && rotationDeg ? { transform: `rotate(${rotationDeg}deg)` } : {}),
+        }}
         onClick={handleClick}
         onDragOver={(e) => {
           e.preventDefault()

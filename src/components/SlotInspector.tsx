@@ -8,6 +8,12 @@ const FILTERS: { id: PhotoFilter | 'none'; label: string }[] = [
   { id: 'sepia', label: 'Sepia' },
 ]
 
+const FRAMES: { id: 'none' | 'hairline' | 'polaroid'; label: string }[] = [
+  { id: 'none', label: 'None' },
+  { id: 'hairline', label: 'Hairline' },
+  { id: 'polaroid', label: 'Polaroid' },
+]
+
 export function SlotInspector() {
   const pages = useStore((s) => s.pages)
   const photos = useStore((s) => s.photos)
@@ -72,6 +78,36 @@ export function SlotInspector() {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="inspector-row">
+            <label>Frame</label>
+            <div className="filter-chips-row">
+              {FRAMES.map((f) => (
+                <button
+                  key={f.id}
+                  className={`filter-chip-btn${(placement.frame ?? 'none') === f.id ? ' active' : ''}`}
+                  onClick={() => updatePlacement(selected, { frame: f.id === 'none' ? undefined : f.id })}
+                  aria-pressed={(placement.frame ?? 'none') === f.id}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="inspector-row">
+            <label htmlFor="tilt">Tilt</label>
+            <input
+              id="tilt"
+              type="range"
+              min={-20}
+              max={20}
+              step={1}
+              value={placement.rotation ?? 0}
+              onChange={(e) => updatePlacement(selected, { rotation: Number(e.target.value) || undefined })}
+            />
+            <span className="value mono">{placement.rotation ?? 0}°</span>
           </div>
 
           <div className="slot-controls">

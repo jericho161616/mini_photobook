@@ -141,6 +141,30 @@ already placed on a page, so nothing is left behind pointing at artwork that
 no longer exists. Saved as a plain PNG on your own device — nothing is ever
 uploaded anywhere.
 
+**Per-photo frame and tilt, per-page tint and margin.** From the Selected
+Photo panel's "Photo" tab, any photo can get a thin Hairline border or a
+Polaroid-style white card mount, plus a manual tilt from -20° to 20° — on top
+of whatever fixed tilt the template itself already applies (Confetti Scatter,
+below). From the Layout panel, a whole page can take a tinted "cardstock"
+background (a handful of warm/cool swatches, or back to plain paper) and a
+Margin slider that loosens or tightens the template's own margin, from a
+tight 30% up to a loose 200%. All of it prints exactly as shown, pixel for
+pixel, in the exported PDF.
+
+**Four more layouts.** Contact Sheet (nine small photos in a tight 3×3 grid),
+Diary (three stacked photos beside a note on faint ruled-paper lines),
+Confetti Scatter (seven photos tossed at their own fixed angles, like loose
+prints on a table), and Before & After (two edge-to-edge photos split by a
+quiet divider line, labeled accordingly) round out the template library —
+Contact Sheet and Confetti Scatter need a Large-trim size or bigger to fit
+their photo count.
+
+**View a page full-screen.** A small ⤢ button in a page's bottom-right corner
+opens it at a much larger size in an overlay, so you can check crops and
+details up close without squinting at the two-page spread. It's the same
+live page underneath — drag, pan, and click-to-place all still work — click
+the × or press Esc to close it.
+
 **Two layout families, including full-bleed.** *Minimal* is one to a few photos
 with room around them — including an edge-to-edge Full Bleed option with no
 margin at all. *Portfolio* is editorial — rows, collages, covers, and a

@@ -78,12 +78,12 @@ async function renderPage(
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Could not create a drawing context for export')
 
-  ctx.fillStyle = background
+  ctx.fillStyle = page.backgroundColor ?? background
   ctx.fillRect(0, 0, pageW, pageH)
   ctx.imageSmoothingQuality = 'high'
 
   const template = getTemplate(page.templateId)
-  const marginRatio = template.bleed ? 0 : PAGE_MARGIN_RATIO
+  const marginRatio = template.bleed ? 0 : PAGE_MARGIN_RATIO * (page.marginScale ?? 1)
 
   const drawPhoto = (rect: { x: number; y: number; w: number; h: number }, placement: Placement) => {
     const bitmap = photoMap.get(placement.photoId)
@@ -107,9 +107,22 @@ async function renderPage(
   const drawSlot = (
     rect: { x: number; y: number; w: number; h: number },
     placement: Placement | null,
-    opts: { framed?: boolean; poster?: boolean; circle?: boolean } = {},
+    opts: { framed?: boolean; poster?: boolean; circle?: boolean; hairline?: boolean; rotationDeg?: number } = {},
   ) => {
     if (!placement) return
+    // Manual/template tilt — skipped for Poster Overlay, which applies its
+    // own fixed rotation below, same guard SlotView uses on screen.
+    if (!opts.poster && opts.rotationDeg) {
+      const cx = rect.x + rect.w / 2
+      const cy = rect.y + rect.h / 2
+      ctx.save()
+      ctx.translate(cx, cy)
+      ctx.rotate((opts.rotationDeg * Math.PI) / 180)
+      ctx.translate(-cx, -cy)
+      drawSlot(rect, placement, { ...opts, rotationDeg: undefined })
+      ctx.restore()
+      return
+    }
     if (opts.poster) {
       const cx = rect.x + rect.w / 2
       const cy = rect.y + rect.h / 2
@@ -159,6 +172,13 @@ async function renderPage(
       return
     }
     drawPhoto(rect, placement)
+    if (opts.hairline) {
+      ctx.save()
+      ctx.strokeStyle = '#6b5f4a'
+      ctx.lineWidth = 1.5
+      ctx.strokeRect(rect.x + 0.75, rect.y + 0.75, rect.w - 1.5, rect.h - 1.5)
+      ctx.restore()
+    }
   }
 
   /** The page note: left- or center-aligned, wrapping, in its own font and weight. */
@@ -168,9 +188,24 @@ async function renderPage(
     scaleH: number,
     style: TextStyle,
     centered: boolean,
+    ruled = false,
   ) => {
     const fontSize = Math.round(scaleH * 0.026 * fontSizeScale(style.size))
     const weight = style.bold ? 'bold' : 'normal'
+    if (ruled) {
+      // Decorative ruled-paper lines — not aligned to the text's own line-height, same as the on-screen CSS version.
+      const ruleSpacing = fontSize * 1.35
+      ctx.save()
+      ctx.strokeStyle = '#c4b78e'
+      ctx.lineWidth = 1
+      for (let y = rect.y + ruleSpacing; y < rect.y + rect.h; y += ruleSpacing) {
+        ctx.beginPath()
+        ctx.moveTo(rect.x, y)
+        ctx.lineTo(rect.x + rect.w, y)
+        ctx.stroke()
+      }
+      ctx.restore()
+    }
     ctx.fillStyle = '#6b5f4a'
     ctx.font = `${weight} ${fontSize}px ${fontStack(style.font)}`
     ctx.textAlign = centered ? 'center' : 'left'
@@ -262,21 +297,56 @@ async function renderPage(
     }
   }
 
+  /** The Before & After template's static divider line and labels, drawn independent of any placed text. */
+  const drawBeforeAfter = (rect: { x: number; y: number; w: number; h: number }) => {
+    const midX = rect.x + rect.w / 2
+    ctx.save()
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)'
+    ctx.lineWidth = Math.max(1, rect.w * 0.001)
+    ctx.beginPath()
+    ctx.moveTo(midX, rect.y)
+    ctx.lineTo(midX, rect.y + rect.h)
+    ctx.stroke()
+
+    const drawLabel = (text: string, x: number) => {
+      const fontSize = Math.round(rect.h * 0.024)
+      ctx.font = `${fontSize}px Georgia, "Times New Roman", serif`
+      const paddingX = fontSize * 0.6
+      const paddingY = fontSize * 0.4
+      const textW = ctx.measureText(text.toUpperCase()).width
+      const boxW = textW + paddingX * 2
+      const boxH = fontSize + paddingY * 2
+      const y = rect.y + rect.h * 0.05
+      ctx.fillStyle = 'rgba(0,0,0,0.45)'
+      ctx.fillRect(x, y, boxW, boxH)
+      ctx.fillStyle = '#ffffff'
+      ctx.textAlign = 'left'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(text.toUpperCase(), x + paddingX, y + boxH / 2)
+    }
+    drawLabel('Before', rect.x + rect.w * 0.06)
+    drawLabel('After', rect.x + rect.w * 0.56)
+    ctx.restore()
+  }
+
   if (template.halfSplit && page.halves) {
     template.slots.forEach((region, halfIndex) => {
       const half = page.halves![halfIndex as 0 | 1]
       const halfTemplate = getTemplate(half.templateId)
       const outer = slotPixelRect(region, pageW, pageH, 0)
-      const halfMargin = halfTemplate.bleed ? 0 : PAGE_MARGIN_RATIO
+      const halfMargin = halfTemplate.bleed ? 0 : PAGE_MARGIN_RATIO * (page.marginScale ?? 1)
       halfTemplate.slots.forEach((slot, slotIndex) => {
         const inner = slotPixelRect(slot, outer.w, outer.h, halfMargin)
+        const placement = half.placements[slotIndex]
         drawSlot(
           { x: outer.x + inner.x, y: outer.y + inner.y, w: inner.w, h: inner.h },
-          half.placements[slotIndex],
+          placement,
           {
-            framed: halfTemplate.id === 'instantGrid',
+            framed: halfTemplate.id === 'instantGrid' || placement?.frame === 'polaroid',
             poster: halfTemplate.decoration === 'poster' && slotIndex === 1,
             circle: halfTemplate.decoration === 'circle' && slotIndex === 1,
+            hairline: placement?.frame === 'hairline',
+            rotationDeg: (halfTemplate.slotRotations?.[slotIndex] ?? 0) + (placement?.rotation ?? 0),
           },
         )
       })
@@ -288,19 +358,29 @@ async function renderPage(
           outer.h,
           half.textStyle ?? DEFAULT_TEXT_STYLE,
           halfTemplate.captionStyle === 'centered',
+          halfTemplate.captionStyle === 'ruled',
         )
+      }
+      if (halfTemplate.decoration === 'beforeAfter') {
+        drawBeforeAfter(outer)
       }
       drawDecorations(decorationHost(page, halfIndex as 0 | 1), outer.w, outer.h, outer.x, outer.y)
     })
   } else {
     template.slots.forEach((slot, slotIndex) => {
       const rect = slotPixelRect(slot, pageW, pageH, marginRatio)
-      drawSlot(rect, page.placements[slotIndex], {
-        framed: template.id === 'instantGrid',
+      const placement = page.placements[slotIndex]
+      drawSlot(rect, placement, {
+        framed: template.id === 'instantGrid' || placement?.frame === 'polaroid',
         poster: template.decoration === 'poster' && slotIndex === 1,
         circle: template.decoration === 'circle' && slotIndex === 1,
+        hairline: placement?.frame === 'hairline',
+        rotationDeg: (template.slotRotations?.[slotIndex] ?? 0) + (placement?.rotation ?? 0),
       })
     })
+    if (template.decoration === 'beforeAfter') {
+      drawBeforeAfter({ x: 0, y: 0, w: pageW, h: pageH })
+    }
   }
 
   // Mirrors the on-screen caption so the printed cover matches the editor.
@@ -320,6 +400,7 @@ async function renderPage(
       pageH,
       page.textStyle ?? DEFAULT_TEXT_STYLE,
       template.captionStyle === 'centered',
+      template.captionStyle === 'ruled',
     )
   }
 

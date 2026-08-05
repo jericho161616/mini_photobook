@@ -106,13 +106,21 @@ export interface Template {
    * differently rather than always being one photo per side.
    */
   halfSplit?: boolean
-  /** Centers the note instead of the usual left-aligned strip under a photo. */
-  captionStyle?: 'centered'
+  /** Centers the note instead of the usual left-aligned strip under a photo; 'ruled' draws faint lines behind it, like a diary page. */
+  captionStyle?: 'centered' | 'ruled'
   /**
    * Second-slot styling for a two-photo overlay template: 'poster' tapes it
    * on top at an angle; 'circle' insets it as a centered circular portrait.
+   * 'beforeAfter' draws a divider and small "before"/"after" labels between
+   * the two slots.
    */
-  decoration?: 'poster' | 'circle'
+  decoration?: 'poster' | 'circle' | 'beforeAfter'
+  /**
+   * A fixed tilt per slot, baked into the design (Confetti Scatter) rather
+   * than user-adjustable — same idea as Poster Overlay's fixed -6°, just one
+   * angle per slot instead of only the second one.
+   */
+  slotRotations?: number[]
 }
 
 export interface BookSize {
@@ -152,6 +160,10 @@ export interface Placement {
   offsetY: number
   /** Undefined means full color. */
   filter?: PhotoFilter
+  /** Undefined means no frame — a plain crop. */
+  frame?: 'hairline' | 'polaroid'
+  /** Manual tilt in degrees, on top of any fixed rotation the template itself applies. Undefined means 0. */
+  rotation?: number
 }
 
 /** One side of a "Split at Fold" page — its own independent layout and photos. */
@@ -191,6 +203,10 @@ export interface Page {
   /** Freely placed decorations — unused while `halves` is set; see HalfLayout. */
   stickers?: Sticker[]
   textBoxes?: TextBox[]
+  /** A tinted "cardstock" page background. Undefined means the default paper color. */
+  backgroundColor?: string
+  /** Multiplies the template's own margin — 1 is the default, smaller is tighter, larger is looser. */
+  marginScale?: number
 }
 
 export interface Project {

@@ -136,6 +136,78 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
   const fallbackDims = dimsFor(sizeRatio(size))
 
   const [leftIndex, rightIndex] = spreadFor(activePageIndex)
+  const [zoomedIndex, setZoomedIndex] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (zoomedIndex === null) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setZoomedIndex(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [zoomedIndex])
+
+  // Everything a PageView needs besides its size and which side it renders
+  // on — shared between the normal spread and the full-screen zoom overlay
+  // so the same page stays fully interactive (pan, select, drop) at any size.
+  const pageViewProps = (index: number, side: 'left' | 'right') => {
+    const page: Page = pages[index]
+    const pageSize = resolvePageSize(page, size)
+    const foldOrientation = foldOrientationForSize(pageSize.id)
+    const familyOptions = a4FamilyOptions(pageSize.id)
+    const sizePicker = familyOptions
+      ? {
+          options: familyOptions,
+          value: pageSize.id,
+          onChange: (nextSizeId: string) => setPageSize(index, nextSizeId),
+        }
+      : undefined
+    return {
+      page,
+      pageIndex: index,
+      photos,
+      customStickers,
+      side,
+      title,
+      selectedSlot: selected?.pageIndex === index ? selected.slotIndex : null,
+      selectedHalfIndex: selected?.pageIndex === index ? selected.halfIndex : undefined,
+      onSelectSlot: (slotIndex: number, halfIndex?: 0 | 1) =>
+        armedPhotoIds.length > 0
+          ? placeArmedPhoto({ pageIndex: index, slotIndex, halfIndex })
+          : select({ pageIndex: index, slotIndex, halfIndex }),
+      onDropPhoto: (slotIndex: number, photoId: string, halfIndex?: 0 | 1) =>
+        assignPhoto({ pageIndex: index, slotIndex, halfIndex }, photoId),
+      onPan: (slotIndex: number, offsetX: number, offsetY: number, halfIndex?: 0 | 1) =>
+        updatePlacement({ pageIndex: index, slotIndex, halfIndex }, { offsetX, offsetY }),
+      onToggleLock: () => togglePageLock(index),
+      sizePicker,
+      foldOrientation,
+      hasArmedPhoto: armedPhotoIds.length > 0,
+      onFullscreen: () => setZoomedIndex(index),
+      quickPick: {
+        openKey: quickPickKey,
+        keyFor: (slotIndex: number, halfIndex?: 0 | 1) => `${index}:${halfIndex ?? 'p'}:${slotIndex}`,
+        photos: unplacedPhotos,
+        onOpen: (key: string) => setQuickPickKey(key),
+        onClose: () => setQuickPickKey(null),
+        onPick: (slotIndex: number, photoId: string, halfIndex?: 0 | 1) => {
+          assignPhoto({ pageIndex: index, slotIndex, halfIndex }, photoId)
+          setQuickPickKey(null)
+        },
+        onOpenLibrary: () => {
+          setQuickPickKey(null)
+          onOpenLibrary()
+        },
+      },
+      decorations: {
+        selected: selectedDecoration,
+        onSelect: selectDecoration,
+        onChangeSticker: updateSticker,
+        onChangeTextBox: updateTextBox,
+        onDelete: removeDecoration,
+      },
+    }
+  }
 
   const renderSide = (index: number | null, side: 'left' | 'right') => {
     if (index === null) {
@@ -146,70 +218,22 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
         />
       )
     }
-    const page: Page = pages[index]
-    const pageSize = resolvePageSize(page, size)
+    const pageSize = resolvePageSize(pages[index], size)
     const { width, height } = dimsFor(sizeRatio(pageSize))
-    const foldOrientation = foldOrientationForSize(pageSize.id)
-    const familyOptions = a4FamilyOptions(pageSize.id)
-    const sizePicker = familyOptions
-      ? {
-          options: familyOptions,
-          value: pageSize.id,
-          onChange: (nextSizeId: string) => setPageSize(index, nextSizeId),
-        }
-      : undefined
-    return (
-      <PageView
-        page={page}
-        pageIndex={index}
-        photos={photos}
-        customStickers={customStickers}
-        width={width}
-        height={height}
-        side={side}
-        title={title}
-        selectedSlot={selected?.pageIndex === index ? selected.slotIndex : null}
-        selectedHalfIndex={selected?.pageIndex === index ? selected.halfIndex : undefined}
-        onSelectSlot={(slotIndex, halfIndex) =>
-          armedPhotoIds.length > 0
-            ? placeArmedPhoto({ pageIndex: index, slotIndex, halfIndex })
-            : select({ pageIndex: index, slotIndex, halfIndex })
-        }
-        onDropPhoto={(slotIndex, photoId, halfIndex) =>
-          assignPhoto({ pageIndex: index, slotIndex, halfIndex }, photoId)
-        }
-        onPan={(slotIndex, offsetX, offsetY, halfIndex) =>
-          updatePlacement({ pageIndex: index, slotIndex, halfIndex }, { offsetX, offsetY })
-        }
-        onToggleLock={() => togglePageLock(index)}
-        sizePicker={sizePicker}
-        foldOrientation={foldOrientation}
-        hasArmedPhoto={armedPhotoIds.length > 0}
-        quickPick={{
-          openKey: quickPickKey,
-          keyFor: (slotIndex, halfIndex) => `${index}:${halfIndex ?? 'p'}:${slotIndex}`,
-          photos: unplacedPhotos,
-          onOpen: (key) => setQuickPickKey(key),
-          onClose: () => setQuickPickKey(null),
-          onPick: (slotIndex, photoId, halfIndex) => {
-            assignPhoto({ pageIndex: index, slotIndex, halfIndex }, photoId)
-            setQuickPickKey(null)
-          },
-          onOpenLibrary: () => {
-            setQuickPickKey(null)
-            onOpenLibrary()
-          },
-        }}
-        decorations={{
-          selected: selectedDecoration,
-          onSelect: selectDecoration,
-          onChangeSticker: updateSticker,
-          onChangeTextBox: updateTextBox,
-          onDelete: removeDecoration,
-        }}
-      />
-    )
+    return <PageView {...pageViewProps(index, side)} width={width} height={height} />
   }
+
+  // Sized to fit comfortably inside the viewport rather than the cramped
+  // two-up spread area, preserving the page's own aspect ratio.
+  const zoomDims = useMemo(() => {
+    if (zoomedIndex === null) return null
+    const pageSize = resolvePageSize(pages[zoomedIndex], size)
+    const ratio = sizeRatio(pageSize)
+    const maxW = window.innerWidth * 0.86
+    const maxH = window.innerHeight * 0.86
+    const width = Math.min(maxW, maxH * ratio)
+    return { width, height: width / ratio }
+  }, [zoomedIndex, pages, size])
 
   return (
     <main className={`canvas-area${armedPhotoIds.length > 0 ? ' armed' : ''}`} ref={areaRef}>
@@ -234,6 +258,24 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
           tray first and then the slot. Click a filled slot to adjust it, or press Delete to clear
           it.
         </p>
+      )}
+      {zoomedIndex !== null && zoomDims && (
+        <div className="page-zoom-overlay" onClick={() => setZoomedIndex(null)}>
+          <div className="page-zoom-frame" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="page-zoom-close"
+              onClick={() => setZoomedIndex(null)}
+              aria-label="Close full-screen page view"
+            >
+              ×
+            </button>
+            <PageView
+              {...pageViewProps(zoomedIndex, 'left')}
+              width={zoomDims.width}
+              height={zoomDims.height}
+            />
+          </div>
+        </div>
       )}
     </main>
   )

@@ -394,6 +394,72 @@ export const TEMPLATES: Template[] = [
     captionStyle: 'centered',
   },
   {
+    id: 'contactSheet',
+    label: '9 · Contact Sheet',
+    family: 'Minimal',
+    fits: ['square', 'wide'],
+    // A dense wall of small even prints, like a lab contact sheet — plain
+    // crops, no card mount (pair with the per-photo Frame option for that).
+    slots: [
+      { x: 0, y: 0, w: 31, h: 31 },
+      { x: 34.5, y: 0, w: 31, h: 31 },
+      { x: 69, y: 0, w: 31, h: 31 },
+      { x: 0, y: 34.5, w: 31, h: 31 },
+      { x: 34.5, y: 34.5, w: 31, h: 31 },
+      { x: 69, y: 34.5, w: 31, h: 31 },
+      { x: 0, y: 69, w: 31, h: 31 },
+      { x: 34.5, y: 69, w: 31, h: 31 },
+      { x: 69, y: 69, w: 31, h: 31 },
+    ],
+  },
+  {
+    id: 'diaryTimeline',
+    label: '3 · Diary',
+    family: 'Minimal',
+    fits: ['wide', 'square'],
+    // Three small photos down the left third, a ruled note column beside
+    // them — a day in photos plus room to actually write about it.
+    slots: [
+      { x: 0, y: 0, w: 31, h: 31 },
+      { x: 0, y: 34.5, w: 31, h: 31 },
+      { x: 0, y: 69, w: 31, h: 31 },
+    ],
+    textSlot: { x: 35, y: 2, w: 65, h: 96 },
+    captionStyle: 'ruled',
+  },
+  {
+    id: 'confettiScatter',
+    label: '7 · Confetti Scatter',
+    family: 'Portfolio',
+    fits: ['square', 'wide'],
+    // Denser and looser than Loose Collage — each slot carries its own fixed
+    // tilt (slotRotations, in the same slot order), like tossed prints.
+    slots: [
+      { x: 4, y: 6, w: 30, h: 24 },
+      { x: 36, y: 3, w: 26, h: 21 },
+      { x: 64, y: 9, w: 32, h: 26 },
+      { x: 8, y: 38, w: 28, h: 23 },
+      { x: 40, y: 35, w: 34, h: 28 },
+      { x: 12, y: 66, w: 30, h: 24 },
+      { x: 50, y: 68, w: 32, h: 26 },
+    ],
+    slotRotations: [-8, 6, -4, 5, -10, 9, -6],
+  },
+  {
+    id: 'beforeAfter',
+    label: '2 · Before & After',
+    family: 'Portfolio',
+    fits: ['wide'],
+    bleed: true,
+    // A clean diptych with a divider and small labels, drawn by
+    // PageView/exportPdf rather than being part of either slot.
+    decoration: 'beforeAfter',
+    slots: [
+      { x: 0, y: 0, w: 50, h: 100 },
+      { x: 50, y: 0, w: 50, h: 100 },
+    ],
+  },
+  {
     id: 'noteCover',
     label: '1 · Note Cover',
     family: 'Portfolio',

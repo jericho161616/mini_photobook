@@ -23,6 +23,8 @@ interface PageViewProps {
   onDropPhoto: (slotIndex: number, photoId: string, halfIndex?: 0 | 1) => void
   onPan: (slotIndex: number, offsetX: number, offsetY: number, halfIndex?: 0 | 1) => void
   onToggleLock: () => void
+  /** Opens this page in the full-screen zoom overlay — omitted for the overlay's own PageView instance. */
+  onFullscreen?: () => void
   /** True while a photo is picked up for click-to-place — an empty slot places it instead of opening the quick picker. */
   hasArmedPhoto: boolean
   /** Lets an empty slot pop open a small picker of recently-unplaced photos instead of requiring a drag. */
@@ -69,6 +71,7 @@ export function PageView({
   onDropPhoto,
   onPan,
   onToggleLock,
+  onFullscreen,
   hasArmedPhoto,
   quickPick,
   sizePicker,
@@ -82,7 +85,7 @@ export function PageView({
   }
 
   const template = getTemplate(page.templateId)
-  const marginRatio = template.bleed ? 0 : PAGE_MARGIN_RATIO
+  const marginRatio = template.bleed ? 0 : PAGE_MARGIN_RATIO * (page.marginScale ?? 1)
   const captionRect = template.caption
     ? slotPixelRect(template.caption, width, height, marginRatio)
     : null
@@ -93,7 +96,7 @@ export function PageView({
   return (
     <div
       className={`page ${side}${page.locked ? ' locked' : ''}`}
-      style={{ width, height }}
+      style={{ width, height, backgroundColor: page.backgroundColor }}
       data-page-index={pageIndex}
     >
       <button
@@ -104,6 +107,19 @@ export function PageView({
       >
         {page.locked ? '🔒' : '🔓'}
       </button>
+      {onFullscreen && (
+        <button
+          className="page-fullscreen"
+          onClick={(e) => {
+            e.stopPropagation()
+            onFullscreen()
+          }}
+          aria-label={`View page ${pageIndex + 1} full-screen`}
+          title="View full-screen"
+        >
+          ⤢
+        </button>
+      )}
       {sizePicker && (
         <select
           className="page-size-picker"
@@ -140,7 +156,9 @@ export function PageView({
         )}
         {textRect && page.text.trim() && (
           <div
-            className={`page-caption page-note${template.captionStyle === 'centered' ? ' centered' : ''}`}
+            className={`page-caption page-note${
+              template.captionStyle === 'centered' ? ' centered' : template.captionStyle === 'ruled' ? ' ruled' : ''
+            }`}
             style={{
               left: textRect.x,
               top: textRect.y,
@@ -159,7 +177,7 @@ export function PageView({
               const outer = slotPixelRect(halfRegion, width, height, 0)
               const half = page.halves![halfIndex as 0 | 1]
               const halfTemplate = getTemplate(half.templateId)
-              const halfMargin = halfTemplate.bleed ? 0 : PAGE_MARGIN_RATIO
+              const halfMargin = halfTemplate.bleed ? 0 : PAGE_MARGIN_RATIO * (page.marginScale ?? 1)
               const nested: JSX.Element[] = halfTemplate.slots.map((slot, slotIndex) => {
                 const inner = slotPixelRect(slot, outer.w, outer.h, halfMargin)
                 const rect = { x: outer.x + inner.x, y: outer.y + inner.y, w: inner.w, h: inner.h }
@@ -176,9 +194,11 @@ export function PageView({
                     onSelect={() => onSelectSlot(slotIndex, halfIndex as 0 | 1)}
                     onDropPhoto={(photoId) => onDropPhoto(slotIndex, photoId, halfIndex as 0 | 1)}
                     onPan={(x, y) => onPan(slotIndex, x, y, halfIndex as 0 | 1)}
-                    framed={halfTemplate.id === 'instantGrid'}
+                    framed={halfTemplate.id === 'instantGrid' || placement?.frame === 'polaroid'}
                     poster={halfTemplate.decoration === 'poster' && slotIndex === 1}
                     circle={halfTemplate.decoration === 'circle' && slotIndex === 1}
+                    hairline={placement?.frame === 'hairline'}
+                    rotationDeg={(halfTemplate.slotRotations?.[slotIndex] ?? 0) + (placement?.rotation ?? 0)}
                     hasArmedPhoto={hasArmedPhoto}
                     quickPick={
                       photo
@@ -203,7 +223,13 @@ export function PageView({
                 nested.push(
                   <div
                     key={`${halfIndex}-note`}
-                    className={`page-caption page-note${halfTemplate.captionStyle === 'centered' ? ' centered' : ''}`}
+                    className={`page-caption page-note${
+                      halfTemplate.captionStyle === 'centered'
+                        ? ' centered'
+                        : halfTemplate.captionStyle === 'ruled'
+                          ? ' ruled'
+                          : ''
+                    }`}
                     style={{
                       left: outer.x + inner.x,
                       top: outer.y + inner.y,
@@ -281,9 +307,11 @@ export function PageView({
                   onSelect={() => onSelectSlot(slotIndex)}
                   onDropPhoto={(photoId) => onDropPhoto(slotIndex, photoId)}
                   onPan={(x, y) => onPan(slotIndex, x, y)}
-                  framed={template.id === 'instantGrid'}
+                  framed={template.id === 'instantGrid' || placement?.frame === 'polaroid'}
                   poster={template.decoration === 'poster' && slotIndex === 1}
                   circle={template.decoration === 'circle' && slotIndex === 1}
+                  hairline={placement?.frame === 'hairline'}
+                  rotationDeg={(template.slotRotations?.[slotIndex] ?? 0) + (placement?.rotation ?? 0)}
                   hasArmedPhoto={hasArmedPhoto}
                   quickPick={
                     photo
@@ -300,6 +328,17 @@ export function PageView({
                 />
               )
             })}
+        {template.decoration === 'beforeAfter' && (
+          <>
+            <div className="before-after-divider" style={{ left: width / 2 }} aria-hidden="true" />
+            <span className="before-after-label" style={{ left: width * 0.06, top: height * 0.05 }}>
+              Before
+            </span>
+            <span className="before-after-label" style={{ left: width * 0.56, top: height * 0.05 }}>
+              After
+            </span>
+          </>
+        )}
         {!template.halfSplit && decorations && (
           <DecorationLayer
             stickers={page.stickers ?? []}

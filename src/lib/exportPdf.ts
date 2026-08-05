@@ -213,7 +213,8 @@ async function renderPage(
       ctx.restore()
     }
     ctx.fillStyle = noteColor
-    ctx.font = `${weight} ${fontSize}px ${fontStack(style.font)}`
+    // The page note is always italic on screen (.page-note in styles.css) — matched here so export doesn't go upright.
+    ctx.font = `italic ${weight} ${fontSize}px ${fontStack(style.font)}`
     ctx.textAlign = centered ? 'center' : 'left'
     ctx.textBaseline = 'top'
     const lineHeight = fontSize * 1.35
@@ -266,7 +267,7 @@ async function renderPage(
     if (!box.text.trim()) return
     const fontSize = Math.max(10, rect.h * 0.28) * fontSizeScale(box.size)
     ctx.fillStyle = '#241f16'
-    ctx.font = `${box.bold ? 'bold' : 'normal'} ${fontSize}px ${fontStack(box.font)}`
+    ctx.font = `${box.italic ? 'italic ' : ''}${box.bold ? 'bold' : 'normal'} ${fontSize}px ${fontStack(box.font)}`
     ctx.textAlign = box.align
     ctx.textBaseline = 'top'
     const innerW = rect.w * 0.92

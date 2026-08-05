@@ -125,11 +125,16 @@ line-drawn heart/star/arrow stickers, plus text boxes you can drop anywhere
 on a page — over a photo, off to the side, wherever — instead of being tied
 to a template's fixed caption slot. Drag a sticker or text box to move it,
 resize from the corner handle, click the × to remove it, and edit a text
-box's words, font, bold, and alignment right in place. On a Split at Fold
-page, stickers and text stay confined to whichever half they were added to,
-so nothing ever lands on the physical crease. Everything is drawn with plain
-CSS/SVG shapes — no downloaded images, icon packs, or fonts — so it stays
-just as free and offline as the rest of the app.
+box's words, font, bold, italic, and alignment right in place. A freshly
+added text box opens straight into typing; after that, double-click it (or
+click it again once it's already selected) to go back into edit mode —
+otherwise a plain click-and-drag always just moves it, since it's easy to
+mean "move this" and land on "edit this" when both share the same click.
+On a Split at Fold page, stickers and text stay confined to whichever half
+they were added to, so nothing ever lands on the physical crease.
+Everything is drawn with plain CSS/SVG shapes — no downloaded images, icon
+packs, or fonts — so it stays just as free and offline as the rest of the
+app.
 
 **Draw your own sticker.** "✏️ Draw a Sticker" in the Decorate panel opens a
 small pad — pick from 8 colors, draw with mouse, touch, or stylus, then "Save

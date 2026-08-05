@@ -56,7 +56,7 @@ export function DecoratePanel() {
     selectedDecoration.pageIndex === activePageIndex &&
     selectedDecoration.halfIndex === targetHalf
 
-  const setStyle = (patch: Partial<TextStyle>) => {
+  const setStyle = (patch: Partial<TextBox>) => {
     if (!selectedTextBox || !selectedDecoration) return
     updateTextBox(selectedDecoration, patch)
   }
@@ -118,6 +118,14 @@ export function DecoratePanel() {
             >
               B
             </button>
+            <button
+              className={`bold-btn italic-btn${selectedTextBox.italic ? ' active' : ''}`}
+              onClick={() => setStyle({ italic: !selectedTextBox.italic })}
+              aria-pressed={selectedTextBox.italic ?? false}
+              title="Italic"
+            >
+              I
+            </button>
           </div>
           <div className="filter-chips-row size-picker-row">
             {FONT_SIZE_OPTIONS.map((s) => (
@@ -149,6 +157,7 @@ export function DecoratePanel() {
             style={{
               fontFamily: fontStack(selectedTextBox.font),
               fontWeight: selectedTextBox.bold ? 700 : 400,
+              fontStyle: selectedTextBox.italic ? 'italic' : 'normal',
               fontSize: 13 * fontSizeScale(selectedTextBox.size),
             }}
           >

@@ -1547,6 +1547,11 @@ kbd {
   color: var(--page-stock);
 }
 
+.italic-btn {
+  font-weight: 400;
+  font-style: italic;
+}
+
 .bold-btn:disabled,
 .font-picker:disabled {
   opacity: 0.5;

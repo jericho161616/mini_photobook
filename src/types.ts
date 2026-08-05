@@ -64,6 +64,8 @@ export interface TextBox {
   text: string
   font: FontId
   bold: boolean
+  /** Undefined means not italic. */
+  italic?: boolean
   align: 'left' | 'center' | 'right'
   /** Undefined means 'md', the original default size. */
   size?: FontSize

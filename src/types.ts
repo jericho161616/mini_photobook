@@ -146,6 +146,8 @@ export interface Photo {
   width: number
   height: number
   addedAt: number
+  /** SHA-256 of the file's own bytes — lets a re-imported copy of the same file be caught and skipped. Undefined for photos imported before this existed. */
+  hash?: string
 }
 
 /**

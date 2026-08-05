@@ -196,6 +196,13 @@ reorder pages by dragging thumbnails in the filmstrip.
 **Page count from 10 to 30**, adjustable at any time. Resizing keeps the pages
 you have already worked on and only adds or trims from the end.
 
+**Duplicate photos are caught automatically.** Each imported photo is
+fingerprinted from its own file bytes (a quick hash, computed locally —
+nothing leaves your device), so re-importing the same file — even under a
+different name, or selected twice in the same batch — is skipped instead of
+adding a visible second copy. A small note under the "Add photos" button
+says how many were skipped, if any.
+
 **Titled cover.** Page one uses a cover layout carrying the book title, which
 renders in the editor and in the exported PDF.
 

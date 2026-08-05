@@ -621,6 +621,13 @@ input:focus-visible,
   line-height: 1.5;
 }
 
+.import-notice {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  text-align: center;
+  margin: 6px 0 0;
+}
+
 /* ---- Canvas ---- */
 .canvas-area {
   display: flex;

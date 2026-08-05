@@ -13,6 +13,7 @@ export function PhotoTray({ onOpenLibrary }: PhotoTrayProps) {
   const addFiles = useStore((s) => s.addFiles)
   const removePhoto = useStore((s) => s.removePhoto)
   const importing = useStore((s) => s.importing)
+  const importNotice = useStore((s) => s.importNotice)
   const armedPhotoIds = useStore((s) => s.armedPhotoIds)
   const armPhoto = useStore((s) => s.armPhoto)
 
@@ -114,6 +115,8 @@ export function PhotoTray({ onOpenLibrary }: PhotoTrayProps) {
       >
         {importing ? 'Reading photos…' : '+ Add photos or drop them here'}
       </button>
+
+      {importNotice && <p className="import-notice">{importNotice}</p>}
 
       <input
         ref={inputRef}

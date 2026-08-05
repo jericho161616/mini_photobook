@@ -89,15 +89,47 @@ async function makeThumbnail(blob: Blob): Promise<Blob> {
   return thumbBlob ?? blob
 }
 
-export async function importFiles(files: File[], projectId: string): Promise<Photo[]> {
+/** SHA-256 of the file's own bytes, as hex — identical files hash identically regardless of name. */
+async function hashBlob(blob: Blob): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer())
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+export interface ImportResult {
+  photos: Photo[]
+  /** Files that hashed the same as a photo already in this book (or another file in the same batch), and so weren't added again. */
+  duplicateCount: number
+}
+
+/**
+ * existingHashes should be every hash already in this book's photo library,
+ * so a file re-imported later (or the same batch selected twice by mistake)
+ * gets caught and skipped rather than added as a visually identical second copy.
+ */
+export async function importFiles(
+  files: File[],
+  projectId: string,
+  existingHashes: Set<string>,
+): Promise<ImportResult> {
   const images = files.filter((f) => ACCEPTED_TYPES.includes(f.type))
-  const photos = await Promise.all(
+  const seenThisBatch = new Set<string>()
+  let duplicateCount = 0
+
+  const results = await Promise.all(
     images.map(async (file) => {
+      const hash = await hashBlob(file)
+      if (existingHashes.has(hash) || seenThisBatch.has(hash)) {
+        duplicateCount += 1
+        return null
+      }
+      seenThisBatch.add(hash)
       const [{ width, height }, thumbBlob] = await Promise.all([
         measure(file),
         makeThumbnail(file),
       ])
-      return {
+      const photo: Photo = {
         id: nextPhotoId(),
         projectId,
         name: file.name,
@@ -106,10 +138,12 @@ export async function importFiles(files: File[], projectId: string): Promise<Pho
         width,
         height,
         addedAt: Date.now() + Math.random(),
-      } satisfies Photo
+        hash,
+      }
+      return photo
     }),
   )
-  return photos
+  return { photos: results.filter((p): p is Photo => p !== null), duplicateCount }
 }
 
 /**

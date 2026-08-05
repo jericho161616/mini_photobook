@@ -81,6 +81,8 @@ interface StoreState {
    * the right photo, a trackpad, a small screen).
    */
   armedPhotoIds: string[]
+  /** A brief, self-clearing message about the last import — e.g. how many duplicate photos were skipped. */
+  importNotice: string | null
   /** Snapshots of {pages, title, sizeId, customStickers} to step back/forward through — photo library changes aren't included, since a deleted photo's file is truly gone. */
   undoStack: HistorySnapshot[]
   redoStack: HistorySnapshot[]
@@ -183,6 +185,7 @@ function projectFrom(
 export const useStore = create<StoreState>((set, get) => {
   /** Debounced write-behind so dragging a photo doesn't hammer IndexedDB. */
   let saveTimer: number | undefined
+  let importNoticeTimer: number | undefined
   let openedAt = Date.now()
   const writeNow = () => {
     const { projectId, title, sizeId, pages, customStickers } = get()
@@ -233,6 +236,7 @@ export const useStore = create<StoreState>((set, get) => {
     shapeFilter: 'all',
     importing: false,
     armedPhotoIds: [],
+    importNotice: null,
     undoStack: [],
     redoStack: [],
 
@@ -281,18 +285,30 @@ export const useStore = create<StoreState>((set, get) => {
     },
 
     async addFiles(files) {
-      const { projectId } = get()
+      const { projectId, photos: existing } = get()
       if (!projectId) return
       set({ importing: true })
       try {
-        const imported = await importFiles(files, projectId)
-        if (imported.length === 0) return
+        const existingHashes = new Set(existing.map((p) => p.hash).filter((h): h is string => !!h))
+        const { photos: imported, duplicateCount } = await importFiles(files, projectId, existingHashes)
 
-        // Importing only adds photos to the library. Nothing is placed on any
-        // page automatically — that's a deliberate choice the designer makes.
-        await storage.savePhotos(imported)
-        set((state) => ({ photos: [...state.photos, ...imported] }))
-        persist()
+        if (imported.length > 0) {
+          // Importing only adds photos to the library. Nothing is placed on any
+          // page automatically — that's a deliberate choice the designer makes.
+          await storage.savePhotos(imported)
+          set((state) => ({ photos: [...state.photos, ...imported] }))
+          persist()
+        }
+
+        if (duplicateCount > 0) {
+          const notice =
+            duplicateCount === 1
+              ? 'Skipped 1 photo — already in this book.'
+              : `Skipped ${duplicateCount} photos — already in this book.`
+          set({ importNotice: notice })
+          window.clearTimeout(importNoticeTimer)
+          importNoticeTimer = window.setTimeout(() => set({ importNotice: null }), 4000)
+        }
       } finally {
         set({ importing: false })
       }

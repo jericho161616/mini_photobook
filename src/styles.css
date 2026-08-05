@@ -1730,6 +1730,38 @@ kbd {
   font-size: 13px;
 }
 
+.export-range-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.export-range-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.export-range-input {
+  width: 56px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 13px;
+  text-align: center;
+}
+
+.export-range-dash {
+  padding-bottom: 8px;
+  color: var(--ink-soft);
+}
+
 .progress-track {
   height: 4px;
   background: var(--linen-deep);

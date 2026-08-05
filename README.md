@@ -237,6 +237,10 @@ it further down the page.
 onto a canvas rather than screenshotting the editor, so the output is genuinely
 print resolution and every crop matches what you arranged on screen.
 
+**Export just a page range.** Export PDF opens a small dialog asking which
+pages to include — the whole book by default, or a "From – To" range (say,
+pages 5–18) for a proof of one section or a reprint of only what changed.
+
 Work is saved to the browser's IndexedDB as you go and restored when you reopen
 the app.
 

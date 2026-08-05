@@ -3,6 +3,7 @@ import { getSize } from '../data/sizes'
 import { exportToPdf } from '../lib/exportPdf'
 import type { ThemeChoice } from '../lib/theme'
 import { useStore } from '../state/useStore'
+import { ExportRangeModal } from './ExportRangeModal'
 import { Filmstrip } from './Filmstrip'
 import { PhotoLibrary } from './PhotoLibrary'
 import { PhotoTray } from './PhotoTray'
@@ -36,6 +37,7 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
   const [error, setError] = useState<string | null>(null)
   const [slideshowOpen, setSlideshowOpen] = useState(false)
   const [libraryOpen, setLibraryOpen] = useState(false)
+  const [exportRangeOpen, setExportRangeOpen] = useState(false)
 
   useEffect(() => {
     void init(projectId)
@@ -55,25 +57,29 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
     return () => window.removeEventListener('keydown', onKey)
   }, [activePageIndex, setActivePage])
 
-  const handleExport = useCallback(async () => {
-    setExporting(true)
-    setError(null)
-    setProgress({ done: 0, total: pages.length })
-    try {
-      await exportToPdf({
-        pages,
-        photos,
-        customStickers,
-        size: getSize(sizeId),
-        title,
-        onProgress: (done, total) => setProgress({ done, total }),
-      })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Export failed')
-    } finally {
-      setExporting(false)
-    }
-  }, [pages, photos, customStickers, sizeId, title])
+  const handleExport = useCallback(
+    async (fromIndex: number, toIndex: number) => {
+      const pagesToExport = pages.slice(fromIndex, toIndex + 1)
+      setExporting(true)
+      setError(null)
+      setProgress({ done: 0, total: pagesToExport.length })
+      try {
+        await exportToPdf({
+          pages: pagesToExport,
+          photos,
+          customStickers,
+          size: getSize(sizeId),
+          title,
+          onProgress: (done, total) => setProgress({ done, total }),
+        })
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Export failed')
+      } finally {
+        setExporting(false)
+      }
+    },
+    [pages, photos, customStickers, sizeId, title],
+  )
 
   if (!ready) {
     return (
@@ -86,7 +92,7 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
   return (
     <div className="app">
       <TopBar
-        onExport={() => void handleExport()}
+        onExport={() => setExportRangeOpen(true)}
         exporting={exporting}
         onPlay={() => setSlideshowOpen(true)}
         onGoToLibrary={() => {
@@ -117,6 +123,17 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
       <Filmstrip photos={photoMap} />
 
       {libraryOpen && <PhotoLibrary onClose={() => setLibraryOpen(false)} />}
+
+      {exportRangeOpen && (
+        <ExportRangeModal
+          pageCount={pages.length}
+          onClose={() => setExportRangeOpen(false)}
+          onExport={(fromIndex, toIndex) => {
+            setExportRangeOpen(false)
+            void handleExport(fromIndex, toIndex)
+          }}
+        />
+      )}
 
       {slideshowOpen && (
         <Slideshow

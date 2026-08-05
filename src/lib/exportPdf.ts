@@ -5,6 +5,7 @@ import {
   CIRCLE_BORDER_RATIO,
   coverGeometry,
   FRAME_INSET_RATIO,
+  isDarkColor,
   POSTER_BORDER_RATIO,
   POSTER_ROTATION_DEG,
   slotPixelRect,
@@ -84,6 +85,11 @@ async function renderPage(
 
   const template = getTemplate(page.templateId)
   const marginRatio = template.bleed ? 0 : PAGE_MARGIN_RATIO * (page.marginScale ?? 1)
+  // A dark page background (e.g. the Night preset) needs light parchment text
+  // instead of the usual dark ink, same rule the editor uses.
+  const onDark = page.backgroundColor ? isDarkColor(page.backgroundColor) : false
+  const captionColor = onDark ? '#f2ead2' : '#241f16'
+  const noteColor = onDark ? '#c9bfa4' : '#6b5f4a'
 
   const drawPhoto = (rect: { x: number; y: number; w: number; h: number }, placement: Placement) => {
     const bitmap = photoMap.get(placement.photoId)
@@ -206,7 +212,7 @@ async function renderPage(
       }
       ctx.restore()
     }
-    ctx.fillStyle = '#6b5f4a'
+    ctx.fillStyle = noteColor
     ctx.font = `${weight} ${fontSize}px ${fontStack(style.font)}`
     ctx.textAlign = centered ? 'center' : 'left'
     ctx.textBaseline = 'top'
@@ -386,7 +392,7 @@ async function renderPage(
   // Mirrors the on-screen caption so the printed cover matches the editor.
   if (template.caption && title.trim()) {
     const rect = slotPixelRect(template.caption, pageW, pageH, PAGE_MARGIN_RATIO)
-    ctx.fillStyle = '#241f16'
+    ctx.fillStyle = captionColor
     ctx.font = `${Math.round(pageH * 0.032)}px Georgia, "Times New Roman", serif`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'

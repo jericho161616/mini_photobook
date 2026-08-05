@@ -2,7 +2,7 @@ import { DEFAULT_TEXT_STYLE, fontSizeScale, fontStack } from '../data/fonts'
 import { getTemplate } from '../data/templates'
 import { decorationHost } from '../lib/autoLayout'
 import { PAGE_MARGIN_RATIO } from '../lib/exportPdf'
-import { slotPixelRect } from '../lib/imageUtils'
+import { isDarkColor, slotPixelRect } from '../lib/imageUtils'
 import type { DecorationRef } from '../state/useStore'
 import type { CustomSticker, Page, Photo, Sticker, TextBox } from '../types'
 import { DecorationLayer } from './DecorationLayer'
@@ -92,6 +92,9 @@ export function PageView({
   const textRect = template.textSlot
     ? slotPixelRect(template.textSlot, width, height, marginRatio)
     : null
+  // A dark page background (e.g. the Night preset) needs light parchment text
+  // instead of the usual dark ink, or the caption/note would be unreadable.
+  const onDark = page.backgroundColor ? isDarkColor(page.backgroundColor) : false
 
   return (
     <div
@@ -149,6 +152,7 @@ export function PageView({
               height: captionRect.h,
               fontSize: Math.max(7, height * 0.032),
               letterSpacing: `${height * 0.0022}px`,
+              color: onDark ? '#f2ead2' : undefined,
             }}
           >
             {title}
@@ -167,6 +171,7 @@ export function PageView({
               fontSize: Math.max(6, height * 0.026) * fontSizeScale((page.textStyle ?? DEFAULT_TEXT_STYLE).size),
               fontFamily: fontStack((page.textStyle ?? DEFAULT_TEXT_STYLE).font),
               fontWeight: (page.textStyle ?? DEFAULT_TEXT_STYLE).bold ? 700 : 400,
+              color: onDark ? '#c9bfa4' : undefined,
             }}
           >
             {page.text}
@@ -238,6 +243,7 @@ export function PageView({
                       fontSize: Math.max(6, outer.h * 0.026) * fontSizeScale(halfStyle.size),
                       fontFamily: fontStack(halfStyle.font),
                       fontWeight: halfStyle.bold ? 700 : 400,
+                      color: onDark ? '#c9bfa4' : undefined,
                     }}
                   >
                     {half.text}

@@ -81,6 +81,9 @@ interface StoreState {
    * the right photo, a trackpad, a small screen).
    */
   armedPhotoIds: string[]
+  /** Snapshots of {pages, title, sizeId, customStickers} to step back/forward through — photo library changes aren't included, since a deleted photo's file is truly gone. */
+  undoStack: HistorySnapshot[]
+  redoStack: HistorySnapshot[]
 
   init: (projectId: string) => Promise<void>
   addFiles: (files: File[]) => Promise<void>
@@ -145,7 +148,22 @@ interface StoreState {
   /** Writes immediately instead of waiting for the debounce — call before
    *  navigating away, so My Books never shows a moment-stale card. */
   flushPending: () => void
+  /** Steps back to the previous layout/content snapshot, if any. */
+  undo: () => void
+  /** Steps forward again after an undo, if nothing new was done since. */
+  redo: () => void
 }
+
+interface HistorySnapshot {
+  pages: Page[]
+  title: string
+  sizeId: string
+  customStickers: CustomSticker[]
+}
+
+const MAX_HISTORY = 50
+/** Edits fired within this window of the last one (a drag, a slider) are treated as one undo step. */
+const HISTORY_COALESCE_MS = 500
 
 function projectFrom(
   state: Pick<StoreState, 'projectId' | 'title' | 'sizeId' | 'pages' | 'customStickers'>,
@@ -182,6 +200,24 @@ export const useStore = create<StoreState>((set, get) => {
     persist()
   }
 
+  /**
+   * Captures an undo checkpoint of the pre-mutation state — call this first,
+   * before applying a state-changing action. Rapid successive calls (dragging
+   * a slider, panning a photo) within HISTORY_COALESCE_MS collapse into the
+   * one checkpoint from before the whole burst, so undo reverts the burst as
+   * a single step rather than one tiny step at a time.
+   */
+  let lastRecordAt = 0
+  const recordHistory = () => {
+    const now = Date.now()
+    const { undoStack, pages, title, sizeId, customStickers } = get()
+    if (now - lastRecordAt > HISTORY_COALESCE_MS || undoStack.length === 0) {
+      const snapshot: HistorySnapshot = { pages, title, sizeId, customStickers }
+      set({ undoStack: [...undoStack, snapshot].slice(-MAX_HISTORY), redoStack: [] })
+    }
+    lastRecordAt = now
+  }
+
   return {
     ready: false,
     projectId: null,
@@ -197,6 +233,8 @@ export const useStore = create<StoreState>((set, get) => {
     shapeFilter: 'all',
     importing: false,
     armedPhotoIds: [],
+    undoStack: [],
+    redoStack: [],
 
     async init(projectId) {
       set({ ready: false })
@@ -217,6 +255,8 @@ export const useStore = create<StoreState>((set, get) => {
           activePageIndex: 0,
           selected: null,
           armedPhotoIds: [],
+          undoStack: [],
+          redoStack: [],
         })
       } else {
         // Shouldn't normally happen — My Books always creates the project
@@ -233,6 +273,8 @@ export const useStore = create<StoreState>((set, get) => {
           customStickers: [],
           activePageIndex: 0,
           selected: null,
+          undoStack: [],
+          redoStack: [],
         })
         persist()
       }
@@ -287,11 +329,13 @@ export const useStore = create<StoreState>((set, get) => {
     },
 
     setTitle(title) {
+      recordHistory()
       set({ title })
       persist()
     },
 
     setSize(sizeId) {
+      recordHistory()
       const size = getSize(sizeId)
       set((state) => {
         // A page's own orientation override only makes sense against the book
@@ -307,6 +351,7 @@ export const useStore = create<StoreState>((set, get) => {
     },
 
     setPageCount(count) {
+      recordHistory()
       const size = getSize(get().sizeId)
       set((state) => {
         const pages = resizePages(state.pages, count, size)
@@ -320,6 +365,7 @@ export const useStore = create<StoreState>((set, get) => {
     },
 
     regenerate() {
+      recordHistory()
       const { photos, sizeId, pages } = get()
       const size = getSize(sizeId)
       // Locked pages, and the photos already on them, are left untouched —
@@ -346,7 +392,15 @@ export const useStore = create<StoreState>((set, get) => {
     select(ref) {
       // A locked page's slots aren't editable, so there's nothing to select.
       if (ref && get().pages[ref.pageIndex]?.locked) return
-      set({ selected: ref, selectedDecoration: null })
+      // Clicking a slot inside one half of a Split at Fold page also switches
+      // the Layout panel to that same half — otherwise picking a template
+      // there could silently land on whichever half was last active instead
+      // of the one you just clicked.
+      set({
+        selected: ref,
+        selectedDecoration: null,
+        ...(ref?.halfIndex !== undefined ? { activeHalfIndex: ref.halfIndex } : {}),
+      })
     },
 
     setShapeFilter(shapeFilter) {
@@ -356,6 +410,7 @@ export const useStore = create<StoreState>((set, get) => {
     applyTemplate(templateId) {
       const { activePageIndex, pages: current } = get()
       if (current[activePageIndex]?.locked) return
+      recordHistory()
       mutatePages((pages) =>
         pages.map((page, i) => (i === activePageIndex ? applyTemplateToPage(page, templateId) : page)),
       )
@@ -364,6 +419,7 @@ export const useStore = create<StoreState>((set, get) => {
 
     applyHalfTemplate(pageIndex, halfIndex, templateId) {
       if (get().pages[pageIndex]?.locked) return
+      recordHistory()
       mutatePages((pages) =>
         pages.map((page, i) => {
           if (i !== pageIndex || !page.halves) return page
@@ -382,6 +438,7 @@ export const useStore = create<StoreState>((set, get) => {
 
     assignPhoto({ pageIndex, slotIndex, halfIndex }, photoId) {
       if (get().pages[pageIndex]?.locked) return
+      recordHistory()
       mutatePages((pages) =>
         pages.map((page, i) => {
           if (i !== pageIndex) return page
@@ -401,6 +458,7 @@ export const useStore = create<StoreState>((set, get) => {
 
     fillNextEmptySlots(photoIds) {
       if (photoIds.length === 0) return
+      recordHistory()
       const startIndex = get().activePageIndex
       const queue = [...photoIds]
       mutatePages((pages) =>
@@ -442,6 +500,7 @@ export const useStore = create<StoreState>((set, get) => {
 
     clearSlot({ pageIndex, slotIndex, halfIndex }) {
       if (get().pages[pageIndex]?.locked) return
+      recordHistory()
       mutatePages((pages) =>
         pages.map((page, i) => {
           if (i !== pageIndex) return page
@@ -461,6 +520,7 @@ export const useStore = create<StoreState>((set, get) => {
 
     updatePlacement({ pageIndex, slotIndex, halfIndex }, patch) {
       if (get().pages[pageIndex]?.locked) return
+      recordHistory()
       const applyPatch = (existing: Placement | null): Placement | null => {
         if (!existing) return existing
         const next: Placement = { ...existing, ...patch }
@@ -491,6 +551,7 @@ export const useStore = create<StoreState>((set, get) => {
     },
 
     togglePageLock(pageIndex) {
+      recordHistory()
       mutatePages((pages) =>
         pages.map((page, i) => (i === pageIndex ? { ...page, locked: !page.locked } : page)),
       )
@@ -499,6 +560,7 @@ export const useStore = create<StoreState>((set, get) => {
     setPageSize(pageIndex, sizeId) {
       const { sizeId: bookSizeId, pages: current } = get()
       if (current[pageIndex]?.locked) return
+      recordHistory()
       const newSize = getSize(sizeId)
       mutatePages((pages) =>
         pages.map((page, i) => {
@@ -511,6 +573,7 @@ export const useStore = create<StoreState>((set, get) => {
 
     setPageText(pageIndex, text) {
       if (get().pages[pageIndex]?.locked) return
+      recordHistory()
       mutatePages((pages) =>
         pages.map((page, i) => (i === pageIndex ? { ...page, text } : page)),
       )
@@ -518,6 +581,7 @@ export const useStore = create<StoreState>((set, get) => {
 
     setHalfText(pageIndex, halfIndex, text) {
       if (get().pages[pageIndex]?.locked) return
+      recordHistory()
       mutatePages((pages) =>
         pages.map((page, i) => {
           if (i !== pageIndex || !page.halves) return page
@@ -530,6 +594,7 @@ export const useStore = create<StoreState>((set, get) => {
 
     setPageTextStyle(pageIndex, style) {
       if (get().pages[pageIndex]?.locked) return
+      recordHistory()
       mutatePages((pages) =>
         pages.map((page, i) => (i === pageIndex ? { ...page, textStyle: style } : page)),
       )
@@ -537,6 +602,7 @@ export const useStore = create<StoreState>((set, get) => {
 
     setPageBackground(pageIndex, color) {
       if (get().pages[pageIndex]?.locked) return
+      recordHistory()
       mutatePages((pages) =>
         pages.map((page, i) => (i === pageIndex ? { ...page, backgroundColor: color } : page)),
       )
@@ -544,6 +610,7 @@ export const useStore = create<StoreState>((set, get) => {
 
     setPageMarginScale(pageIndex, scale) {
       if (get().pages[pageIndex]?.locked) return
+      recordHistory()
       mutatePages((pages) =>
         pages.map((page, i) => (i === pageIndex ? { ...page, marginScale: scale } : page)),
       )
@@ -551,6 +618,7 @@ export const useStore = create<StoreState>((set, get) => {
 
     setHalfTextStyle(pageIndex, halfIndex, style) {
       if (get().pages[pageIndex]?.locked) return
+      recordHistory()
       mutatePages((pages) =>
         pages.map((page, i) => {
           if (i !== pageIndex || !page.halves) return page
@@ -562,6 +630,7 @@ export const useStore = create<StoreState>((set, get) => {
     },
 
     movePage(from, to) {
+      recordHistory()
       mutatePages((pages) => {
         if (from === to || from < 0 || from >= pages.length) return pages
         if (pages[from].locked) return pages
@@ -575,6 +644,7 @@ export const useStore = create<StoreState>((set, get) => {
 
     addSticker(pageIndex, halfIndex, type, customId) {
       if (get().pages[pageIndex]?.locked) return
+      recordHistory()
       const id = nextDecorationId()
       // A doodle is usually closer to square than the built-in tape/icon
       // stickers, which read better in a wider box.
@@ -599,6 +669,7 @@ export const useStore = create<StoreState>((set, get) => {
 
     addTextBox(pageIndex, halfIndex) {
       if (get().pages[pageIndex]?.locked) return
+      recordHistory()
       const id = nextDecorationId()
       const textBox: TextBox = {
         id,
@@ -627,6 +698,7 @@ export const useStore = create<StoreState>((set, get) => {
     },
 
     addCustomSticker(dataUrl) {
+      recordHistory()
       const id = nextCustomStickerId()
       set((state) => ({ customStickers: [...state.customStickers, { id, dataUrl }] }))
       persist()
@@ -634,6 +706,7 @@ export const useStore = create<StoreState>((set, get) => {
     },
 
     removeCustomSticker(id) {
+      recordHistory()
       set((state) => ({ customStickers: state.customStickers.filter((c) => c.id !== id) }))
       // Any already-placed copies of this drawing would otherwise linger as
       // invisible, still-draggable boxes once the artwork behind them is gone.
@@ -655,6 +728,7 @@ export const useStore = create<StoreState>((set, get) => {
 
     updateSticker(ref, patch) {
       if (get().pages[ref.pageIndex]?.locked) return
+      recordHistory()
       mutatePages((pages) =>
         pages.map((page, i) => {
           if (i !== ref.pageIndex) return page
@@ -673,6 +747,7 @@ export const useStore = create<StoreState>((set, get) => {
 
     updateTextBox(ref, patch) {
       if (get().pages[ref.pageIndex]?.locked) return
+      recordHistory()
       mutatePages((pages) =>
         pages.map((page, i) => {
           if (i !== ref.pageIndex) return page
@@ -691,6 +766,7 @@ export const useStore = create<StoreState>((set, get) => {
 
     removeDecoration(ref) {
       if (get().pages[ref.pageIndex]?.locked) return
+      recordHistory()
       mutatePages((pages) =>
         pages.map((page, i) => {
           if (i !== ref.pageIndex) return page
@@ -730,6 +806,8 @@ export const useStore = create<StoreState>((set, get) => {
         customStickers: [],
         activePageIndex: 0,
         selected: null,
+        undoStack: [],
+        redoStack: [],
       })
       persist()
     },
@@ -737,6 +815,38 @@ export const useStore = create<StoreState>((set, get) => {
     flushPending() {
       window.clearTimeout(saveTimer)
       writeNow()
+    },
+
+    undo() {
+      const { undoStack, redoStack, pages, title, sizeId, customStickers } = get()
+      const prev = undoStack[undoStack.length - 1]
+      if (!prev) return
+      const current: HistorySnapshot = { pages, title, sizeId, customStickers }
+      lastRecordAt = 0
+      set({
+        ...prev,
+        undoStack: undoStack.slice(0, -1),
+        redoStack: [...redoStack, current],
+        selected: null,
+        selectedDecoration: null,
+      })
+      persist()
+    },
+
+    redo() {
+      const { undoStack, redoStack, pages, title, sizeId, customStickers } = get()
+      const next = redoStack[redoStack.length - 1]
+      if (!next) return
+      const current: HistorySnapshot = { pages, title, sizeId, customStickers }
+      lastRecordAt = 0
+      set({
+        ...next,
+        redoStack: redoStack.slice(0, -1),
+        undoStack: [...undoStack, current],
+        selected: null,
+        selectedDecoration: null,
+      })
+      persist()
     },
   }
 })

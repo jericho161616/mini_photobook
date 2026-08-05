@@ -29,6 +29,10 @@ export function TopBar({
   const photos = useStore((s) => s.photos)
   const setPageCount = useStore((s) => s.setPageCount)
   const regenerate = useStore((s) => s.regenerate)
+  const undo = useStore((s) => s.undo)
+  const redo = useStore((s) => s.redo)
+  const canUndo = useStore((s) => s.undoStack.length > 0)
+  const canRedo = useStore((s) => s.redoStack.length > 0)
   const [confirmingReset, setConfirmingReset] = useState(false)
 
   const size = getSize(sizeId)
@@ -64,6 +68,27 @@ export function TopBar({
       >
         Reset
       </button>
+
+      <div className="topbar-group">
+        <button
+          className="btn"
+          onClick={undo}
+          disabled={!canUndo}
+          aria-label="Undo"
+          title="Undo (Ctrl+Z)"
+        >
+          ↺
+        </button>
+        <button
+          className="btn"
+          onClick={redo}
+          disabled={!canRedo}
+          aria-label="Redo"
+          title="Redo (Ctrl+Shift+Z)"
+        >
+          ↻
+        </button>
+      </div>
 
       <div className="topbar-group">
         <span className="meta-label">Size</span>

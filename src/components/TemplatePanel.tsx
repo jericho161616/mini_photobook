@@ -18,6 +18,8 @@ const PAGE_TINTS: { id: string; color: string; label: string }[] = [
   { id: 'blush', color: '#e3d6d0', label: 'Blush' },
   { id: 'dusty-blue', color: '#d8dfe3', label: 'Dusty blue' },
   { id: 'deep-linen', color: '#cabb92', label: 'Deep linen' },
+  { id: 'night', color: '#141414', label: 'Night' },
+  { id: 'midnight-navy', color: '#171d29', label: 'Midnight navy' },
 ]
 
 /** A grid of template swatches — reused for both the whole-page picker and each half's own. */

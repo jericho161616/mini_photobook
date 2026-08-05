@@ -43,6 +43,8 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
   const placeArmedPhoto = useStore((s) => s.placeArmedPhoto)
   const clearSlot = useStore((s) => s.clearSlot)
   const updatePlacement = useStore((s) => s.updatePlacement)
+  const undo = useStore((s) => s.undo)
+  const redo = useStore((s) => s.redo)
   const togglePageLock = useStore((s) => s.togglePageLock)
   const setPageSize = useStore((s) => s.setPageSize)
   const selectedDecoration = useStore((s) => s.selectedDecoration)
@@ -123,6 +125,22 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [selected, pages, clearSlot])
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const mod = e.ctrlKey || e.metaKey
+      const key = e.key.toLowerCase()
+      if (!mod || (key !== 'z' && key !== 'y')) return
+      // Let a text input's own native undo (title, notes) handle Ctrl+Z there instead.
+      const target = e.target as HTMLElement | null
+      if (target && (['INPUT', 'TEXTAREA'].includes(target.tagName) || target.isContentEditable)) return
+      e.preventDefault()
+      if (key === 'y' || (key === 'z' && e.shiftKey)) redo()
+      else undo()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [undo, redo])
 
   const dimsFor = useMemo(() => {
     const availableW = Math.max(160, (area.width - SPREAD_CHROME_X) / 2)

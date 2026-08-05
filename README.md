@@ -165,6 +165,19 @@ details up close without squinting at the two-page spread. It's the same
 live page underneath — drag, pan, and click-to-place all still work — click
 the × or press Esc to close it.
 
+**Undo and redo.** Ctrl+Z (Cmd+Z on Mac) steps back through layout, text,
+photo-placement, and decoration changes; Ctrl+Shift+Z or Ctrl+Y steps forward
+again — matching toolbar ↺/↻ buttons sit next to Reset. A whole drag or
+slider sweep collapses into one step rather than one per pixel. Typing in a
+text field keeps its own native undo instead, so it doesn't fight this.
+Photo library changes (importing or deleting a photo outright) aren't part
+of this history, since a deleted photo's file is genuinely gone.
+
+**Night and tinted page backgrounds.** Alongside the warm/cool cardstock
+tints, a page background can go all the way to Night or Midnight navy — the
+caption and note automatically switch to light parchment text whenever the
+chosen background is dark enough to need it, so nothing goes unreadable.
+
 **Two layout families, including full-bleed.** *Minimal* is one to a few photos
 with room around them — including an edge-to-edge Full Bleed option with no
 margin at all. *Portfolio* is editorial — rows, collages, covers, and a

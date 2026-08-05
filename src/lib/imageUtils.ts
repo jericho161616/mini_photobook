@@ -19,6 +19,21 @@ export const POSTER_ROTATION_DEG = -6
 /** Thickness of the white ring around Circle Inset's second photo, relative to its own diameter. */
 export const CIRCLE_BORDER_RATIO = 0.045
 
+/**
+ * True for a background dark enough that the usual dark-ink caption/note text
+ * would be unreadable on it — used to flip to light parchment text instead.
+ * Shared between the editor and exportPdf so both make the same call.
+ */
+export function isDarkColor(hex: string): boolean {
+  const n = parseInt(hex.replace('#', ''), 16)
+  const r = (n >> 16) & 255
+  const g = (n >> 8) & 255
+  const b = n & 255
+  // Perceived luminance (ITU-R BT.601) — cheap and good enough for a on/off text-color call.
+  const luminance = (r * 299 + g * 587 + b * 114) / 1000
+  return luminance < 128
+}
+
 /** Read a file's intrinsic pixel dimensions without decoding it into the DOM. */
 async function measure(blob: Blob): Promise<{ width: number; height: number }> {
   if ('createImageBitmap' in window) {

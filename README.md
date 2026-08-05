@@ -178,7 +178,15 @@ that space goes to photos and layout instead. The picker itself is grouped
 into Photobook trims, printer paper (A6–A3), and novelty (Polaroid).
 
 **Light and dark themes**, matching your OS by default with a manual toggle in
-the top bar that's remembered next time you open the app.
+the top bar that's remembered next time you open the app. Both themes use a
+muted botanical palette — sage and putty tones instead of the earlier warm
+linen — carried through the editor, exported PDFs, and the on-page note text.
+
+**A tabbed editing panel**, not one long stack you scroll through. Selected
+Photo, Page Note, Layout, and Decorate live behind Photo/Note/Layout/Decorate
+tabs on the right, so the panel stays a fixed height no matter how much any
+one section grows — the doodle pad, say — instead of pushing everything below
+it further down the page.
 
 **300 DPI PDF export** at true trim dimensions. Pages are drawn programmatically
 onto a canvas rather than screenshotting the editor, so the output is genuinely

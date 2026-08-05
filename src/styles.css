@@ -1,63 +1,70 @@
+/*
+ * "Muted Botanical" — sage and putty instead of the earlier warm linen/navy,
+ * a calmer, quieter palette. --navy and --brass keep their original roles
+ * (cool primary accent / warm secondary accent) even though neither is
+ * literally navy or brass anymore, so the rest of the stylesheet didn't need
+ * to change to pick up the new colors.
+ */
 :root {
-  --paper: #f1eee7;
-  --ink: #201f1c;
-  --ink-soft: #5b564c;
-  --linen: #e4dfd3;
-  --linen-deep: #d8d1c0;
-  --navy: #2e3f52;
-  --navy-soft: #3f5570;
-  --brass: #a8763f;
-  --brass-soft: #c79a63;
-  --line: #c9c1af;
-  --page-stock: #fbfaf7;
-  --shadow: 0 1px 2px rgba(32, 31, 28, 0.06), 0 8px 24px rgba(32, 31, 28, 0.08);
+  --paper: #eeece2;
+  --ink: #26291f;
+  --ink-soft: #68705a;
+  --linen: #dde0cd;
+  --linen-deep: #c9cdb2;
+  --navy: #3f4d34;
+  --navy-soft: #586b48;
+  --brass: #6b7f5e;
+  --brass-soft: #8fa27f;
+  --line: #c2c5ac;
+  --page-stock: #f8f8f0;
+  --shadow: 0 1px 2px rgba(38, 41, 31, 0.06), 0 8px 24px rgba(38, 41, 31, 0.08);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #17181a;
-    --ink: #ece7dd;
-    --ink-soft: #a39c8d;
-    --linen: #212226;
-    --linen-deep: #2a2b2f;
-    --navy: #7c9dc2;
-    --navy-soft: #94b2d3;
-    --brass: #d2a46b;
-    --brass-soft: #e3be8c;
-    --line: #3a3b3e;
-    --page-stock: #e9e5da;
+    --paper: #181a15;
+    --ink: #e3e6d6;
+    --ink-soft: #9aa38a;
+    --linen: #21241c;
+    --linen-deep: #2a2e22;
+    --navy: #a9c08e;
+    --navy-soft: #bcd1a2;
+    --brass: #c9a24a;
+    --brass-soft: #ddbb6c;
+    --line: #383c2f;
+    --page-stock: #ece8da;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
   }
 }
 
 :root[data-theme='dark'] {
-  --paper: #17181a;
-  --ink: #ece7dd;
-  --ink-soft: #a39c8d;
-  --linen: #212226;
-  --linen-deep: #2a2b2f;
-  --navy: #7c9dc2;
-  --navy-soft: #94b2d3;
-  --brass: #d2a46b;
-  --brass-soft: #e3be8c;
-  --line: #3a3b3e;
-  --page-stock: #e9e5da;
+  --paper: #181a15;
+  --ink: #e3e6d6;
+  --ink-soft: #9aa38a;
+  --linen: #21241c;
+  --linen-deep: #2a2e22;
+  --navy: #a9c08e;
+  --navy-soft: #bcd1a2;
+  --brass: #c9a24a;
+  --brass-soft: #ddbb6c;
+  --line: #383c2f;
+  --page-stock: #ece8da;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 :root[data-theme='light'] {
-  --paper: #f1eee7;
-  --ink: #201f1c;
-  --ink-soft: #5b564c;
-  --linen: #e4dfd3;
-  --linen-deep: #d8d1c0;
-  --navy: #2e3f52;
-  --navy-soft: #3f5570;
-  --brass: #a8763f;
-  --brass-soft: #c79a63;
-  --line: #c9c1af;
-  --page-stock: #fbfaf7;
-  --shadow: 0 1px 2px rgba(32, 31, 28, 0.06), 0 8px 24px rgba(32, 31, 28, 0.08);
+  --paper: #eeece2;
+  --ink: #26291f;
+  --ink-soft: #68705a;
+  --linen: #dde0cd;
+  --linen-deep: #c9cdb2;
+  --navy: #3f4d34;
+  --navy-soft: #586b48;
+  --brass: #6b7f5e;
+  --brass-soft: #8fa27f;
+  --line: #c2c5ac;
+  --page-stock: #f8f8f0;
+  --shadow: 0 1px 2px rgba(38, 41, 31, 0.06), 0 8px 24px rgba(38, 41, 31, 0.08);
 }
 
 * {
@@ -334,6 +341,62 @@ input:focus-visible,
   min-height: 0;
   display: flex;
   flex-direction: column;
+}
+
+/*
+ * The tabbed right sidebar (Photo/Note/Layout/Decorate) is one card with its
+ * own tab row pinned at the top — overflow: hidden here so the tab row can
+ * never scroll out of reach; .tab-content is the part that actually scrolls
+ * when whichever panel is open (the doodle pad, say) runs long.
+ */
+.sidebar-tabbed {
+  overflow: hidden;
+  padding-right: 0;
+  background: var(--linen);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  gap: 0;
+}
+
+.sidebar-tabbed .tab-row {
+  display: flex;
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--line);
+}
+
+.sidebar-tabbed .tab-btn {
+  flex: 1;
+  padding: 11px 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+
+.sidebar-tabbed .tab-btn.active {
+  color: var(--navy);
+  border-bottom-color: var(--brass);
+  background: var(--page-stock);
+}
+
+.sidebar-tabbed .tab-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px;
+}
+
+/* The active panel sits directly in the tab card, so it drops its own
+   card chrome rather than nesting a card inside a card. */
+.sidebar-tabbed .tab-content > .panel {
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
 }
 
 .panel h2 .count {
@@ -885,7 +948,7 @@ input:focus-visible,
   justify-content: center;
   text-align: center;
   font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
-  color: #201f1c;
+  color: #26291f;
   overflow: hidden;
   white-space: nowrap;
   pointer-events: none;
@@ -893,7 +956,7 @@ input:focus-visible,
 
 .page-note {
   font-style: italic;
-  color: #5b564c;
+  color: #68705a;
   text-align: left;
   justify-content: flex-start;
   align-items: flex-start;
@@ -1713,7 +1776,7 @@ kbd {
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(46, 63, 82, 0.28);
+  background: rgba(63, 77, 52, 0.28);
 }
 
 .library-check {

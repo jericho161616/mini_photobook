@@ -3,16 +3,13 @@ import { getSize } from '../data/sizes'
 import { exportToPdf } from '../lib/exportPdf'
 import type { ThemeChoice } from '../lib/theme'
 import { useStore } from '../state/useStore'
-import { DecoratePanel } from './DecoratePanel'
 import { Filmstrip } from './Filmstrip'
-import { PageTextPanel } from './PageTextPanel'
 import { PhotoLibrary } from './PhotoLibrary'
 import { PhotoTray } from './PhotoTray'
+import { RightSidebarTabs } from './RightSidebarTabs'
 import { SizePanel } from './SizePanel'
 import { Slideshow } from './Slideshow'
-import { SlotInspector } from './SlotInspector'
 import { SpreadCanvas } from './SpreadCanvas'
-import { TemplatePanel } from './TemplatePanel'
 import { TopBar } from './TopBar'
 
 interface EditorProps {
@@ -114,12 +111,7 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
 
         <SpreadCanvas photos={photoMap} onOpenLibrary={() => setLibraryOpen(true)} />
 
-        <aside className="sidebar">
-          <SlotInspector />
-          <PageTextPanel />
-          <TemplatePanel />
-          <DecoratePanel />
-        </aside>
+        <RightSidebarTabs />
       </div>
 
       <Filmstrip photos={photoMap} />

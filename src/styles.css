@@ -1,70 +1,70 @@
 /*
- * "Muted Botanical" — sage and putty instead of the earlier warm linen/navy,
- * a calmer, quieter palette. --navy and --brass keep their original roles
- * (cool primary accent / warm secondary accent) even though neither is
- * literally navy or brass anymore, so the rest of the stylesheet didn't need
- * to change to pick up the new colors.
+ * "Ink & Parchment" — aged-paper cream with a deep ink accent in light mode,
+ * a near-black ground with parchment panels and antique gold in dark mode.
+ * --navy and --brass keep their original roles (cool/dark primary accent,
+ * warm secondary accent) even though neither is literally navy or brass, so
+ * the rest of the stylesheet didn't need to change to pick up the colors.
  */
 :root {
-  --paper: #eeece2;
-  --ink: #26291f;
-  --ink-soft: #68705a;
-  --linen: #dde0cd;
-  --linen-deep: #c9cdb2;
-  --navy: #3f4d34;
-  --navy-soft: #586b48;
-  --brass: #6b7f5e;
-  --brass-soft: #8fa27f;
-  --line: #c2c5ac;
-  --page-stock: #f8f8f0;
-  --shadow: 0 1px 2px rgba(38, 41, 31, 0.06), 0 8px 24px rgba(38, 41, 31, 0.08);
+  --paper: #ece4d0;
+  --ink: #241f16;
+  --ink-soft: #6b5f4a;
+  --linen: #ddd2b4;
+  --linen-deep: #cabb92;
+  --navy: #2b2419;
+  --navy-soft: #4a3f2c;
+  --brass: #a9822f;
+  --brass-soft: #c9a24a;
+  --line: #c4b78e;
+  --page-stock: #f7f2e4;
+  --shadow: 0 1px 2px rgba(36, 31, 22, 0.08), 0 8px 24px rgba(36, 31, 22, 0.1);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #181a15;
-    --ink: #e3e6d6;
-    --ink-soft: #9aa38a;
-    --linen: #21241c;
-    --linen-deep: #2a2e22;
-    --navy: #a9c08e;
-    --navy-soft: #bcd1a2;
+    --paper: #1c1a17;
+    --ink: #ece4d3;
+    --ink-soft: #a99d84;
+    --linen: #26231e;
+    --linen-deep: #332e26;
+    --navy: #c9b98a;
+    --navy-soft: #dccb9c;
     --brass: #c9a24a;
-    --brass-soft: #ddbb6c;
-    --line: #383c2f;
-    --page-stock: #ece8da;
+    --brass-soft: #e0bd6c;
+    --line: #3d372c;
+    --page-stock: #f2ead2;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
   }
 }
 
 :root[data-theme='dark'] {
-  --paper: #181a15;
-  --ink: #e3e6d6;
-  --ink-soft: #9aa38a;
-  --linen: #21241c;
-  --linen-deep: #2a2e22;
-  --navy: #a9c08e;
-  --navy-soft: #bcd1a2;
+  --paper: #1c1a17;
+  --ink: #ece4d3;
+  --ink-soft: #a99d84;
+  --linen: #26231e;
+  --linen-deep: #332e26;
+  --navy: #c9b98a;
+  --navy-soft: #dccb9c;
   --brass: #c9a24a;
-  --brass-soft: #ddbb6c;
-  --line: #383c2f;
-  --page-stock: #ece8da;
+  --brass-soft: #e0bd6c;
+  --line: #3d372c;
+  --page-stock: #f2ead2;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 :root[data-theme='light'] {
-  --paper: #eeece2;
-  --ink: #26291f;
-  --ink-soft: #68705a;
-  --linen: #dde0cd;
-  --linen-deep: #c9cdb2;
-  --navy: #3f4d34;
-  --navy-soft: #586b48;
-  --brass: #6b7f5e;
-  --brass-soft: #8fa27f;
-  --line: #c2c5ac;
-  --page-stock: #f8f8f0;
-  --shadow: 0 1px 2px rgba(38, 41, 31, 0.06), 0 8px 24px rgba(38, 41, 31, 0.08);
+  --paper: #ece4d0;
+  --ink: #241f16;
+  --ink-soft: #6b5f4a;
+  --linen: #ddd2b4;
+  --linen-deep: #cabb92;
+  --navy: #2b2419;
+  --navy-soft: #4a3f2c;
+  --brass: #a9822f;
+  --brass-soft: #c9a24a;
+  --line: #c4b78e;
+  --page-stock: #f7f2e4;
+  --shadow: 0 1px 2px rgba(36, 31, 22, 0.08), 0 8px 24px rgba(36, 31, 22, 0.1);
 }
 
 * {
@@ -948,7 +948,7 @@ input:focus-visible,
   justify-content: center;
   text-align: center;
   font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
-  color: #26291f;
+  color: #241f16;
   overflow: hidden;
   white-space: nowrap;
   pointer-events: none;
@@ -956,7 +956,7 @@ input:focus-visible,
 
 .page-note {
   font-style: italic;
-  color: #68705a;
+  color: #6b5f4a;
   text-align: left;
   justify-content: flex-start;
   align-items: flex-start;
@@ -1776,7 +1776,7 @@ kbd {
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(63, 77, 52, 0.28);
+  background: rgba(43, 36, 25, 0.28);
 }
 
 .library-check {

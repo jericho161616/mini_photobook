@@ -178,9 +178,10 @@ that space goes to photos and layout instead. The picker itself is grouped
 into Photobook trims, printer paper (A6–A3), and novelty (Polaroid).
 
 **Light and dark themes**, matching your OS by default with a manual toggle in
-the top bar that's remembered next time you open the app. Both themes use a
-muted botanical palette — sage and putty tones instead of the earlier warm
-linen — carried through the editor, exported PDFs, and the on-page note text.
+the top bar that's remembered next time you open the app. Both themes use an
+"Ink & Parchment" palette — aged-paper cream with a deep ink accent in light
+mode, a near-black ground with parchment panels and antique gold in dark
+mode — carried through the editor, exported PDFs, and the on-page note text.
 
 **A tabbed editing panel**, not one long stack you scroll through. Selected
 Photo, Page Note, Layout, and Decorate live behind Photo/Note/Layout/Decorate

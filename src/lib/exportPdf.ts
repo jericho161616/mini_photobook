@@ -33,9 +33,9 @@ const TAPE_COLORS: Record<string, string> = {
  * current theme, same as a physical page doesn't have a dark mode.
  */
 const ICON_PATHS: Record<string, { d: string; color: string }> = {
-  heart: { d: 'M12 20s-7-4.6-9.3-9C1 7.7 2.3 4 6 4c2 0 3.3 1.2 4 2.4C10.7 5.2 12 4 14 4c3.7 0 5 3.7 3.3 7-2.3 4.4-9.3 9-9.3 9z', color: '#6b7f5e' },
-  star: { d: 'M12 2.8l2.7 6.1 6.6.6-5 4.5 1.5 6.5-5.8-3.5-5.8 3.5 1.5-6.5-5-4.5 6.6-.6z', color: '#586b48' },
-  arrow: { d: 'M3 12h15M13 6l6 6-6 6', color: '#68705a' },
+  heart: { d: 'M12 20s-7-4.6-9.3-9C1 7.7 2.3 4 6 4c2 0 3.3 1.2 4 2.4C10.7 5.2 12 4 14 4c3.7 0 5 3.7 3.3 7-2.3 4.4-9.3 9-9.3 9z', color: '#a9822f' },
+  star: { d: 'M12 2.8l2.7 6.1 6.6.6-5 4.5 1.5 6.5-5.8-3.5-5.8 3.5 1.5-6.5-5-4.5 6.6-.6z', color: '#4a3f2c' },
+  arrow: { d: 'M3 12h15M13 6l6 6-6 6', color: '#6b5f4a' },
 }
 
 /** Greedy word wrap so canvas text (which doesn't wrap on its own) matches the on-screen note. */
@@ -171,7 +171,7 @@ async function renderPage(
   ) => {
     const fontSize = Math.round(scaleH * 0.026 * fontSizeScale(style.size))
     const weight = style.bold ? 'bold' : 'normal'
-    ctx.fillStyle = '#68705a'
+    ctx.fillStyle = '#6b5f4a'
     ctx.font = `${weight} ${fontSize}px ${fontStack(style.font)}`
     ctx.textAlign = centered ? 'center' : 'left'
     ctx.textBaseline = 'top'
@@ -224,7 +224,7 @@ async function renderPage(
   const drawFreeText = (rect: { x: number; y: number; w: number; h: number }, box: TextBox) => {
     if (!box.text.trim()) return
     const fontSize = Math.max(10, rect.h * 0.28) * fontSizeScale(box.size)
-    ctx.fillStyle = '#26291f'
+    ctx.fillStyle = '#241f16'
     ctx.font = `${box.bold ? 'bold' : 'normal'} ${fontSize}px ${fontStack(box.font)}`
     ctx.textAlign = box.align
     ctx.textBaseline = 'top'
@@ -306,7 +306,7 @@ async function renderPage(
   // Mirrors the on-screen caption so the printed cover matches the editor.
   if (template.caption && title.trim()) {
     const rect = slotPixelRect(template.caption, pageW, pageH, PAGE_MARGIN_RATIO)
-    ctx.fillStyle = '#26291f'
+    ctx.fillStyle = '#241f16'
     ctx.font = `${Math.round(pageH * 0.032)}px Georgia, "Times New Roman", serif`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'

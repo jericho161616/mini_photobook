@@ -499,7 +499,7 @@ input:focus-visible,
 /* photo tray */
 .photo-tray {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
   /* Grid items stretch to fill their row by default, which overrides
      aspect-ratio and lets one wide photo's row balloon every cell in it
      into a tall rectangle. align-items: start keeps each cell an actual

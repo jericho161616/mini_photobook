@@ -10,6 +10,13 @@ function nextPhotoId(): string {
 
 export const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
 
+/** Shared with SlotView and PageView so a photo's filter reads identically whether it's in a slot or a page background. */
+export const PHOTO_FILTER_CSS: Record<PhotoFilter, string> = {
+  bw: 'grayscale(1)',
+  sepia: 'sepia(0.75) saturate(1.1)',
+  negative: 'invert(1) hue-rotate(180deg)',
+}
+
 /**
  * Shared with exportPdf so the editor and the printed page agree exactly on
  * how much white mat surrounds an Instant Grid photo, and how much border and

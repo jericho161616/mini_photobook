@@ -3,6 +3,7 @@ import {
   CIRCLE_BORDER_RATIO,
   coverGeometry,
   FRAME_INSET_RATIO,
+  PHOTO_FILTER_CSS,
   photoThumbUrl,
   photoUrl,
   POSTER_BORDER_RATIO,
@@ -50,12 +51,6 @@ interface SlotViewProps {
   hasArmedPhoto?: boolean
   /** Present only for empty slots — omitted once a photo occupies the slot. */
   quickPick?: QuickPick
-}
-
-const FILTER_CSS: Record<string, string> = {
-  bw: 'grayscale(1)',
-  sepia: 'sepia(0.75) saturate(1.1)',
-  negative: 'invert(1) hue-rotate(180deg)',
 }
 
 export function SlotView({
@@ -236,7 +231,7 @@ export function SlotView({
               top: inset + geo.y,
               width: geo.drawWidth,
               height: geo.drawHeight,
-              filter: FILTER_CSS[forceFilter ?? placement?.filter ?? ''],
+              filter: (forceFilter ?? placement?.filter) ? PHOTO_FILTER_CSS[forceFilter ?? placement!.filter!] : undefined,
             }}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}

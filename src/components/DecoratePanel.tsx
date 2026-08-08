@@ -4,7 +4,7 @@ import { getTemplate, isFullSheetTemplate } from '../data/templates'
 import { decorationHost } from '../lib/autoLayout'
 import { photoThumbUrl } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
-import type { Page, StickerType, TextBox, TextStyle } from '../types'
+import type { Page, PhotoFilter, StickerType, TextBox, TextStyle } from '../types'
 import { BackgroundPhotoModal } from './BackgroundPhotoModal'
 import { DoodlePad } from './DoodlePad'
 import { PanelSection } from './PanelSection'
@@ -19,6 +19,13 @@ const PAGE_TINTS: { id: string; color: string; label: string }[] = [
   { id: 'deep-linen', color: '#cabb92', label: 'Deep linen' },
   { id: 'night', color: '#141414', label: 'Night' },
   { id: 'midnight-navy', color: '#171d29', label: 'Midnight navy' },
+]
+
+const BG_FILTERS: { id: PhotoFilter | 'none'; label: string }[] = [
+  { id: 'none', label: 'Color' },
+  { id: 'bw', label: 'B&W' },
+  { id: 'sepia', label: 'Sepia' },
+  { id: 'negative', label: 'Negative' },
 ]
 
 const COVERAGE_OPTIONS: { id: NonNullable<Page['backgroundPhotoCoverage']>; label: string; title: string }[] = [
@@ -82,6 +89,7 @@ export function DecoratePanel() {
   const setPageBackgroundPhoto = useStore((s) => s.setPageBackgroundPhoto)
   const setPageBackgroundDim = useStore((s) => s.setPageBackgroundDim)
   const setPageBackgroundCoverage = useStore((s) => s.setPageBackgroundCoverage)
+  const setPageBackgroundFilter = useStore((s) => s.setPageBackgroundFilter)
   const setPageMarginScale = useStore((s) => s.setPageMarginScale)
   const uploadInputRef = useRef<HTMLInputElement>(null)
   const [browsingPhotos, setBrowsingPhotos] = useState(false)
@@ -201,6 +209,24 @@ export function DecoratePanel() {
                   title={opt.title}
                 >
                   {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {page.backgroundPhotoId !== undefined && (
+          <div className="inspector-row">
+            <label>Filter</label>
+            <div className="filter-chips-row">
+              {BG_FILTERS.map((f) => (
+                <button
+                  key={f.id}
+                  className={`filter-chip-btn${(page.backgroundPhotoFilter ?? 'none') === f.id ? ' active' : ''}`}
+                  onClick={() => setPageBackgroundFilter(activePageIndex, f.id === 'none' ? undefined : f.id)}
+                  aria-pressed={(page.backgroundPhotoFilter ?? 'none') === f.id}
+                >
+                  {f.label}
                 </button>
               ))}
             </div>

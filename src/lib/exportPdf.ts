@@ -143,7 +143,9 @@ export async function renderPage(
     ctx.beginPath()
     ctx.rect(bgRect.x, bgRect.y, bgRect.w, bgRect.h)
     ctx.clip()
+    ctx.filter = page.backgroundPhotoFilter ? FILTER_CANVAS[page.backgroundPhotoFilter] : 'none'
     ctx.drawImage(backgroundBitmap, bgRect.x + geo.x, bgRect.y + geo.y, geo.drawWidth, geo.drawHeight)
+    ctx.filter = 'none'
     ctx.fillStyle = `rgba(10, 8, 5, ${(page.backgroundDim ?? 35) / 100})`
     ctx.fillRect(bgRect.x, bgRect.y, bgRect.w, bgRect.h)
     ctx.restore()

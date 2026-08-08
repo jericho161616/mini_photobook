@@ -40,6 +40,8 @@ interface PageViewProps {
   onDropPhoto: (slotIndex: number, photoId: string, halfIndex?: 0 | 1) => void
   onPan: (slotIndex: number, offsetX: number, offsetY: number, halfIndex?: 0 | 1) => void
   onToggleLock: () => void
+  /** Opens this page even larger in a full-screen overlay — omitted for the overlay's own PageView instance. */
+  onFullscreen?: () => void
   /** True while a photo is picked up for click-to-place — an empty slot places it instead of opening the quick picker. */
   hasArmedPhoto: boolean
   /** Lets an empty slot pop open a small picker of recently-unplaced photos instead of requiring a drag. */
@@ -86,6 +88,7 @@ export function PageView({
   onDropPhoto,
   onPan,
   onToggleLock,
+  onFullscreen,
   hasArmedPhoto,
   quickPick,
   sizePicker,
@@ -140,6 +143,19 @@ export function PageView({
       >
         {page.locked ? '🔒' : '🔓'}
       </button>
+      {onFullscreen && (
+        <button
+          className="page-fullscreen"
+          onClick={(e) => {
+            e.stopPropagation()
+            onFullscreen()
+          }}
+          aria-label={`View page ${pageIndex + 1} full-screen`}
+          title="View even larger, full-screen"
+        >
+          ⤢
+        </button>
+      )}
       {sizePicker && (
         <select
           className="page-size-picker"

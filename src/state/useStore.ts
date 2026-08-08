@@ -5,6 +5,7 @@ import {
   applyTemplateToPage,
   autoLayout,
   fitPageToSize,
+  insertPage,
   normalizePages,
   placementFor,
   reconcileTemplates,
@@ -13,7 +14,7 @@ import {
 } from '../lib/autoLayout'
 import * as storage from '../lib/db'
 import { clampOffset, clampZoom, importFiles, releasePhotoUrl } from '../lib/imageUtils'
-import { MIN_PAGES } from '../types'
+import { MAX_PAGES, MIN_PAGES } from '../types'
 import type {
   CustomSticker,
   HalfLayout,
@@ -96,6 +97,8 @@ interface StoreState {
   setTitle: (title: string) => void
   setSize: (sizeId: string) => void
   setPageCount: (count: number) => void
+  /** Inserts one new blank page at `position` (shifting later pages back), instead of only ever appending at the end. No-op at MAX_PAGES. */
+  insertPageAt: (position: number) => void
   regenerate: () => void
   setActivePage: (index: number) => void
   setActiveHalf: (halfIndex: 0 | 1) => void
@@ -384,6 +387,20 @@ export const useStore = create<StoreState>((set, get) => {
           activePageIndex: Math.min(state.activePageIndex, pages.length - 1),
           selected: null,
         }
+      })
+      persist()
+    },
+
+    insertPageAt(position) {
+      const { pages, sizeId } = get()
+      if (pages.length >= MAX_PAGES) return
+      recordHistory()
+      const size = getSize(sizeId)
+      set({
+        pages: insertPage(pages, position, size),
+        activePageIndex: position,
+        activeHalfIndex: 0,
+        selected: null,
       })
       persist()
     },

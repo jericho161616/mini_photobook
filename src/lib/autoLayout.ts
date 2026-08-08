@@ -277,6 +277,20 @@ export function resizePages(pages: Page[], pageCount: number, size: BookSize): P
 }
 
 /**
+ * A single new blank page, inserted at `position` (0 is before the current
+ * first page, `pages.length` is after the current last) rather than only
+ * ever appending at the end — for slotting a page in between two existing
+ * ones without disturbing anything already on either side of it.
+ */
+export function insertPage(pages: Page[], position: number, size: BookSize): Page[] {
+  const candidates = shapeFitting(templatesForSize(size), size)
+  const page = makePage(candidates[position % candidates.length].id)
+  const next = [...pages]
+  next.splice(position, 0, page)
+  return next
+}
+
+/**
  * When the book size changes, some templates may now be too dense. Swap those
  * pages to the closest allowed layout, carrying over as many photos as fit.
  */

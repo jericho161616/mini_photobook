@@ -740,6 +740,75 @@ input:focus-visible,
   opacity: 1;
 }
 
+.page-fullscreen {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 0.35;
+  transition: opacity 0.15s;
+}
+
+.page:hover .page-fullscreen {
+  opacity: 0.9;
+}
+
+.page-fullscreen:hover {
+  opacity: 1;
+}
+
+.page-zoom-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-zoom-frame {
+  position: relative;
+}
+
+.page-zoom-frame .page {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.page-zoom-close {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.page-zoom-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
 .page-size-picker {
   position: absolute;
   top: 8px;
@@ -1784,13 +1853,36 @@ kbd {
 .filmstrip {
   flex: 0 0 auto;
   display: flex;
-  gap: 10px;
+  align-items: center;
+  gap: 2px;
   overflow-x: auto;
   padding: 14px;
   background: var(--linen);
   border: 1px solid var(--line);
-  border-radius: 10px;
-  box-shadow: var(--shadow);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.fs-insert {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 28px;
+  border: none;
+  background: none;
+  color: transparent;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1;
+  transition: color 0.1s, background 0.1s;
+}
+
+.fs-insert:hover:not(:disabled) {
+  color: var(--ink-soft);
+  background: var(--paper);
+}
+
+.fs-insert:disabled {
+  cursor: not-allowed;
 }
 
 .fs-item {
@@ -2707,11 +2799,19 @@ kbd {
   border: 1px solid var(--line);
   border-radius: 7px;
   background: var(--paper);
+  overflow: hidden;
 }
 
 .doodle-tray-btn img {
   position: absolute;
   inset: 3px;
+  /* A position:absolute + inset alone doesn't stretch a replaced element
+     (an <img> keeps its natural pixel size) the way it stretches a <div> —
+     explicit percentage dimensions are required to actually fill the inset
+     box, or a large drawing renders at full size and spills out of its tray
+     thumbnail. overflow: hidden above is a second guard against that. */
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
   object-fit: contain;
 }
 

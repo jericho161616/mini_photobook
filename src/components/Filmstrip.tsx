@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { getSize, sizeRatio } from '../data/sizes'
 import { getTemplate } from '../data/templates'
 import { resolvePageSize } from '../lib/autoLayout'
 import { photoThumbUrl } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
-import type { Photo } from '../types'
+import { MAX_PAGES, type Photo } from '../types'
 
 const THUMB_WIDTH = 72
 
@@ -15,20 +15,36 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
   const setActivePage = useStore((s) => s.setActivePage)
   const movePage = useStore((s) => s.movePage)
   const togglePageLock = useStore((s) => s.togglePageLock)
+  const insertPageAt = useStore((s) => s.insertPageAt)
+  const canInsert = pages.length < MAX_PAGES
 
   const [dragFrom, setDragFrom] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
 
   const size = getSize(sizeId)
 
+  const insertGap = (position: number) => (
+    <button
+      className="fs-insert"
+      onClick={() => insertPageAt(position)}
+      disabled={!canInsert}
+      aria-label={`Insert a new page here (position ${position + 1})`}
+      title={canInsert ? 'Insert a new page here' : `Maximum is ${MAX_PAGES} pages`}
+    >
+      +
+    </button>
+  )
+
   return (
     <footer className="filmstrip">
+      {insertGap(0)}
       {pages.map((page, index) => {
         const template = getTemplate(page.templateId)
         const ratio = sizeRatio(resolvePageSize(page, size))
         const height = THUMB_WIDTH / ratio
         return (
-          <div className="fs-item" key={page.id}>
+          <Fragment key={page.id}>
+            <div className="fs-item">
             <div className="fs-page-wrap" style={{ width: THUMB_WIDTH, height }}>
               <button
                 className={[
@@ -120,7 +136,9 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
               </button>
             </div>
             <span className="fs-num mono">{index + 1}</span>
-          </div>
+            </div>
+            {insertGap(index + 1)}
+          </Fragment>
         )
       })}
     </footer>

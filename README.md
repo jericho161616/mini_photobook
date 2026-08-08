@@ -170,7 +170,15 @@ open book — a two-page spread mostly wasted space (a blank placeholder next
 to a lone opening page, or dead air below a short, wide A4 Folded sheet)
 without actually helping you work on either page faster. The ‹ › arrows
 beside the page (or the filmstrip below) move to the page before or after,
-one at a time — you never see two at once.
+one at a time — you never see two at once. A small ⤢ button in the corner
+still opens it even larger in a full-screen overlay, for checking crops and
+details up close — the same live page underneath, click the × or press Esc
+to close it.
+
+**Insert a page anywhere, not just at the end.** Small "+" gaps between the
+filmstrip's page thumbnails (and one before the first page) drop a new blank
+page in exactly that spot, shifting everything after it back by one — for
+slotting a page in between two existing ones without disturbing either.
 
 **Undo and redo.** Ctrl+Z (Cmd+Z on Mac) steps back through layout, text,
 photo-placement, and decoration changes; Ctrl+Shift+Z or Ctrl+Y steps forward

@@ -165,6 +165,77 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
   const canPrev = activePageIndex > 0
   const canNext = activePageIndex < pages.length - 1
 
+  const [zoomed, setZoomed] = useState(false)
+
+  useEffect(() => {
+    if (!zoomed) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setZoomed(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [zoomed])
+
+  // Everything a PageView needs besides its own size and whether it can open
+  // the zoom overlay — shared between the normal view and the zoomed-in one
+  // so the same page stays fully interactive (pan, select, drop) at any size.
+  const pageViewProps = (allowFullscreen: boolean) => ({
+    page,
+    pageIndex: activePageIndex,
+    photos,
+    customStickers,
+    side: 'single' as const,
+    title,
+    selectedSlot: selected?.pageIndex === activePageIndex ? selected.slotIndex : null,
+    selectedHalfIndex: selected?.pageIndex === activePageIndex ? selected.halfIndex : undefined,
+    onSelectSlot: (slotIndex: number, halfIndex?: 0 | 1) =>
+      armedPhotoIds.length > 0
+        ? placeArmedPhoto({ pageIndex: activePageIndex, slotIndex, halfIndex })
+        : select({ pageIndex: activePageIndex, slotIndex, halfIndex }),
+    onDropPhoto: (slotIndex: number, photoId: string, halfIndex?: 0 | 1) =>
+      assignPhoto({ pageIndex: activePageIndex, slotIndex, halfIndex }, photoId),
+    onPan: (slotIndex: number, offsetX: number, offsetY: number, halfIndex?: 0 | 1) =>
+      updatePlacement({ pageIndex: activePageIndex, slotIndex, halfIndex }, { offsetX, offsetY }),
+    onToggleLock: () => togglePageLock(activePageIndex),
+    onFullscreen: allowFullscreen ? () => setZoomed(true) : undefined,
+    sizePicker,
+    foldOrientation,
+    hasArmedPhoto: armedPhotoIds.length > 0,
+    quickPick: {
+      openKey: quickPickKey,
+      keyFor: (slotIndex: number, halfIndex?: 0 | 1) => `${activePageIndex}:${halfIndex ?? 'p'}:${slotIndex}`,
+      photos: unplacedPhotos,
+      onOpen: (key: string) => setQuickPickKey(key),
+      onClose: () => setQuickPickKey(null),
+      onPick: (slotIndex: number, photoId: string, halfIndex?: 0 | 1) => {
+        assignPhoto({ pageIndex: activePageIndex, slotIndex, halfIndex }, photoId)
+        setQuickPickKey(null)
+      },
+      onOpenLibrary: () => {
+        setQuickPickKey(null)
+        onOpenLibrary()
+      },
+    },
+    decorations: {
+      selected: selectedDecoration,
+      onSelect: selectDecoration,
+      onChangeSticker: updateSticker,
+      onChangeTextBox: updateTextBox,
+      onDelete: removeDecoration,
+    },
+  })
+
+  // Sized to fit comfortably inside the viewport rather than the canvas's
+  // own available space, preserving the page's own aspect ratio.
+  const zoomDims = useMemo(() => {
+    if (!zoomed) return null
+    const ratio = sizeRatio(pageSize)
+    const maxW = window.innerWidth * 0.86
+    const maxH = window.innerHeight * 0.86
+    const width = Math.min(maxW, maxH * ratio)
+    return { width, height: width / ratio }
+  }, [zoomed, pageSize])
+
   return (
     <main className={`canvas-area${armedPhotoIds.length > 0 ? ' armed' : ''}`} ref={areaRef}>
       <div className="page-row">
@@ -178,57 +249,7 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
           ‹
         </button>
 
-        {page && (
-          <PageView
-            page={page}
-            pageIndex={activePageIndex}
-            photos={photos}
-            customStickers={customStickers}
-            side="single"
-            title={title}
-            width={dims.width}
-            height={dims.height}
-            selectedSlot={selected?.pageIndex === activePageIndex ? selected.slotIndex : null}
-            selectedHalfIndex={selected?.pageIndex === activePageIndex ? selected.halfIndex : undefined}
-            onSelectSlot={(slotIndex, halfIndex) =>
-              armedPhotoIds.length > 0
-                ? placeArmedPhoto({ pageIndex: activePageIndex, slotIndex, halfIndex })
-                : select({ pageIndex: activePageIndex, slotIndex, halfIndex })
-            }
-            onDropPhoto={(slotIndex, photoId, halfIndex) =>
-              assignPhoto({ pageIndex: activePageIndex, slotIndex, halfIndex }, photoId)
-            }
-            onPan={(slotIndex, offsetX, offsetY, halfIndex) =>
-              updatePlacement({ pageIndex: activePageIndex, slotIndex, halfIndex }, { offsetX, offsetY })
-            }
-            onToggleLock={() => togglePageLock(activePageIndex)}
-            sizePicker={sizePicker}
-            foldOrientation={foldOrientation}
-            hasArmedPhoto={armedPhotoIds.length > 0}
-            quickPick={{
-              openKey: quickPickKey,
-              keyFor: (slotIndex, halfIndex) => `${activePageIndex}:${halfIndex ?? 'p'}:${slotIndex}`,
-              photos: unplacedPhotos,
-              onOpen: (key) => setQuickPickKey(key),
-              onClose: () => setQuickPickKey(null),
-              onPick: (slotIndex, photoId, halfIndex) => {
-                assignPhoto({ pageIndex: activePageIndex, slotIndex, halfIndex }, photoId)
-                setQuickPickKey(null)
-              },
-              onOpenLibrary: () => {
-                setQuickPickKey(null)
-                onOpenLibrary()
-              },
-            }}
-            decorations={{
-              selected: selectedDecoration,
-              onSelect: selectDecoration,
-              onChangeSticker: updateSticker,
-              onChangeTextBox: updateTextBox,
-              onDelete: removeDecoration,
-            }}
-          />
-        )}
+        {page && <PageView {...pageViewProps(true)} width={dims.width} height={dims.height} />}
 
         <button
           className="page-nav next"
@@ -257,6 +278,17 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
           tray first and then the slot. Click a filled slot to adjust it, or press Delete to clear
           it.
         </p>
+      )}
+
+      {zoomed && page && zoomDims && (
+        <div className="page-zoom-overlay" onClick={() => setZoomed(false)}>
+          <div className="page-zoom-frame" onClick={(e) => e.stopPropagation()}>
+            <button className="page-zoom-close" onClick={() => setZoomed(false)} aria-label="Close full-screen view">
+              ×
+            </button>
+            <PageView {...pageViewProps(false)} width={zoomDims.width} height={zoomDims.height} />
+          </div>
+        </div>
       )}
     </main>
   )

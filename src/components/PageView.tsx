@@ -5,6 +5,7 @@ import { PAGE_MARGIN_RATIO } from '../lib/exportPdf'
 import {
   isDarkColor,
   isOverlaySlot,
+  PHOTO_FILTER_CSS,
   photoUrl,
   resolveOverlayPosition,
   resolveSlotStyle,
@@ -144,6 +145,7 @@ export function PageView({
             style={{
               inset: backgroundPhotoInset(page.backgroundPhotoCoverage),
               backgroundImage: `url(${photoUrl(backgroundPhoto)})`,
+              filter: page.backgroundPhotoFilter ? PHOTO_FILTER_CSS[page.backgroundPhotoFilter] : undefined,
             }}
             aria-hidden="true"
           />

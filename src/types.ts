@@ -236,6 +236,8 @@ export interface Page {
   backgroundDim?: number
   /** How much of the page backgroundPhotoId covers — undefined (or 'full') means edge to edge. */
   backgroundPhotoCoverage?: 'full' | 'left' | 'right' | 'top' | 'bottom'
+  /** Same B&W/sepia/negative treatment as a slotted photo's filter, applied to backgroundPhotoId. */
+  backgroundPhotoFilter?: PhotoFilter
   /** Multiplies the template's own margin — 1 is the default, smaller is tighter, larger is looser. */
   marginScale?: number
 }

@@ -1,11 +1,32 @@
 import { useRef } from 'react'
 import { FONT_OPTIONS, FONT_SIZE_OPTIONS, fontSizeScale, fontStack } from '../data/fonts'
-import { getTemplate } from '../data/templates'
+import { getTemplate, isFullSheetTemplate } from '../data/templates'
 import { decorationHost } from '../lib/autoLayout'
+import { photoThumbUrl } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
+import type { Page, StickerType, TextBox, TextStyle } from '../types'
 import { DoodlePad } from './DoodlePad'
+import { PanelSection } from './PanelSection'
 import { StickerGlyph } from './StickerGlyph'
-import type { StickerType, TextBox, TextStyle } from '../types'
+
+/** A handful of tinted "cardstock" options — swatches, not a full color picker, to keep this simple. */
+const PAGE_TINTS: { id: string; color: string; label: string }[] = [
+  { id: 'warm', color: '#e8ded0', label: 'Warm' },
+  { id: 'sage', color: '#dfe3d8', label: 'Sage' },
+  { id: 'blush', color: '#e3d6d0', label: 'Blush' },
+  { id: 'dusty-blue', color: '#d8dfe3', label: 'Dusty blue' },
+  { id: 'deep-linen', color: '#cabb92', label: 'Deep linen' },
+  { id: 'night', color: '#141414', label: 'Night' },
+  { id: 'midnight-navy', color: '#171d29', label: 'Midnight navy' },
+]
+
+const COVERAGE_OPTIONS: { id: NonNullable<Page['backgroundPhotoCoverage']>; label: string; title: string }[] = [
+  { id: 'full', label: 'Whole', title: 'Whole page' },
+  { id: 'left', label: 'Left', title: 'Left half' },
+  { id: 'right', label: 'Right', title: 'Right half' },
+  { id: 'top', label: 'Top', title: 'Top half' },
+  { id: 'bottom', label: 'Bottom', title: 'Bottom half' },
+]
 
 /** Longest edge kept for an uploaded sticker image — plenty for a decoration, and keeps the book's own storage small. */
 const UPLOADED_STICKER_MAX_EDGE = 640
@@ -55,12 +76,19 @@ export function DecoratePanel() {
   const updateTextBox = useStore((s) => s.updateTextBox)
   const removeDecoration = useStore((s) => s.removeDecoration)
   const addCustomSticker = useStore((s) => s.addCustomSticker)
+  const photos = useStore((s) => s.photos)
+  const setPageBackground = useStore((s) => s.setPageBackground)
+  const setPageBackgroundPhoto = useStore((s) => s.setPageBackgroundPhoto)
+  const setPageBackgroundDim = useStore((s) => s.setPageBackgroundDim)
+  const setPageBackgroundCoverage = useStore((s) => s.setPageBackgroundCoverage)
+  const setPageMarginScale = useStore((s) => s.setPageMarginScale)
   const uploadInputRef = useRef<HTMLInputElement>(null)
 
   const page = pages[activePageIndex]
   if (!page) return null
 
-  const isSplit = Boolean(getTemplate(page.templateId).halfSplit && page.halves)
+  const template = getTemplate(page.templateId)
+  const isSplit = Boolean(template.halfSplit && page.halves)
   const targetHalf = isSplit ? activeHalfIndex : undefined
   const host = decorationHost(page, targetHalf)
 
@@ -90,6 +118,110 @@ export function DecoratePanel() {
           ? 'Placed on whichever half is selected in the Layout panel above.'
           : 'Drag onto the page, resize from the corner, drag the × to remove.'}
       </p>
+
+      <PanelSection title="Page styling" defaultOpen>
+        <div className="inspector-row">
+          <label>Background</label>
+          <div className="filter-chips-row">
+            <button
+              className={`filter-chip-btn${!page.backgroundColor && !page.backgroundPhotoId ? ' active' : ''}`}
+              onClick={() => setPageBackground(activePageIndex, undefined)}
+              aria-pressed={!page.backgroundColor && !page.backgroundPhotoId}
+            >
+              None
+            </button>
+            {PAGE_TINTS.map((tint) => (
+              <button
+                key={tint.id}
+                className={`filter-chip-btn${page.backgroundColor === tint.color ? ' active' : ''}`}
+                onClick={() => setPageBackground(activePageIndex, tint.color)}
+                aria-pressed={page.backgroundColor === tint.color}
+                title={tint.label}
+              >
+                <span className="tint-swatch" style={{ background: tint.color }} aria-hidden="true" />
+              </button>
+            ))}
+            {!isFullSheetTemplate(template) && (
+              <button
+                className={`filter-chip-btn${page.backgroundPhotoId ? ' active' : ''}`}
+                onClick={() => setPageBackgroundPhoto(activePageIndex, page.backgroundPhotoId ?? photos[0]?.id)}
+                aria-pressed={!!page.backgroundPhotoId}
+                disabled={photos.length === 0}
+                title={photos.length === 0 ? 'Add photos first' : "Use a photo as this page's background"}
+              >
+                Photo
+              </button>
+            )}
+          </div>
+        </div>
+
+        {page.backgroundPhotoId !== undefined && (
+          <div className="inspector-row bg-photo-row">
+            <label>Choose photo</label>
+            <div className="bg-photo-grid">
+              {photos.map((p) => (
+                <button
+                  key={p.id}
+                  className={`bg-photo-thumb${page.backgroundPhotoId === p.id ? ' active' : ''}`}
+                  style={{ backgroundImage: `url(${photoThumbUrl(p)})` }}
+                  onClick={() => setPageBackgroundPhoto(activePageIndex, p.id)}
+                  aria-pressed={page.backgroundPhotoId === p.id}
+                  title={p.name}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {page.backgroundPhotoId !== undefined && (
+          <div className="inspector-row">
+            <label>Covers</label>
+            <div className="filter-chips-row">
+              {COVERAGE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.id}
+                  className={`filter-chip-btn${(page.backgroundPhotoCoverage ?? 'full') === opt.id ? ' active' : ''}`}
+                  onClick={() => setPageBackgroundCoverage(activePageIndex, opt.id === 'full' ? undefined : opt.id)}
+                  aria-pressed={(page.backgroundPhotoCoverage ?? 'full') === opt.id}
+                  title={opt.title}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {page.backgroundPhotoId !== undefined && (
+          <div className="inspector-row">
+            <label htmlFor="bg-dim">Darken</label>
+            <input
+              id="bg-dim"
+              type="range"
+              min={0}
+              max={80}
+              step={5}
+              value={page.backgroundDim ?? 35}
+              onChange={(e) => setPageBackgroundDim(activePageIndex, Number(e.target.value))}
+            />
+            <span className="value mono">{page.backgroundDim ?? 35}%</span>
+          </div>
+        )}
+
+        <div className="inspector-row">
+          <label htmlFor="margin-scale">Margin</label>
+          <input
+            id="margin-scale"
+            type="range"
+            min={0.3}
+            max={2}
+            step={0.05}
+            value={page.marginScale ?? 1}
+            onChange={(e) => setPageMarginScale(activePageIndex, Number(e.target.value))}
+          />
+          <span className="value mono">{Math.round((page.marginScale ?? 1) * 100)}%</span>
+        </div>
+      </PanelSection>
 
       <div className="sticker-tray">
         {STICKERS.map((s) => (

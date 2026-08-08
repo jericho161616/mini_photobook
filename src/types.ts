@@ -234,6 +234,8 @@ export interface Page {
   backgroundPhotoId?: string
   /** How much to darken backgroundPhotoId for legibility, 0–100. Meaningless without one. */
   backgroundDim?: number
+  /** How much of the page backgroundPhotoId covers — undefined (or 'full') means edge to edge. */
+  backgroundPhotoCoverage?: 'full' | 'left' | 'right' | 'top' | 'bottom'
   /** Multiplies the template's own margin — 1 is the default, smaller is tighter, larger is looser. */
   marginScale?: number
 }

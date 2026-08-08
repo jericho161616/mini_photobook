@@ -1,8 +1,7 @@
-import { Fragment, useState } from 'react'
+import { Fragment } from 'react'
 import { foldOrientationForSize, getSize } from '../data/sizes'
 import {
   getTemplate,
-  isFullSheetTemplate,
   MAX_PHOTOS_PER_HALF,
   SHAPE_FILTERS,
   STYLE_FILTERS,
@@ -11,20 +10,9 @@ import {
   templatesForSize,
 } from '../data/templates'
 import { resolvePageSize } from '../lib/autoLayout'
-import { photoThumbUrl } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
 import type { Shape, Template, TemplateFamily } from '../types'
-
-/** A handful of tinted "cardstock" options — swatches, not a full color picker, to keep this simple. */
-const PAGE_TINTS: { id: string; color: string; label: string }[] = [
-  { id: 'warm', color: '#e8ded0', label: 'Warm' },
-  { id: 'sage', color: '#dfe3d8', label: 'Sage' },
-  { id: 'blush', color: '#e3d6d0', label: 'Blush' },
-  { id: 'dusty-blue', color: '#d8dfe3', label: 'Dusty blue' },
-  { id: 'deep-linen', color: '#cabb92', label: 'Deep linen' },
-  { id: 'night', color: '#141414', label: 'Night' },
-  { id: 'midnight-navy', color: '#171d29', label: 'Midnight navy' },
-]
+import { PanelSection } from './PanelSection'
 
 /** A grid of template swatches — reused for both the whole-page picker and each half's own. */
 function TemplateGrid({
@@ -84,30 +72,6 @@ function TemplateGrid({
   )
 }
 
-/** A collapsible group within the Layout panel — "Choose a template" vs. "Page styling" answer different questions, so each gets its own disclosure instead of one long scroll. */
-function PanelSection({
-  title,
-  defaultOpen,
-  children,
-}: {
-  title: string
-  defaultOpen: boolean
-  children: React.ReactNode
-}) {
-  const [open, setOpen] = useState(defaultOpen)
-  return (
-    <div className={`panel-section${open ? '' : ' collapsed'}`}>
-      <button className="panel-section-head" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-        <span>{title}</span>
-        <span className="chev" aria-hidden="true">
-          ▾
-        </span>
-      </button>
-      {open && <div className="panel-section-body">{children}</div>}
-    </div>
-  )
-}
-
 export function TemplatePanel() {
   const sizeId = useStore((s) => s.sizeId)
   const pages = useStore((s) => s.pages)
@@ -120,11 +84,6 @@ export function TemplatePanel() {
   const applyHalfTemplate = useStore((s) => s.applyHalfTemplate)
   const activeHalfIndex = useStore((s) => s.activeHalfIndex)
   const setActiveHalf = useStore((s) => s.setActiveHalf)
-  const setPageBackground = useStore((s) => s.setPageBackground)
-  const setPageBackgroundPhoto = useStore((s) => s.setPageBackgroundPhoto)
-  const setPageBackgroundDim = useStore((s) => s.setPageBackgroundDim)
-  const setPageMarginScale = useStore((s) => s.setPageMarginScale)
-  const photos = useStore((s) => s.photos)
 
   const bookSize = getSize(sizeId)
   const currentPage = pages[activePageIndex]
@@ -259,95 +218,6 @@ export function TemplatePanel() {
           />
         )}
       </PanelSection>
-
-      {currentPage && (
-        <PanelSection title="Page styling" defaultOpen={false}>
-          <div className="inspector-row">
-            <label>Background</label>
-            <div className="filter-chips-row">
-              <button
-                className={`filter-chip-btn${
-                  !currentPage.backgroundColor && !currentPage.backgroundPhotoId ? ' active' : ''
-                }`}
-                onClick={() => setPageBackground(activePageIndex, undefined)}
-                aria-pressed={!currentPage.backgroundColor && !currentPage.backgroundPhotoId}
-              >
-                None
-              </button>
-              {PAGE_TINTS.map((tint) => (
-                <button
-                  key={tint.id}
-                  className={`filter-chip-btn${currentPage.backgroundColor === tint.color ? ' active' : ''}`}
-                  onClick={() => setPageBackground(activePageIndex, tint.color)}
-                  aria-pressed={currentPage.backgroundColor === tint.color}
-                  title={tint.label}
-                >
-                  <span className="tint-swatch" style={{ background: tint.color }} aria-hidden="true" />
-                </button>
-              ))}
-              {!isFullSheetTemplate(containerTemplate!) && (
-                <button
-                  className={`filter-chip-btn${currentPage.backgroundPhotoId ? ' active' : ''}`}
-                  onClick={() => setPageBackgroundPhoto(activePageIndex, currentPage.backgroundPhotoId ?? photos[0]?.id)}
-                  aria-pressed={!!currentPage.backgroundPhotoId}
-                  disabled={photos.length === 0}
-                  title={photos.length === 0 ? 'Add photos first' : "Use a photo as this page's background"}
-                >
-                  Photo
-                </button>
-              )}
-            </div>
-          </div>
-
-          {currentPage.backgroundPhotoId !== undefined && (
-            <div className="inspector-row bg-photo-row">
-              <label>Choose photo</label>
-              <div className="bg-photo-grid">
-                {photos.map((p) => (
-                  <button
-                    key={p.id}
-                    className={`bg-photo-thumb${currentPage.backgroundPhotoId === p.id ? ' active' : ''}`}
-                    style={{ backgroundImage: `url(${photoThumbUrl(p)})` }}
-                    onClick={() => setPageBackgroundPhoto(activePageIndex, p.id)}
-                    aria-pressed={currentPage.backgroundPhotoId === p.id}
-                    title={p.name}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {currentPage.backgroundPhotoId !== undefined && (
-            <div className="inspector-row">
-              <label htmlFor="bg-dim">Darken</label>
-              <input
-                id="bg-dim"
-                type="range"
-                min={0}
-                max={80}
-                step={5}
-                value={currentPage.backgroundDim ?? 35}
-                onChange={(e) => setPageBackgroundDim(activePageIndex, Number(e.target.value))}
-              />
-              <span className="value mono">{currentPage.backgroundDim ?? 35}%</span>
-            </div>
-          )}
-
-          <div className="inspector-row">
-            <label htmlFor="margin-scale">Margin</label>
-            <input
-              id="margin-scale"
-              type="range"
-              min={0.3}
-              max={2}
-              step={0.05}
-              value={currentPage.marginScale ?? 1}
-              onChange={(e) => setPageMarginScale(activePageIndex, Number(e.target.value))}
-            />
-            <span className="value mono">{Math.round((currentPage.marginScale ?? 1) * 100)}%</span>
-          </div>
-        </PanelSection>
-      )}
     </section>
   )
 }

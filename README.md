@@ -306,10 +306,14 @@ no change to what any control does.
 
 **A background photo for any page**, alongside the existing tinted-cardstock
 option — pick any photo (even one already placed in a slot elsewhere) to fill
-the whole page behind its slots, with a Darken slider so foreground photos
-and captions stay legible. Not offered on Full Bleed or Full Sheet templates,
+the page behind its slots, with a Darken slider so foreground photos and
+captions stay legible. A Covers control picks how much of the page it
+fills — the whole page, or just its left/right/top/bottom half, leaving the
+rest plain background. Not offered on Full Bleed or Full Sheet templates,
 since those pages are already entirely one photo with nothing behind them to
-layer. Prints exactly as shown, same as everything else.
+layer. Prints exactly as shown, same as everything else. Lives in the
+Decorate tab's Page Styling section, open by default, alongside the Margin
+slider.
 
 **Preview Book**, next to Export PDF, renders every page in order into one
 downloadable image — a quick way to check the whole book's flow without

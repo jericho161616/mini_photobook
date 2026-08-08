@@ -142,6 +142,8 @@ interface StoreState {
   setPageBackgroundPhoto: (pageIndex: number, photoId: string | undefined) => void
   /** How much to darken the background photo, 0–100. */
   setPageBackgroundDim: (pageIndex: number, dim: number) => void
+  /** How much of the page the background photo covers — undefined means edge to edge. */
+  setPageBackgroundCoverage: (pageIndex: number, coverage: Page['backgroundPhotoCoverage']) => void
   /** Multiplies the template's own margin for one page — 1 restores the default. */
   setPageMarginScale: (pageIndex: number, scale: number) => void
   movePage: (from: number, to: number) => void
@@ -670,6 +672,14 @@ export const useStore = create<StoreState>((set, get) => {
       recordHistory()
       mutatePages((pages) =>
         pages.map((page, i) => (i === pageIndex ? { ...page, backgroundDim: dim } : page)),
+      )
+    },
+
+    setPageBackgroundCoverage(pageIndex, coverage) {
+      if (get().pages[pageIndex]?.locked) return
+      recordHistory()
+      mutatePages((pages) =>
+        pages.map((page, i) => (i === pageIndex ? { ...page, backgroundPhotoCoverage: coverage } : page)),
       )
     },
 

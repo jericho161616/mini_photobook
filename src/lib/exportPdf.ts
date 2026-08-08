@@ -64,6 +64,26 @@ const ICON_PATHS: Record<string, { d: string; color: string }> = {
   arrow: { d: 'M3 12h15M13 6l6 6-6 6', color: '#6b5f4a' },
 }
 
+/** Mirrors PageView's backgroundPhotoInset — which portion of the page a background photo fills. */
+function backgroundPhotoRect(
+  coverage: Page['backgroundPhotoCoverage'],
+  pageW: number,
+  pageH: number,
+): { x: number; y: number; w: number; h: number } {
+  switch (coverage) {
+    case 'left':
+      return { x: 0, y: 0, w: pageW / 2, h: pageH }
+    case 'right':
+      return { x: pageW / 2, y: 0, w: pageW / 2, h: pageH }
+    case 'top':
+      return { x: 0, y: 0, w: pageW, h: pageH / 2 }
+    case 'bottom':
+      return { x: 0, y: pageH / 2, w: pageW, h: pageH / 2 }
+    default:
+      return { x: 0, y: 0, w: pageW, h: pageH }
+  }
+}
+
 /** Greedy word wrap so canvas text (which doesn't wrap on its own) matches the on-screen note. */
 function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const words = text.split(/\s+/)
@@ -113,14 +133,20 @@ export async function renderPage(
 
   const backgroundBitmap = page.backgroundPhotoId ? photoMap.get(page.backgroundPhotoId) : undefined
   if (backgroundBitmap) {
-    const geo = coverGeometry(backgroundBitmap.width / backgroundBitmap.height, pageW, pageH, {
+    const bgRect = backgroundPhotoRect(page.backgroundPhotoCoverage, pageW, pageH)
+    const geo = coverGeometry(backgroundBitmap.width / backgroundBitmap.height, bgRect.w, bgRect.h, {
       offsetX: 0,
       offsetY: 0,
       zoom: 1,
     })
-    ctx.drawImage(backgroundBitmap, geo.x, geo.y, geo.drawWidth, geo.drawHeight)
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(bgRect.x, bgRect.y, bgRect.w, bgRect.h)
+    ctx.clip()
+    ctx.drawImage(backgroundBitmap, bgRect.x + geo.x, bgRect.y + geo.y, geo.drawWidth, geo.drawHeight)
     ctx.fillStyle = `rgba(10, 8, 5, ${(page.backgroundDim ?? 35) / 100})`
-    ctx.fillRect(0, 0, pageW, pageH)
+    ctx.fillRect(bgRect.x, bgRect.y, bgRect.w, bgRect.h)
+    ctx.restore()
   }
 
   const template = getTemplate(page.templateId)

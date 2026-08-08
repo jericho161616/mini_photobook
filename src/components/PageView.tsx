@@ -25,6 +25,22 @@ const CAPTION_CLASS: Record<string, string> = {
   stamp: ' stamp',
 }
 
+/** Which portion of the page a background photo fills — undefined (or 'full') means edge to edge. */
+function backgroundPhotoInset(coverage: Page['backgroundPhotoCoverage']): string {
+  switch (coverage) {
+    case 'left':
+      return '0 50% 0 0'
+    case 'right':
+      return '0 0 0 50%'
+    case 'top':
+      return '0 0 50% 0'
+    case 'bottom':
+      return '50% 0 0 0'
+    default:
+      return '0'
+  }
+}
+
 interface PageViewProps {
   page: Page | undefined
   pageIndex: number
@@ -125,12 +141,18 @@ export function PageView({
         <>
           <div
             className="page-bg-photo"
-            style={{ backgroundImage: `url(${photoUrl(backgroundPhoto)})` }}
+            style={{
+              inset: backgroundPhotoInset(page.backgroundPhotoCoverage),
+              backgroundImage: `url(${photoUrl(backgroundPhoto)})`,
+            }}
             aria-hidden="true"
           />
           <div
             className="page-bg-dim"
-            style={{ opacity: (page.backgroundDim ?? 35) / 100 }}
+            style={{
+              inset: backgroundPhotoInset(page.backgroundPhotoCoverage),
+              opacity: (page.backgroundDim ?? 35) / 100,
+            }}
             aria-hidden="true"
           />
         </>

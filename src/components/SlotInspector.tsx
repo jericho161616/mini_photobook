@@ -1,17 +1,47 @@
-import { MAX_ZOOM, MIN_ZOOM } from '../lib/imageUtils'
+import { getTemplate } from '../data/templates'
+import { isOverlaySlot, MAX_ZOOM, MIN_ZOOM } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
-import type { PhotoFilter } from '../types'
+import type { Placement, PhotoFilter } from '../types'
 
 const FILTERS: { id: PhotoFilter | 'none'; label: string }[] = [
   { id: 'none', label: 'Color' },
   { id: 'bw', label: 'B&W' },
   { id: 'sepia', label: 'Sepia' },
+  { id: 'negative', label: 'Negative' },
 ]
 
-const FRAMES: { id: 'none' | 'hairline' | 'polaroid'; label: string }[] = [
+const FRAMES: { id: 'none' | 'hairline' | 'polaroid' | 'stamp'; label: string }[] = [
   { id: 'none', label: 'None' },
   { id: 'hairline', label: 'Hairline' },
   { id: 'polaroid', label: 'Polaroid' },
+  { id: 'stamp', label: 'Stamp' },
+]
+
+const ATTACHMENTS: { id: 'none' | NonNullable<Placement['attachment']>; label: string }[] = [
+  { id: 'none', label: 'None' },
+  { id: 'tape', label: 'Tape' },
+  { id: 'clip', label: 'Clip' },
+  { id: 'paperclip', label: 'Paperclip' },
+]
+
+const TAPE_COLORS = [
+  { id: 'cream', color: 'rgba(232, 217, 160, 0.85)', label: 'Cream' },
+  { id: 'blush', color: 'rgba(227, 184, 176, 0.85)', label: 'Blush' },
+  { id: 'sage', color: 'rgba(185, 196, 168, 0.85)', label: 'Sage' },
+  { id: 'brass', color: 'rgba(169, 130, 47, 0.75)', label: 'Brass' },
+  { id: 'ink', color: 'rgba(43, 36, 25, 0.7)', label: 'Ink' },
+]
+
+const OVERLAY_POSITIONS: { id: NonNullable<Placement['overlayPosition']>; label: string }[] = [
+  { id: 'tl', label: 'Top left' },
+  { id: 'tc', label: 'Top center' },
+  { id: 'tr', label: 'Top right' },
+  { id: 'ml', label: 'Middle left' },
+  { id: 'mc', label: 'Center' },
+  { id: 'mr', label: 'Middle right' },
+  { id: 'bl', label: 'Bottom left' },
+  { id: 'bc', label: 'Bottom center' },
+  { id: 'br', label: 'Bottom right' },
 ]
 
 export function SlotInspector() {
@@ -28,6 +58,14 @@ export function SlotInspector() {
       : selectedPage?.placements[selected.slotIndex]
     : null
   const photo = placement ? photos.find((p) => p.id === placement.photoId) : undefined
+
+  const templateId =
+    selected?.halfIndex !== undefined
+      ? selectedPage?.halves?.[selected.halfIndex].templateId
+      : selectedPage?.templateId
+  const template = templateId ? getTemplate(templateId) : undefined
+  const isPosterSlot = !!(template && selected && template.decoration === 'poster' && selected.slotIndex >= 1)
+  const isOverlay = !!(template && selected && isOverlaySlot(template, selected.slotIndex))
 
   return (
     <section className="panel">
@@ -95,6 +133,61 @@ export function SlotInspector() {
               ))}
             </div>
           </div>
+
+          {!isPosterSlot && (
+            <div className="inspector-row">
+              <label>Attachment</label>
+              <div className="filter-chips-row">
+                {ATTACHMENTS.map((a) => (
+                  <button
+                    key={a.id}
+                    className={`filter-chip-btn${(placement.attachment ?? 'none') === a.id ? ' active' : ''}`}
+                    onClick={() => updatePlacement(selected, { attachment: a.id === 'none' ? undefined : a.id })}
+                    aria-pressed={(placement.attachment ?? 'none') === a.id}
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(isPosterSlot || placement.attachment === 'tape') && (
+            <div className="inspector-row">
+              <label>Tape color</label>
+              <div className="filter-chips-row">
+                {TAPE_COLORS.map((t) => (
+                  <button
+                    key={t.id}
+                    className={`filter-chip-btn${placement.attachmentColor === t.color ? ' active' : ''}`}
+                    onClick={() => updatePlacement(selected, { attachmentColor: t.color })}
+                    aria-pressed={placement.attachmentColor === t.color}
+                    title={t.label}
+                  >
+                    <span className="tint-swatch" style={{ background: t.color }} aria-hidden="true" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {isOverlay && (
+            <div className="inspector-row">
+              <label>Position</label>
+              <div className="overlay-pos-grid">
+                {OVERLAY_POSITIONS.map((p) => (
+                  <button
+                    key={p.id}
+                    className={`overlay-pos-btn${placement.overlayPosition === p.id ? ' active' : ''}`}
+                    onClick={() => updatePlacement(selected, { overlayPosition: p.id })}
+                    aria-pressed={placement.overlayPosition === p.id}
+                    aria-label={p.label}
+                    title={p.label}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="inspector-row">
             <label htmlFor="tilt">Tilt</label>

@@ -1,4 +1,6 @@
-import type { Photo, Placement, SlotRect } from '../types'
+import type { Photo, Placement, SlotRect, Template } from '../types'
+
+type OverlayPosition = NonNullable<Placement['overlayPosition']>
 
 let photoSeq = 0
 function nextPhotoId(): string {
@@ -18,6 +20,30 @@ export const POSTER_BORDER_RATIO = 0.05
 export const POSTER_ROTATION_DEG = -6
 /** Thickness of the white ring around Circle Inset's second photo, relative to its own diameter. */
 export const CIRCLE_BORDER_RATIO = 0.045
+/** Margin between a Stamp-framed photo and its scalloped cut edge, relative to the shorter side. */
+export const STAMP_INSET_RATIO = 0.05
+
+type DecorationTemplate = Pick<Template, 'decoration' | 'slotRotations'>
+
+/** True for a 'poster'/'window' decoration's overlay slot(s) — every slot after the first. */
+export function isOverlaySlot(template: DecorationTemplate, slotIndex: number): boolean {
+  return (template.decoration === 'poster' || template.decoration === 'window') && slotIndex >= 1
+}
+
+/**
+ * A poster slot falls back to the classic fixed tilt when the template
+ * doesn't define its own per-slot angle — shared so the editor and exportPdf
+ * agree on exactly what "no explicit rotation" means for that one case.
+ */
+export function slotRotationDeg(
+  template: DecorationTemplate,
+  slotIndex: number,
+  placement: Placement | null | undefined,
+): number {
+  const isPoster = template.decoration === 'poster' && slotIndex >= 1
+  const base = template.slotRotations?.[slotIndex] ?? (isPoster ? POSTER_ROTATION_DEG : 0)
+  return base + (placement?.rotation ?? 0)
+}
 
 /**
  * True for a background dark enough that the usual dark-ink caption/note text
@@ -233,6 +259,66 @@ export const MAX_ZOOM = 3
 
 export function clampZoom(value: number): number {
   return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, value))
+}
+
+/** How far a repositioned overlay slot keeps from the page edge, in percent. */
+const OVERLAY_MARGIN_PCT = 4
+
+/**
+ * Where a 'poster'/'window' decoration's overlay slot actually lands, as a
+ * percentage rect — a 3x3 grid of preset spots (the overlay's own size, from
+ * the template, is kept; only its position moves). Undefined position keeps
+ * the template's own default rect untouched.
+ */
+export function resolveOverlayPosition(base: SlotRect, position: OverlayPosition | undefined): SlotRect {
+  if (!position) return base
+  const leftX = OVERLAY_MARGIN_PCT
+  const centerX = (100 - base.w) / 2
+  const rightX = 100 - base.w - OVERLAY_MARGIN_PCT
+  const topY = OVERLAY_MARGIN_PCT
+  const middleY = (100 - base.h) / 2
+  const bottomY = 100 - base.h - OVERLAY_MARGIN_PCT
+  const xByPosition: Record<OverlayPosition, number> = {
+    tl: leftX, ml: leftX, bl: leftX,
+    tc: centerX, mc: centerX, bc: centerX,
+    tr: rightX, mr: rightX, br: rightX,
+  }
+  const yByPosition: Record<OverlayPosition, number> = {
+    tl: topY, tc: topY, tr: topY,
+    ml: middleY, mc: middleY, mr: middleY,
+    bl: bottomY, bc: bottomY, br: bottomY,
+  }
+  return { ...base, x: xByPosition[position], y: yByPosition[position] }
+}
+
+/**
+ * A scalloped "postage stamp" edge as a sequence of points — straight lines
+ * rather than true arcs, so the exact same points draw identically as an SVG
+ * polygon on screen and as a canvas path in exportPdf, pixel for pixel.
+ */
+export function stampScallopPoints(w: number, h: number): { x: number; y: number }[] {
+  const bump = Math.max(2, Math.min(w, h) * 0.035)
+  const perSide = (length: number) => Math.max(4, Math.round(length / 22))
+  const points: { x: number; y: number }[] = []
+  function edge(x1: number, y1: number, x2: number, y2: number, count: number) {
+    const nx = -(y2 - y1)
+    const ny = x2 - x1
+    const len = Math.hypot(nx, ny) || 1
+    for (let i = 0; i < count; i++) {
+      const t0 = i / count
+      const t1 = (i + 1) / count
+      const midT = (t0 + t1) / 2
+      const mx = x1 + (x2 - x1) * midT
+      const my = y1 + (y2 - y1) * midT
+      points.push({ x: mx - (nx / len) * bump, y: my - (ny / len) * bump })
+      points.push({ x: x1 + (x2 - x1) * t1, y: y1 + (y2 - y1) * t1 })
+    }
+  }
+  edge(0, 0, w, 0, perSide(w))
+  edge(w, 0, w, h, perSide(h))
+  edge(w, h, 0, h, perSide(w))
+  edge(0, h, 0, 0, perSide(h))
+  return points
 }
 
 /** Pixel rect of a slot inside a page of the given pixel size, honoring margin. */

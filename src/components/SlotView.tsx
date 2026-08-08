@@ -6,8 +6,11 @@ import {
   photoThumbUrl,
   photoUrl,
   POSTER_BORDER_RATIO,
+  STAMP_INSET_RATIO,
+  stampScallopPoints,
 } from '../lib/imageUtils'
-import type { Photo, Placement } from '../types'
+import type { Photo, Placement, PhotoFilter } from '../types'
+import { AttachmentGraphic } from './AttachmentGraphic'
 
 /** Wires an empty slot's little "pick from here" popover — see SpreadCanvas. */
 export interface QuickPick {
@@ -29,13 +32,19 @@ interface SlotViewProps {
   onPan: (offsetX: number, offsetY: number) => void
   /** A small white card mount around the photo — the Instant Grid look. */
   framed?: boolean
-  /** Taped-on-top styling for the Poster Overlay's second slot. */
+  /** Taped-on-top styling for a 'poster'-decorated template's overlay slot(s). */
   poster?: boolean
   /** Centered circular portrait with a white ring — Circle Inset's second slot. */
   circle?: boolean
   /** A thin outline around the photo — independent of, and combinable with, the template's own styling. */
   hairline?: boolean
-  /** The template's own fixed tilt for this slot (Confetti Scatter) plus the photo's manual tilt, combined. */
+  /** A scalloped postage-stamp cut edge — independent of, and combinable with, other styling. */
+  stamp?: boolean
+  /** A subtle inset ring with no border/rotation — the Photo Window decoration's inset slot. */
+  windowSlot?: boolean
+  /** Overrides the placement's own filter — used to force the Photo Window decoration's background slot to grayscale. */
+  forceFilter?: PhotoFilter
+  /** The template's own fixed tilt for this slot (Confetti Scatter, Overlapping Duo) plus the photo's manual tilt, combined. */
   rotationDeg?: number
   /** True while a photo is picked up for click-to-place — takes priority over the quick picker. */
   hasArmedPhoto?: boolean
@@ -46,6 +55,7 @@ interface SlotViewProps {
 const FILTER_CSS: Record<string, string> = {
   bw: 'grayscale(1)',
   sepia: 'sepia(0.75) saturate(1.1)',
+  negative: 'invert(1) hue-rotate(180deg)',
 }
 
 export function SlotView({
@@ -60,6 +70,9 @@ export function SlotView({
   poster,
   circle,
   hairline,
+  stamp,
+  windowSlot,
+  forceFilter,
   rotationDeg,
   hasArmedPhoto,
   quickPick,
@@ -90,17 +103,27 @@ export function SlotView({
 
   // The photo itself may sit inside a decorative inset (a white mat for
   // Instant Grid, a border for the taped Poster Overlay photo, a ring for
-  // Circle Inset) — computed in JS rather than CSS padding, so it stays
-  // exact regardless of the containing block, and matches exportPdf's math
-  // pixel for pixel.
+  // Circle Inset, a margin inside the Stamp's scalloped cut) — computed in JS
+  // rather than CSS padding, so it stays exact regardless of the containing
+  // block, and matches exportPdf's math pixel for pixel.
   const inset = framed
     ? Math.min(box.w, box.h) * FRAME_INSET_RATIO
     : poster
       ? box.w * POSTER_BORDER_RATIO
       : circle
         ? box.w * CIRCLE_BORDER_RATIO
-        : 0
+        : stamp
+          ? Math.min(box.w, box.h) * STAMP_INSET_RATIO
+          : 0
   const photoBox = { w: box.w - inset * 2, h: box.h - inset * 2 }
+
+  // Same points feed exportPdf's canvas path, so the cut edge prints exactly
+  // as shown here.
+  const stampClipPath = stamp
+    ? `polygon(${stampScallopPoints(box.w, box.h)
+        .map((p) => `${p.x}px ${p.y}px`)
+        .join(', ')})`
+    : undefined
 
   const geo =
     photo && placement ? coverGeometry(photo.width / photo.height, photoBox.w, photoBox.h, placement) : null
@@ -150,6 +173,8 @@ export function SlotView({
     poster && 'slot-poster',
     circle && 'slot-circle',
     hairline && 'slot-hairline',
+    stamp && 'slot-stamp',
+    windowSlot && 'slot-window',
   ]
     .filter(Boolean)
     .join(' ')
@@ -178,9 +203,8 @@ export function SlotView({
           top: box.y,
           width: box.w,
           height: box.h,
-          // Poster Overlay applies its own fixed rotation via CSS class instead —
-          // an inline transform here would win specificity and clobber it.
-          ...(!poster && rotationDeg ? { transform: `rotate(${rotationDeg}deg)` } : {}),
+          ...(rotationDeg ? { transform: `rotate(${rotationDeg}deg)` } : {}),
+          ...(stampClipPath ? { clipPath: stampClipPath } : {}),
         }}
         onClick={handleClick}
         onDragOver={(e) => {
@@ -195,7 +219,16 @@ export function SlotView({
           if (photoId) onDropPhoto(photoId)
         }}
       >
-        {poster && <span className="poster-tape" aria-hidden="true" />}
+        {poster && (
+          <span
+            className="poster-tape"
+            style={{ background: placement?.attachmentColor ?? undefined }}
+            aria-hidden="true"
+          />
+        )}
+        {!poster && placement?.attachment && (
+          <AttachmentGraphic type={placement.attachment} color={placement.attachmentColor} />
+        )}
         {photo && geo ? (
           <img
             src={photoUrl(photo)}
@@ -206,7 +239,7 @@ export function SlotView({
               top: inset + geo.y,
               width: geo.drawWidth,
               height: geo.drawHeight,
-              filter: placement?.filter ? FILTER_CSS[placement.filter] : undefined,
+              filter: FILTER_CSS[forceFilter ?? placement?.filter ?? ''],
             }}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}

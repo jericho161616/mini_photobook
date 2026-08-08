@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { FONT_OPTIONS, FONT_SIZE_OPTIONS, fontSizeScale, fontStack } from '../data/fonts'
 import { getTemplate } from '../data/templates'
 import { decorationHost } from '../lib/autoLayout'
@@ -5,6 +6,24 @@ import { useStore } from '../state/useStore'
 import { DoodlePad } from './DoodlePad'
 import { StickerGlyph } from './StickerGlyph'
 import type { StickerType, TextBox, TextStyle } from '../types'
+
+/** Longest edge kept for an uploaded sticker image — plenty for a decoration, and keeps the book's own storage small. */
+const UPLOADED_STICKER_MAX_EDGE = 640
+
+/** Downscales (if needed) and re-encodes as PNG, so an uploaded photo-sized image doesn't bloat the book. */
+async function readStickerFile(file: File): Promise<string> {
+  const bitmap = await createImageBitmap(file)
+  const scale = Math.min(1, UPLOADED_STICKER_MAX_EDGE / Math.max(bitmap.width, bitmap.height))
+  const w = Math.max(1, Math.round(bitmap.width * scale))
+  const h = Math.max(1, Math.round(bitmap.height * scale))
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')!
+  ctx.drawImage(bitmap, 0, 0, w, h)
+  bitmap.close()
+  return canvas.toDataURL('image/png')
+}
 
 const STICKERS: { type: StickerType; label: string }[] = [
   { type: 'tape-yellow', label: 'Tape' },
@@ -35,6 +54,8 @@ export function DecoratePanel() {
   const addTextBox = useStore((s) => s.addTextBox)
   const updateTextBox = useStore((s) => s.updateTextBox)
   const removeDecoration = useStore((s) => s.removeDecoration)
+  const addCustomSticker = useStore((s) => s.addCustomSticker)
+  const uploadInputRef = useRef<HTMLInputElement>(null)
 
   const page = pages[activePageIndex]
   if (!page) return null
@@ -87,6 +108,28 @@ export function DecoratePanel() {
       </div>
 
       <DoodlePad pageIndex={activePageIndex} targetHalf={targetHalf} locked={page.locked} />
+
+      <button
+        className="btn add-text-btn"
+        onClick={() => uploadInputRef.current?.click()}
+        disabled={page.locked}
+        title="Add a PNG (or other image) from your own files as a placeable sticker"
+      >
+        ↑ Upload Image
+      </button>
+      <input
+        ref={uploadInputRef}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={async (e) => {
+          const file = e.target.files?.[0]
+          e.target.value = ''
+          if (!file) return
+          const dataUrl = await readStickerFile(file)
+          addCustomSticker(dataUrl)
+        }}
+      />
 
       <button
         className="btn add-text-btn"

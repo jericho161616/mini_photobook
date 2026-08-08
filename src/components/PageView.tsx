@@ -2,11 +2,26 @@ import { DEFAULT_TEXT_STYLE, fontSizeScale, fontStack } from '../data/fonts'
 import { getTemplate } from '../data/templates'
 import { decorationHost } from '../lib/autoLayout'
 import { PAGE_MARGIN_RATIO } from '../lib/exportPdf'
-import { isDarkColor, slotPixelRect } from '../lib/imageUtils'
+import {
+  isDarkColor,
+  isOverlaySlot,
+  resolveOverlayPosition,
+  slotPixelRect,
+  slotRotationDeg,
+  stampScallopPoints,
+} from '../lib/imageUtils'
 import type { DecorationRef } from '../state/useStore'
 import type { CustomSticker, Page, Photo, Sticker, TextBox } from '../types'
 import { DecorationLayer } from './DecorationLayer'
 import { SlotView } from './SlotView'
+
+const CAPTION_CLASS: Record<string, string> = {
+  centered: ' centered',
+  ruled: ' ruled',
+  quote: ' quote',
+  divider: ' divider',
+  stamp: ' stamp',
+}
 
 interface PageViewProps {
   page: Page | undefined
@@ -160,21 +175,29 @@ export function PageView({
         )}
         {textRect && page.text.trim() && (
           <div
-            className={`page-caption page-note${
-              template.captionStyle === 'centered' ? ' centered' : template.captionStyle === 'ruled' ? ' ruled' : ''
-            }`}
+            className={`page-caption page-note${CAPTION_CLASS[template.captionStyle ?? ''] ?? ''}`}
             style={{
               left: textRect.x,
               top: textRect.y,
               width: textRect.w,
               height: textRect.h,
-              fontSize: Math.max(6, height * 0.026) * fontSizeScale((page.textStyle ?? DEFAULT_TEXT_STYLE).size),
+              fontSize:
+                Math.max(6, height * (template.captionStyle === 'divider' ? 0.052 : 0.026)) *
+                fontSizeScale((page.textStyle ?? DEFAULT_TEXT_STYLE).size),
               fontFamily: fontStack((page.textStyle ?? DEFAULT_TEXT_STYLE).font),
               fontWeight: (page.textStyle ?? DEFAULT_TEXT_STYLE).bold ? 700 : 400,
               color: onDark ? '#c9bfa4' : undefined,
+              clipPath:
+                template.captionStyle === 'stamp'
+                  ? `polygon(${stampScallopPoints(textRect.w, textRect.h)
+                      .map((p) => `${p.x}px ${p.y}px`)
+                      .join(', ')})`
+                  : undefined,
             }}
           >
+            {template.captionStyle === 'quote' && <span className="quote-mark" aria-hidden="true">&ldquo;</span>}
             {page.text}
+            {template.captionStyle === 'divider' && <span className="divider-rule" aria-hidden="true" />}
           </div>
         )}
         {template.halfSplit && page.halves
@@ -184,9 +207,12 @@ export function PageView({
               const halfTemplate = getTemplate(half.templateId)
               const halfMargin = halfTemplate.bleed ? 0 : PAGE_MARGIN_RATIO * (page.marginScale ?? 1)
               const nested: JSX.Element[] = halfTemplate.slots.map((slot, slotIndex) => {
-                const inner = slotPixelRect(slot, outer.w, outer.h, halfMargin)
-                const rect = { x: outer.x + inner.x, y: outer.y + inner.y, w: inner.w, h: inner.h }
                 const placement = half.placements[slotIndex] ?? null
+                const positioned = isOverlaySlot(halfTemplate, slotIndex)
+                  ? resolveOverlayPosition(slot, placement?.overlayPosition)
+                  : slot
+                const inner = slotPixelRect(positioned, outer.w, outer.h, halfMargin)
+                const rect = { x: outer.x + inner.x, y: outer.y + inner.y, w: inner.w, h: inner.h }
                 const photo = placement ? photos.get(placement.photoId) : undefined
                 const key = quickPick.keyFor(slotIndex, halfIndex as 0 | 1)
                 return (
@@ -199,11 +225,18 @@ export function PageView({
                     onSelect={() => onSelectSlot(slotIndex, halfIndex as 0 | 1)}
                     onDropPhoto={(photoId) => onDropPhoto(slotIndex, photoId, halfIndex as 0 | 1)}
                     onPan={(x, y) => onPan(slotIndex, x, y, halfIndex as 0 | 1)}
-                    framed={halfTemplate.id === 'instantGrid' || placement?.frame === 'polaroid'}
-                    poster={halfTemplate.decoration === 'poster' && slotIndex === 1}
+                    framed={
+                      halfTemplate.id === 'instantGrid' ||
+                      halfTemplate.id === 'polaroidStrip' ||
+                      placement?.frame === 'polaroid'
+                    }
+                    poster={halfTemplate.decoration === 'poster' && slotIndex >= 1}
                     circle={halfTemplate.decoration === 'circle' && slotIndex === 1}
                     hairline={placement?.frame === 'hairline'}
-                    rotationDeg={(halfTemplate.slotRotations?.[slotIndex] ?? 0) + (placement?.rotation ?? 0)}
+                    stamp={halfTemplate.id === 'postageStampDuo' || placement?.frame === 'stamp'}
+                    windowSlot={halfTemplate.decoration === 'window' && slotIndex >= 1}
+                    forceFilter={halfTemplate.decoration === 'window' && slotIndex === 0 ? 'bw' : undefined}
+                    rotationDeg={slotRotationDeg(halfTemplate, slotIndex, placement)}
                     hasArmedPhoto={hasArmedPhoto}
                     quickPick={
                       photo
@@ -228,25 +261,31 @@ export function PageView({
                 nested.push(
                   <div
                     key={`${halfIndex}-note`}
-                    className={`page-caption page-note${
-                      halfTemplate.captionStyle === 'centered'
-                        ? ' centered'
-                        : halfTemplate.captionStyle === 'ruled'
-                          ? ' ruled'
-                          : ''
-                    }`}
+                    className={`page-caption page-note${CAPTION_CLASS[halfTemplate.captionStyle ?? ''] ?? ''}`}
                     style={{
                       left: outer.x + inner.x,
                       top: outer.y + inner.y,
                       width: inner.w,
                       height: inner.h,
-                      fontSize: Math.max(6, outer.h * 0.026) * fontSizeScale(halfStyle.size),
+                      fontSize:
+                        Math.max(6, outer.h * (halfTemplate.captionStyle === 'divider' ? 0.052 : 0.026)) *
+                        fontSizeScale(halfStyle.size),
                       fontFamily: fontStack(halfStyle.font),
                       fontWeight: halfStyle.bold ? 700 : 400,
                       color: onDark ? '#c9bfa4' : undefined,
+                      clipPath:
+                        halfTemplate.captionStyle === 'stamp'
+                          ? `polygon(${stampScallopPoints(inner.w, inner.h)
+                              .map((p) => `${p.x}px ${p.y}px`)
+                              .join(', ')})`
+                          : undefined,
                     }}
                   >
+                    {halfTemplate.captionStyle === 'quote' && (
+                      <span className="quote-mark" aria-hidden="true">&ldquo;</span>
+                    )}
                     {half.text}
+                    {halfTemplate.captionStyle === 'divider' && <span className="divider-rule" aria-hidden="true" />}
                   </div>,
                 )
               }
@@ -299,8 +338,11 @@ export function PageView({
               return nested
             })
           : template.slots.map((slot, slotIndex) => {
-              const rect = slotPixelRect(slot, width, height, marginRatio)
               const placement = page.placements[slotIndex] ?? null
+              const positioned = isOverlaySlot(template, slotIndex)
+                ? resolveOverlayPosition(slot, placement?.overlayPosition)
+                : slot
+              const rect = slotPixelRect(positioned, width, height, marginRatio)
               const photo = placement ? photos.get(placement.photoId) : undefined
               const key = quickPick.keyFor(slotIndex)
               return (
@@ -313,11 +355,18 @@ export function PageView({
                   onSelect={() => onSelectSlot(slotIndex)}
                   onDropPhoto={(photoId) => onDropPhoto(slotIndex, photoId)}
                   onPan={(x, y) => onPan(slotIndex, x, y)}
-                  framed={template.id === 'instantGrid' || placement?.frame === 'polaroid'}
-                  poster={template.decoration === 'poster' && slotIndex === 1}
+                  framed={
+                    template.id === 'instantGrid' ||
+                    template.id === 'polaroidStrip' ||
+                    placement?.frame === 'polaroid'
+                  }
+                  poster={template.decoration === 'poster' && slotIndex >= 1}
                   circle={template.decoration === 'circle' && slotIndex === 1}
                   hairline={placement?.frame === 'hairline'}
-                  rotationDeg={(template.slotRotations?.[slotIndex] ?? 0) + (placement?.rotation ?? 0)}
+                  stamp={template.id === 'postageStampDuo' || placement?.frame === 'stamp'}
+                  windowSlot={template.decoration === 'window' && slotIndex >= 1}
+                  forceFilter={template.decoration === 'window' && slotIndex === 0 ? 'bw' : undefined}
+                  rotationDeg={slotRotationDeg(template, slotIndex, placement)}
                   hasArmedPhoto={hasArmedPhoto}
                   quickPick={
                     photo

@@ -208,6 +208,35 @@ different name, or selected twice in the same batch — is skipped instead of
 adding a visible second copy. A small note under the "Add photos" button
 says how many were skipped, if any.
 
+**Five more layouts.** Polaroid Strip (three prints stacked on a dark page,
+like a contact strip — pairs well with the Night background), Overlapping
+Duo (two tilted taped photos layered over a full background photo), Postage
+Stamp Duo (a photo and a short line of text, each in a scalloped stamp
+frame), Quote Card (one photo, a big italic line doing the talking), Photo
+Window (a grayscale background with a sharp color window cut into it — no
+tape, no rotation, just an inset), and Text Divider (no photo at all — a
+title/quote page to open or close a section of the book).
+
+**Tape, clips, and a stamp frame — all customizable.** Any photo taped on
+top of another (Poster Overlay, Overlapping Duo) now has its own tape color,
+picked from a small swatch row, and its own spot to sit in — a 3×3 grid of
+preset positions instead of one fixed place. Any photo can also carry a
+Binder Clip or Paperclip instead of tape, and a fourth Frame option, Stamp,
+cuts a scalloped postage-stamp edge around the photo. All of it — the tape
+color, the clip, the stamp's scalloped cut — prints exactly as shown.
+
+**A Negative filter** joins Color / B&W / Sepia in the Selected Photo panel.
+
+**PNG stickers from your own files.** An "Upload Image" button next to "Draw
+a Sticker" in the Decorate panel lets you add any image — a graphic you
+downloaded, a transparent PNG — as a draggable, resizable sticker, stored
+alongside your own drawings in this book's sticker library. Large images are
+downscaled on the way in so the book's own storage stays small.
+
+**Three more font stacks**: Brush Script, Condensed, and Slab Serif, joining
+the original five — still every one either already on your computer or a
+close, free system equivalent, so nothing is ever downloaded.
+
 **Titled cover.** Page one uses a cover layout carrying the book title, which
 renders in the editor and in the exported PDF.
 

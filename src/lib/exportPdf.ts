@@ -6,11 +6,26 @@ import {
   coverGeometry,
   FRAME_INSET_RATIO,
   isDarkColor,
+  isOverlaySlot,
   POSTER_BORDER_RATIO,
-  POSTER_ROTATION_DEG,
+  resolveOverlayPosition,
   slotPixelRect,
+  slotRotationDeg,
+  STAMP_INSET_RATIO,
+  stampScallopPoints,
 } from './imageUtils'
-import type { BookSize, CustomSticker, Page, Photo, Placement, Sticker, TextBox, TextStyle } from '../types'
+import type {
+  BookSize,
+  CustomSticker,
+  Page,
+  Photo,
+  PhotoFilter,
+  Placement,
+  Sticker,
+  Template,
+  TextBox,
+  TextStyle,
+} from '../types'
 
 export const PAGE_MARGIN_RATIO = 0.09
 const DPI = 300
@@ -19,7 +34,10 @@ const JPEG_QUALITY = 0.92
 const FILTER_CANVAS: Record<string, string> = {
   bw: 'grayscale(1)',
   sepia: 'sepia(0.75) saturate(1.1)',
+  negative: 'invert(1) hue-rotate(180deg)',
 }
+
+const DEFAULT_TAPE_COLOR_CANVAS = 'rgba(232, 217, 160, 0.85)'
 
 const TAPE_COLORS: Record<string, string> = {
   'tape-yellow': 'rgba(232, 217, 160, 0.85)',
@@ -91,34 +109,107 @@ async function renderPage(
   const captionColor = onDark ? '#f2ead2' : '#241f16'
   const noteColor = onDark ? '#c9bfa4' : '#6b5f4a'
 
-  const drawPhoto = (rect: { x: number; y: number; w: number; h: number }, placement: Placement) => {
+  const drawPhoto = (
+    rect: { x: number; y: number; w: number; h: number },
+    placement: Placement,
+    forceFilter?: PhotoFilter,
+  ) => {
     const bitmap = photoMap.get(placement.photoId)
     if (!bitmap) return
     const geo = coverGeometry(bitmap.width / bitmap.height, rect.w, rect.h, placement)
+    const filterKey = forceFilter ?? placement.filter
     ctx.save()
     ctx.beginPath()
     ctx.rect(rect.x, rect.y, rect.w, rect.h)
     ctx.clip()
-    ctx.filter = placement.filter ? FILTER_CANVAS[placement.filter] : 'none'
+    ctx.filter = filterKey ? FILTER_CANVAS[filterKey] : 'none'
     ctx.drawImage(bitmap, rect.x + geo.x, rect.y + geo.y, geo.drawWidth, geo.drawHeight)
     ctx.filter = 'none'
     ctx.restore()
   }
 
+  /** Tape, a binder clip, or a paperclip pinning a photo to the page — drawn just above the slot's own top edge. */
+  const drawAttachment = (
+    rect: { x: number; y: number; w: number; h: number },
+    type: 'tape' | 'clip' | 'paperclip',
+    color: string | undefined,
+  ) => {
+    if (type === 'tape') {
+      const w = rect.w * 0.4
+      const h = rect.h * 0.16
+      const x = rect.x + rect.w * 0.3
+      const y = rect.y - rect.h * 0.06
+      const cx = x + w / 2
+      const cy = y + h / 2
+      ctx.save()
+      ctx.translate(cx, cy)
+      ctx.rotate((-3 * Math.PI) / 180)
+      ctx.translate(-cx, -cy)
+      ctx.shadowColor = 'rgba(0,0,0,0.2)'
+      ctx.shadowBlur = rect.w * 0.01
+      ctx.fillStyle = color ?? DEFAULT_TAPE_COLOR_CANVAS
+      ctx.fillRect(x, y, w, h)
+      ctx.restore()
+      return
+    }
+    if (type === 'clip') {
+      const w = rect.w * 0.15
+      const h = w * (34 / 26)
+      const x = rect.x + rect.w / 2 - w / 2
+      const y = rect.y - rect.h * 0.09
+      ctx.save()
+      ctx.fillStyle = '#1c1a17'
+      ctx.fillRect(x, y + h * 0.18, w, h * 0.4)
+      ctx.strokeStyle = '#c9a24a'
+      ctx.lineWidth = Math.max(1, w * 0.06)
+      ctx.beginPath()
+      ctx.arc(x + w * 0.3, y + h * 0.38, w * 0.09, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.beginPath()
+      ctx.arc(x + w * 0.7, y + h * 0.38, w * 0.09, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.restore()
+      return
+    }
+    const w = rect.w * 0.11
+    const h = w * (44 / 20)
+    const x = rect.x + rect.w * 0.03
+    const y = rect.y - rect.h * 0.1
+    ctx.save()
+    ctx.strokeStyle = '#8a97a3'
+    ctx.lineWidth = Math.max(1, w * 0.12)
+    ctx.lineCap = 'round'
+    ctx.beginPath()
+    ctx.moveTo(x + w * 0.5, y + h * 0.09)
+    ctx.lineTo(x + w * 0.5, y + h * 0.73)
+    ctx.arc(x + w * 0.2, y + h * 0.73, w * 0.3, 0, Math.PI, false)
+    ctx.lineTo(x + w * 0.2, y + h * 0.18)
+    ctx.stroke()
+    ctx.restore()
+  }
+
   /**
    * A single photo slot, aware of the decorative slot styles: Instant Grid's
-   * white card mount, Poster Overlay's taped-on-top second photo (rotated,
-   * bordered, shadowed), and Circle Inset's centered circular portrait.
+   * white card mount, an overlay decoration's taped-on-top photo (rotated,
+   * bordered, shadowed), Circle Inset's centered circular portrait, and the
+   * Stamp frame's scalloped cut edge.
    */
   const drawSlot = (
     rect: { x: number; y: number; w: number; h: number },
     placement: Placement | null,
-    opts: { framed?: boolean; poster?: boolean; circle?: boolean; hairline?: boolean; rotationDeg?: number } = {},
+    opts: {
+      framed?: boolean
+      poster?: boolean
+      circle?: boolean
+      hairline?: boolean
+      stamp?: boolean
+      windowSlot?: boolean
+      forceFilter?: PhotoFilter
+      rotationDeg?: number
+    } = {},
   ) => {
     if (!placement) return
-    // Manual/template tilt — skipped for Poster Overlay, which applies its
-    // own fixed rotation below, same guard SlotView uses on screen.
-    if (!opts.poster && opts.rotationDeg) {
+    if (opts.rotationDeg) {
       const cx = rect.x + rect.w / 2
       const cy = rect.y + rect.h / 2
       ctx.save()
@@ -130,21 +221,22 @@ async function renderPage(
       return
     }
     if (opts.poster) {
-      const cx = rect.x + rect.w / 2
-      const cy = rect.y + rect.h / 2
       ctx.save()
-      ctx.translate(cx, cy)
-      ctx.rotate((POSTER_ROTATION_DEG * Math.PI) / 180)
-      ctx.translate(-rect.w / 2, -rect.h / 2)
       ctx.shadowColor = 'rgba(0,0,0,0.35)'
       ctx.shadowBlur = rect.w * 0.05
       ctx.shadowOffsetY = rect.h * 0.02
       ctx.fillStyle = '#fdfaf1'
-      ctx.fillRect(0, 0, rect.w, rect.h)
+      ctx.fillRect(rect.x, rect.y, rect.w, rect.h)
       ctx.shadowColor = 'transparent'
       const border = rect.w * POSTER_BORDER_RATIO
-      drawPhoto({ x: border, y: border, w: rect.w - border * 2, h: rect.h - border * 2 }, placement)
+      drawPhoto(
+        { x: rect.x + border, y: rect.y + border, w: rect.w - border * 2, h: rect.h - border * 2 },
+        placement,
+        opts.forceFilter,
+      )
       ctx.restore()
+      // A poster slot always carries its own tape, same as SlotView's unconditional render.
+      drawAttachment(rect, 'tape', placement.attachmentColor)
       return
     }
     if (opts.circle) {
@@ -166,18 +258,50 @@ async function renderPage(
       drawPhoto(
         { x: cx - size / 2 + border, y: cy - size / 2 + border, w: size - border * 2, h: size - border * 2 },
         placement,
+        opts.forceFilter,
       )
       ctx.restore()
+      return
+    }
+    if (opts.stamp) {
+      const points = stampScallopPoints(rect.w, rect.h).map((p) => ({ x: rect.x + p.x, y: rect.y + p.y }))
+      ctx.save()
+      ctx.beginPath()
+      points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)))
+      ctx.closePath()
+      ctx.fillStyle = '#f2ead2'
+      ctx.fill()
+      ctx.clip()
+      const inset = Math.min(rect.w, rect.h) * STAMP_INSET_RATIO
+      drawPhoto(
+        { x: rect.x + inset, y: rect.y + inset, w: rect.w - inset * 2, h: rect.h - inset * 2 },
+        placement,
+        opts.forceFilter,
+      )
+      ctx.restore()
+      if (placement.attachment) drawAttachment(rect, placement.attachment, placement.attachmentColor)
       return
     }
     if (opts.framed) {
       ctx.fillStyle = '#ffffff'
       ctx.fillRect(rect.x, rect.y, rect.w, rect.h)
       const inset = Math.min(rect.w, rect.h) * FRAME_INSET_RATIO
-      drawPhoto({ x: rect.x + inset, y: rect.y + inset, w: rect.w - inset * 2, h: rect.h - inset * 2 }, placement)
+      drawPhoto(
+        { x: rect.x + inset, y: rect.y + inset, w: rect.w - inset * 2, h: rect.h - inset * 2 },
+        placement,
+        opts.forceFilter,
+      )
+      if (placement.attachment) drawAttachment(rect, placement.attachment, placement.attachmentColor)
       return
     }
-    drawPhoto(rect, placement)
+    drawPhoto(rect, placement, opts.forceFilter)
+    if (opts.windowSlot) {
+      ctx.save()
+      ctx.strokeStyle = 'rgba(255,255,255,0.6)'
+      ctx.lineWidth = 1
+      ctx.strokeRect(rect.x + 0.5, rect.y + 0.5, rect.w - 1, rect.h - 1)
+      ctx.restore()
+    }
     if (opts.hairline) {
       ctx.save()
       ctx.strokeStyle = '#6b5f4a'
@@ -185,20 +309,28 @@ async function renderPage(
       ctx.strokeRect(rect.x + 0.75, rect.y + 0.75, rect.w - 1.5, rect.h - 1.5)
       ctx.restore()
     }
+    if (placement.attachment) drawAttachment(rect, placement.attachment, placement.attachmentColor)
   }
 
-  /** The page note: left- or center-aligned, wrapping, in its own font and weight. */
+  /**
+   * The page note: left- or center-aligned, wrapping, in its own font and
+   * weight — 'ruled' draws faint diary lines behind it, 'quote' anchors it to
+   * the bottom with a decorative opening mark, 'divider' sets it large and
+   * centered with a rule beneath, 'stamp' draws it inside a scalloped card
+   * matching the Stamp frame.
+   */
   const drawNote = (
     rect: { x: number; y: number; w: number; h: number },
     text: string,
     scaleH: number,
     style: TextStyle,
-    centered: boolean,
-    ruled = false,
+    captionStyle: Template['captionStyle'],
   ) => {
-    const fontSize = Math.round(scaleH * 0.026 * fontSizeScale(style.size))
+    const fontScale = captionStyle === 'divider' ? 0.052 : 0.026
+    const fontSize = Math.round(scaleH * fontScale * fontSizeScale(style.size))
     const weight = style.bold ? 'bold' : 'normal'
-    if (ruled) {
+
+    if (captionStyle === 'ruled') {
       // Decorative ruled-paper lines — not aligned to the text's own line-height, same as the on-screen CSS version.
       const ruleSpacing = fontSize * 1.35
       ctx.save()
@@ -212,18 +344,64 @@ async function renderPage(
       }
       ctx.restore()
     }
-    ctx.fillStyle = noteColor
+
+    let innerRect = rect
+    if (captionStyle === 'stamp') {
+      const points = stampScallopPoints(rect.w, rect.h).map((p) => ({ x: rect.x + p.x, y: rect.y + p.y }))
+      ctx.save()
+      ctx.beginPath()
+      points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)))
+      ctx.closePath()
+      ctx.fillStyle = '#f2ead2'
+      ctx.fill()
+      ctx.restore()
+      innerRect = { x: rect.x + rect.w * 0.08, y: rect.y, w: rect.w * 0.84, h: rect.h }
+    }
+
+    const centered = captionStyle === 'centered' || captionStyle === 'divider' || captionStyle === 'stamp'
+    ctx.fillStyle = captionStyle === 'stamp' ? '#241f16' : noteColor
     // The page note is always italic on screen (.page-note in styles.css) — matched here so export doesn't go upright.
     ctx.font = `italic ${weight} ${fontSize}px ${fontStack(style.font)}`
     ctx.textAlign = centered ? 'center' : 'left'
     ctx.textBaseline = 'top'
     const lineHeight = fontSize * 1.35
-    const lines = wrapText(ctx, text.trim(), rect.w)
-    const maxLines = Math.max(1, Math.floor(rect.h / lineHeight))
-    const x = centered ? rect.x + rect.w / 2 : rect.x
-    lines.slice(0, maxLines).forEach((line, i) => {
-      ctx.fillText(line, x, rect.y + i * lineHeight, rect.w)
+    const lines = wrapText(ctx, text.trim(), innerRect.w)
+    const maxLines = Math.max(1, Math.floor(innerRect.h / lineHeight))
+    const shown = lines.slice(0, maxLines)
+    const blockH = shown.length * lineHeight
+    const x = centered ? innerRect.x + innerRect.w / 2 : innerRect.x
+    let startY = innerRect.y
+    if (captionStyle === 'quote') startY = innerRect.y + innerRect.h - blockH
+    else if (captionStyle === 'divider' || captionStyle === 'stamp') {
+      startY = innerRect.y + Math.max(0, (innerRect.h - blockH) / 2)
+    }
+
+    if (captionStyle === 'quote') {
+      ctx.save()
+      ctx.fillStyle = '#a9822f'
+      ctx.font = `${Math.round(fontSize * 1.6)}px Georgia, "Times New Roman", serif`
+      ctx.textAlign = 'left'
+      ctx.textBaseline = 'alphabetic'
+      ctx.fillText('“', innerRect.x, startY + fontSize * 0.9)
+      ctx.restore()
+    }
+
+    shown.forEach((line, i) => {
+      ctx.fillText(line, x, startY + i * lineHeight, innerRect.w)
     })
+
+    if (captionStyle === 'divider') {
+      ctx.save()
+      ctx.strokeStyle = '#c4b78e'
+      ctx.lineWidth = 1
+      const ruleW = fontSize * 1.6
+      const ruleY = startY + blockH + fontSize * 0.5
+      ctx.beginPath()
+      ctx.moveTo(x - ruleW / 2, ruleY)
+      ctx.lineTo(x + ruleW / 2, ruleY)
+      ctx.stroke()
+      ctx.restore()
+    }
   }
 
   /** A sticker — a flat piece of tape, a small line-drawn icon, or the user's own drawing. */
@@ -343,17 +521,26 @@ async function renderPage(
       const outer = slotPixelRect(region, pageW, pageH, 0)
       const halfMargin = halfTemplate.bleed ? 0 : PAGE_MARGIN_RATIO * (page.marginScale ?? 1)
       halfTemplate.slots.forEach((slot, slotIndex) => {
-        const inner = slotPixelRect(slot, outer.w, outer.h, halfMargin)
         const placement = half.placements[slotIndex]
+        const positioned = isOverlaySlot(halfTemplate, slotIndex)
+          ? resolveOverlayPosition(slot, placement?.overlayPosition)
+          : slot
+        const inner = slotPixelRect(positioned, outer.w, outer.h, halfMargin)
         drawSlot(
           { x: outer.x + inner.x, y: outer.y + inner.y, w: inner.w, h: inner.h },
           placement,
           {
-            framed: halfTemplate.id === 'instantGrid' || placement?.frame === 'polaroid',
-            poster: halfTemplate.decoration === 'poster' && slotIndex === 1,
+            framed:
+              halfTemplate.id === 'instantGrid' ||
+              halfTemplate.id === 'polaroidStrip' ||
+              placement?.frame === 'polaroid',
+            poster: halfTemplate.decoration === 'poster' && slotIndex >= 1,
             circle: halfTemplate.decoration === 'circle' && slotIndex === 1,
             hairline: placement?.frame === 'hairline',
-            rotationDeg: (halfTemplate.slotRotations?.[slotIndex] ?? 0) + (placement?.rotation ?? 0),
+            stamp: halfTemplate.id === 'postageStampDuo' || placement?.frame === 'stamp',
+            windowSlot: halfTemplate.decoration === 'window' && slotIndex >= 1,
+            forceFilter: halfTemplate.decoration === 'window' && slotIndex === 0 ? 'bw' : undefined,
+            rotationDeg: slotRotationDeg(halfTemplate, slotIndex, placement),
           },
         )
       })
@@ -364,8 +551,7 @@ async function renderPage(
           half.text,
           outer.h,
           half.textStyle ?? DEFAULT_TEXT_STYLE,
-          halfTemplate.captionStyle === 'centered',
-          halfTemplate.captionStyle === 'ruled',
+          halfTemplate.captionStyle,
         )
       }
       if (halfTemplate.decoration === 'beforeAfter') {
@@ -375,14 +561,20 @@ async function renderPage(
     })
   } else {
     template.slots.forEach((slot, slotIndex) => {
-      const rect = slotPixelRect(slot, pageW, pageH, marginRatio)
       const placement = page.placements[slotIndex]
+      const positioned = isOverlaySlot(template, slotIndex)
+        ? resolveOverlayPosition(slot, placement?.overlayPosition)
+        : slot
+      const rect = slotPixelRect(positioned, pageW, pageH, marginRatio)
       drawSlot(rect, placement, {
-        framed: template.id === 'instantGrid' || placement?.frame === 'polaroid',
-        poster: template.decoration === 'poster' && slotIndex === 1,
+        framed: template.id === 'instantGrid' || template.id === 'polaroidStrip' || placement?.frame === 'polaroid',
+        poster: template.decoration === 'poster' && slotIndex >= 1,
         circle: template.decoration === 'circle' && slotIndex === 1,
         hairline: placement?.frame === 'hairline',
-        rotationDeg: (template.slotRotations?.[slotIndex] ?? 0) + (placement?.rotation ?? 0),
+        stamp: template.id === 'postageStampDuo' || placement?.frame === 'stamp',
+        windowSlot: template.decoration === 'window' && slotIndex >= 1,
+        forceFilter: template.decoration === 'window' && slotIndex === 0 ? 'bw' : undefined,
+        rotationDeg: slotRotationDeg(template, slotIndex, placement),
       })
     })
     if (template.decoration === 'beforeAfter') {
@@ -406,8 +598,7 @@ async function renderPage(
       page.text,
       pageH,
       page.textStyle ?? DEFAULT_TEXT_STYLE,
-      template.captionStyle === 'centered',
-      template.captionStyle === 'ruled',
+      template.captionStyle,
     )
   }
 

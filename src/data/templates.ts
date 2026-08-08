@@ -470,6 +470,80 @@ export const TEMPLATES: Template[] = [
     textSlot: { x: 15, y: 64, w: 70, h: 20 },
     captionStyle: 'centered',
   },
+  {
+    id: 'polaroidStrip',
+    label: '3 · Polaroid Strip',
+    family: 'Portfolio',
+    fits: ['tall', 'square'],
+    // Each slot gets the Polaroid frame automatically, like Instant Grid —
+    // meant to be paired with the Night page background for a contact-strip look.
+    slots: [
+      { x: 22, y: 3, w: 56, h: 28 },
+      { x: 22, y: 36, w: 56, h: 28 },
+      { x: 22, y: 69, w: 56, h: 28 },
+    ],
+  },
+  {
+    id: 'overlappingDuo',
+    label: '3 · Overlapping Duo',
+    family: 'Portfolio',
+    fits: ['square', 'wide', 'tall'],
+    bleed: true,
+    // Same taped-on-top idea as Poster Overlay, generalized to every slot
+    // after the first — each one keeps its own tilt from slotRotations
+    // instead of sharing one fixed angle.
+    decoration: 'poster',
+    slots: [
+      { x: 0, y: 0, w: 100, h: 100 },
+      { x: 8, y: 14, w: 52, h: 50 },
+      { x: 36, y: 38, w: 52, h: 50 },
+    ],
+    slotRotations: [0, -7, 6],
+  },
+  {
+    id: 'postageStampDuo',
+    label: '1 · Postage Stamp Duo',
+    family: 'Portfolio',
+    fits: ['wide'],
+    // The photo slot always gets the Stamp frame (see PageView/exportPdf);
+    // the note sits in a matching scalloped card of its own beside it.
+    slots: [{ x: 6, y: 14, w: 40, h: 72 }],
+    textSlot: { x: 54, y: 14, w: 40, h: 72 },
+    captionStyle: 'stamp',
+  },
+  {
+    id: 'quoteCard',
+    label: '1 · Quote Card',
+    family: 'Minimal',
+    fits: ['square', 'tall', 'wide'],
+    slots: [{ x: 8, y: 8, w: 40, h: 40 }],
+    textSlot: { x: 8, y: 54, w: 84, h: 38 },
+    captionStyle: 'quote',
+  },
+  {
+    id: 'photoWindow',
+    label: '2 · Photo Window',
+    family: 'Portfolio',
+    fits: ['square', 'tall', 'wide'],
+    bleed: true,
+    // The background is forced to grayscale and a sharp color window is cut
+    // through it at the second slot — no tape, no rotation, no border.
+    decoration: 'window',
+    slots: [
+      { x: 0, y: 0, w: 100, h: 100 },
+      { x: 26, y: 30, w: 48, h: 34 },
+    ],
+  },
+  {
+    id: 'textDivider',
+    label: '0 · Text Divider',
+    family: 'Minimal',
+    fits: ['square', 'tall', 'wide'],
+    // No photo at all — a title/quote page to open or close a section of the book.
+    slots: [],
+    textSlot: { x: 12, y: 38, w: 76, h: 24 },
+    captionStyle: 'divider',
+  },
 ]
 
 export const SHAPE_FILTERS: { id: Shape | 'all'; label: string }[] = [

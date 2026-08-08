@@ -11,6 +11,9 @@ export const FONT_OPTIONS: { id: FontId; label: string; stack: string }[] = [
   { id: 'mono', label: 'Typewriter', stack: '"Courier New", Courier, monospace' },
   { id: 'hand1', label: 'Handwritten', stack: '"Bradley Hand", "Segoe Script", cursive' },
   { id: 'hand2', label: 'Marker', stack: '"Comic Sans MS", "Segoe Print", cursive' },
+  { id: 'brush', label: 'Brush Script', stack: '"Brush Script MT", "Lucida Handwriting", "Snell Roundhand", cursive' },
+  { id: 'condensed', label: 'Condensed', stack: '"Arial Narrow", "Bahnschrift", sans-serif' },
+  { id: 'slab', label: 'Slab Serif', stack: 'Rockwell, "Roboto Slab", Georgia, serif' },
 ]
 
 export function fontStack(id: FontId | undefined): string {

@@ -8,7 +8,7 @@ export type TemplateFamily = 'Minimal' | 'Portfolio'
  * small font file bundled inside the app itself under a free license — never
  * fetched from anywhere, so the offline/free guarantee holds either way.
  */
-export type FontId = 'serif' | 'sans' | 'mono' | 'hand1' | 'hand2'
+export type FontId = 'serif' | 'sans' | 'mono' | 'hand1' | 'hand2' | 'brush' | 'condensed' | 'slab'
 
 /** A relative size, not a pixel value — the actual font size is always computed from the space available. */
 export type FontSize = 'sm' | 'md' | 'lg' | 'xl'
@@ -21,7 +21,7 @@ export interface TextStyle {
 }
 
 /** Applied to a photo in its slot — the print itself is untouched, only the placement. */
-export type PhotoFilter = 'bw' | 'sepia'
+export type PhotoFilter = 'bw' | 'sepia' | 'negative'
 
 /**
  * The built-ins are drawn with CSS/SVG at render time — nothing downloaded,
@@ -108,15 +108,25 @@ export interface Template {
    * differently rather than always being one photo per side.
    */
   halfSplit?: boolean
-  /** Centers the note instead of the usual left-aligned strip under a photo; 'ruled' draws faint lines behind it, like a diary page. */
-  captionStyle?: 'centered' | 'ruled'
   /**
-   * Second-slot styling for a two-photo overlay template: 'poster' tapes it
-   * on top at an angle; 'circle' insets it as a centered circular portrait.
-   * 'beforeAfter' draws a divider and small "before"/"after" labels between
-   * the two slots.
+   * Centers the note instead of the usual left-aligned strip under a photo;
+   * 'ruled' draws faint lines behind it, like a diary page; 'quote' sets it
+   * large and italic with a decorative opening mark, anchored near the
+   * bottom; 'divider' sets it large and centered with a rule beneath, for a
+   * text-only page; 'stamp' gives it the same scalloped card as the Stamp
+   * frame, so a caption can sit in its own "stamp" beside a photo.
    */
-  decoration?: 'poster' | 'circle' | 'beforeAfter'
+  captionStyle?: 'centered' | 'ruled' | 'quote' | 'divider' | 'stamp'
+  /**
+   * Second-slot-onward styling for an overlay template: 'poster' tapes each
+   * slot after the first on top at an angle (their own tilts come from
+   * slotRotations); 'circle' insets the second slot as a centered circular
+   * portrait; 'beforeAfter' draws a divider and small "before"/"after"
+   * labels between the two slots; 'window' forces the first slot to
+   * grayscale and cuts a sharp color window through it at the second slot —
+   * no tape, no rotation, no border.
+   */
+  decoration?: 'poster' | 'circle' | 'beforeAfter' | 'window'
   /**
    * A fixed tilt per slot, baked into the design (Confetti Scatter) rather
    * than user-adjustable — same idea as Poster Overlay's fixed -6°, just one
@@ -164,10 +174,21 @@ export interface Placement {
   offsetY: number
   /** Undefined means full color. */
   filter?: PhotoFilter
-  /** Undefined means no frame — a plain crop. */
-  frame?: 'hairline' | 'polaroid'
+  /** Undefined means no frame — a plain crop. 'stamp' cuts a scalloped postage-stamp edge. */
+  frame?: 'hairline' | 'polaroid' | 'stamp'
   /** Manual tilt in degrees, on top of any fixed rotation the template itself applies. Undefined means 0. */
   rotation?: number
+  /** A piece of tape, a binder clip, or a paperclip pinning the photo to the page — independent of, and combinable with, any frame. */
+  attachment?: 'tape' | 'clip' | 'paperclip'
+  /** Tape's own color — meaningless (and ignored) for clip/paperclip, which are always the same neutral material. */
+  attachmentColor?: string
+  /**
+   * Where a 'poster' or 'window' decoration's second-and-later slot actually
+   * sits — one of a 3×3 grid of preset spots, overriding that slot's default
+   * template position while keeping its size. Undefined uses the template's
+   * own position.
+   */
+  overlayPosition?: 'tl' | 'tc' | 'tr' | 'ml' | 'mc' | 'mr' | 'bl' | 'bc' | 'br'
 }
 
 /** One side of a "Split at Fold" page — its own independent layout and photos. */

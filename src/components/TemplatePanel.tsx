@@ -1,9 +1,11 @@
-import { Fragment } from 'react'
+import { Fragment, useState } from 'react'
 import { foldOrientationForSize, getSize } from '../data/sizes'
 import {
   getTemplate,
   MAX_PHOTOS_PER_HALF,
   SHAPE_FILTERS,
+  STYLE_FILTERS,
+  templateStyleCategory,
   templatesForHalf,
   templatesForSize,
 } from '../data/templates'
@@ -80,12 +82,38 @@ function TemplateGrid({
   )
 }
 
+/** A collapsible group within the Layout panel — "Choose a template" vs. "Page styling" answer different questions, so each gets its own disclosure instead of one long scroll. */
+function PanelSection({
+  title,
+  defaultOpen,
+  children,
+}: {
+  title: string
+  defaultOpen: boolean
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className={`panel-section${open ? '' : ' collapsed'}`}>
+      <button className="panel-section-head" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+        <span>{title}</span>
+        <span className="chev" aria-hidden="true">
+          ▾
+        </span>
+      </button>
+      {open && <div className="panel-section-body">{children}</div>}
+    </div>
+  )
+}
+
 export function TemplatePanel() {
   const sizeId = useStore((s) => s.sizeId)
   const pages = useStore((s) => s.pages)
   const activePageIndex = useStore((s) => s.activePageIndex)
   const shapeFilter = useStore((s) => s.shapeFilter)
   const setShapeFilter = useStore((s) => s.setShapeFilter)
+  const styleFilter = useStore((s) => s.styleFilter)
+  const setStyleFilter = useStore((s) => s.setStyleFilter)
   const applyTemplate = useStore((s) => s.applyTemplate)
   const applyHalfTemplate = useStore((s) => s.applyHalfTemplate)
   const activeHalfIndex = useStore((s) => s.activeHalfIndex)
@@ -101,9 +129,11 @@ export function TemplatePanel() {
 
   const byShape = <T extends { fits: Shape[] }>(templates: T[]) =>
     templates.filter((t) => shapeFilter === 'all' || t.fits.includes(shapeFilter))
+  const byStyle = (templates: Template[]) =>
+    templates.filter((t) => styleFilter === 'all' || templateStyleCategory(t) === styleFilter)
 
-  const visible = byShape(templatesForSize(size))
-  const halfTemplates = byShape(templatesForHalf())
+  const visible = byStyle(byShape(templatesForSize(size)))
+  const halfTemplates = byStyle(byShape(templatesForHalf()))
 
   const containerTemplate = currentPage ? getTemplate(currentPage.templateId) : undefined
   const isSplit = Boolean(containerTemplate?.halfSplit && currentPage?.halves)
@@ -144,110 +174,127 @@ export function TemplatePanel() {
         )}
       </p>
 
-      {showShapeChips && (
-        <div className="shape-chips">
-          {SHAPE_FILTERS.map((shape) => (
-            <button
-              key={shape.id}
-              className={`shape-chip${shapeFilter === shape.id ? ' active' : ''}`}
-              data-shape={shape.id}
-              onClick={() => setShapeFilter(shape.id)}
-              aria-pressed={shapeFilter === shape.id}
-            >
-              {shape.id !== 'all' && <span className="glyph" />}
-              {shape.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {currentPage && (
-        <div className="inspector-row">
-          <label>Background</label>
-          <div className="filter-chips-row">
-            <button
-              className={`filter-chip-btn${!currentPage.backgroundColor ? ' active' : ''}`}
-              onClick={() => setPageBackground(activePageIndex, undefined)}
-              aria-pressed={!currentPage.backgroundColor}
-            >
-              None
-            </button>
-            {PAGE_TINTS.map((tint) => (
+      <PanelSection title="Choose a template" defaultOpen>
+        {showShapeChips && (
+          <div className="shape-chips">
+            {SHAPE_FILTERS.map((shape) => (
               <button
-                key={tint.id}
-                className={`filter-chip-btn${currentPage.backgroundColor === tint.color ? ' active' : ''}`}
-                onClick={() => setPageBackground(activePageIndex, tint.color)}
-                aria-pressed={currentPage.backgroundColor === tint.color}
-                title={tint.label}
+                key={shape.id}
+                className={`shape-chip${shapeFilter === shape.id ? ' active' : ''}`}
+                data-shape={shape.id}
+                onClick={() => setShapeFilter(shape.id)}
+                aria-pressed={shapeFilter === shape.id}
               >
-                <span className="tint-swatch" style={{ background: tint.color }} aria-hidden="true" />
+                {shape.id !== 'all' && <span className="glyph" />}
+                {shape.label}
               </button>
             ))}
           </div>
-        </div>
-      )}
+        )}
 
-      {currentPage && (
-        <div className="inspector-row">
-          <label htmlFor="margin-scale">Margin</label>
-          <input
-            id="margin-scale"
-            type="range"
-            min={0.3}
-            max={2}
-            step={0.05}
-            value={currentPage.marginScale ?? 1}
-            onChange={(e) => setPageMarginScale(activePageIndex, Number(e.target.value))}
-          />
-          <span className="value mono">{Math.round((currentPage.marginScale ?? 1) * 100)}%</span>
-        </div>
-      )}
-
-      {isFolded ? (
-        <>
-          <div className="sheet-panel">
-            <p className="layout-section-title">The sheet</p>
-            <TemplateGrid
-              templates={sheetTemplates}
-              activeId={currentPage?.templateId}
-              maxSlots={size.maxPhotosPerPage}
-              onPick={applyTemplate}
-            />
+        {showShapeChips && (
+          <div className="style-chips">
+            {STYLE_FILTERS.map((style) => (
+              <button
+                key={style.id}
+                className={`style-chip${styleFilter === style.id ? ' active' : ''}`}
+                onClick={() => setStyleFilter(style.id)}
+                aria-pressed={styleFilter === style.id}
+              >
+                {style.label}
+              </button>
+            ))}
           </div>
+        )}
 
-          {/* One half at a time — showing both grids at once made for a very
-              long panel and easy mis-clicks into the wrong half. */}
-          {isSplit && currentPage?.halves && (
-            <div className="half-panel">
-              <div className="half-tabs" role="tablist" aria-label="Which half to lay out">
-                {([0, 1] as const).map((halfIndex) => (
-                  <button
-                    key={halfIndex}
-                    role="tab"
-                    className={`half-tab${activeHalfIndex === halfIndex ? ' active' : ''}`}
-                    aria-selected={activeHalfIndex === halfIndex}
-                    onClick={() => setActiveHalf(halfIndex)}
-                  >
-                    {halfLabels[halfIndex]}
-                  </button>
-                ))}
-              </div>
+        {isFolded ? (
+          <>
+            <div className="sheet-panel">
+              <p className="layout-section-title">The sheet</p>
               <TemplateGrid
-                templates={halfTemplates}
-                activeId={currentPage.halves[activeHalfIndex].templateId}
-                maxSlots={MAX_PHOTOS_PER_HALF}
-                onPick={(templateId) => applyHalfTemplate(activePageIndex, activeHalfIndex, templateId)}
+                templates={sheetTemplates}
+                activeId={currentPage?.templateId}
+                maxSlots={size.maxPhotosPerPage}
+                onPick={applyTemplate}
               />
             </div>
-          )}
-        </>
-      ) : (
-        <TemplateGrid
-          templates={visible}
-          activeId={currentPage?.templateId}
-          maxSlots={size.maxPhotosPerPage}
-          onPick={applyTemplate}
-        />
+
+            {/* One half at a time — showing both grids at once made for a very
+                long panel and easy mis-clicks into the wrong half. */}
+            {isSplit && currentPage?.halves && (
+              <div className="half-panel">
+                <div className="half-tabs" role="tablist" aria-label="Which half to lay out">
+                  {([0, 1] as const).map((halfIndex) => (
+                    <button
+                      key={halfIndex}
+                      role="tab"
+                      className={`half-tab${activeHalfIndex === halfIndex ? ' active' : ''}`}
+                      aria-selected={activeHalfIndex === halfIndex}
+                      onClick={() => setActiveHalf(halfIndex)}
+                    >
+                      {halfLabels[halfIndex]}
+                    </button>
+                  ))}
+                </div>
+                <TemplateGrid
+                  templates={halfTemplates}
+                  activeId={currentPage.halves[activeHalfIndex].templateId}
+                  maxSlots={MAX_PHOTOS_PER_HALF}
+                  onPick={(templateId) => applyHalfTemplate(activePageIndex, activeHalfIndex, templateId)}
+                />
+              </div>
+            )}
+          </>
+        ) : (
+          <TemplateGrid
+            templates={visible}
+            activeId={currentPage?.templateId}
+            maxSlots={size.maxPhotosPerPage}
+            onPick={applyTemplate}
+          />
+        )}
+      </PanelSection>
+
+      {currentPage && (
+        <PanelSection title="Page styling" defaultOpen={false}>
+          <div className="inspector-row">
+            <label>Background</label>
+            <div className="filter-chips-row">
+              <button
+                className={`filter-chip-btn${!currentPage.backgroundColor ? ' active' : ''}`}
+                onClick={() => setPageBackground(activePageIndex, undefined)}
+                aria-pressed={!currentPage.backgroundColor}
+              >
+                None
+              </button>
+              {PAGE_TINTS.map((tint) => (
+                <button
+                  key={tint.id}
+                  className={`filter-chip-btn${currentPage.backgroundColor === tint.color ? ' active' : ''}`}
+                  onClick={() => setPageBackground(activePageIndex, tint.color)}
+                  aria-pressed={currentPage.backgroundColor === tint.color}
+                  title={tint.label}
+                >
+                  <span className="tint-swatch" style={{ background: tint.color }} aria-hidden="true" />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="inspector-row">
+            <label htmlFor="margin-scale">Margin</label>
+            <input
+              id="margin-scale"
+              type="range"
+              min={0.3}
+              max={2}
+              step={0.05}
+              value={currentPage.marginScale ?? 1}
+              onChange={(e) => setPageMarginScale(activePageIndex, Number(e.target.value))}
+            />
+            <span className="value mono">{Math.round((currentPage.marginScale ?? 1) * 100)}%</span>
+          </div>
+        </PanelSection>
       )}
     </section>
   )

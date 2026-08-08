@@ -89,6 +89,7 @@ export function SlotInspector() {
             </span>
           </p>
 
+          <p className="cluster-title">Crop</p>
           <div className="inspector-row">
             <label htmlFor="zoom">Zoom</label>
             <input
@@ -103,6 +104,7 @@ export function SlotInspector() {
             <span className="value mono">{placement.zoom.toFixed(2)}×</span>
           </div>
 
+          <p className="cluster-title">Style</p>
           <div className="inspector-row">
             <label>Filter</label>
             <div className="filter-chips-row">
@@ -172,6 +174,7 @@ export function SlotInspector() {
             </div>
           )}
 
+          <p className="cluster-title">Position</p>
           {isOverlay && (
             <div className="inspector-row">
               <label>Position</label>

@@ -553,6 +553,35 @@ export const SHAPE_FILTERS: { id: Shape | 'all'; label: string }[] = [
   { id: 'wide', label: 'Wide' },
 ]
 
+/**
+ * A second, orthogonal way to narrow the template list, once picking by
+ * shape alone stopped being enough to find anything in ~40 options. Derived
+ * from each template's own existing fields rather than a new one on
+ * `Template`, so this is purely a browsing aid, not a data change.
+ */
+export type StyleCategory = 'classic' | 'grids' | 'overlays' | 'text' | 'novelty'
+
+const GRID_IDS = new Set(['grid4', 'squareGrid4', 'instantGrid', 'contactSheet', 'asymGrid'])
+const NOVELTY_IDS = new Set(['polaroid', 'polaroidNote', 'polaroidStrip', 'confettiScatter'])
+const TEXT_FORWARD_CAPTION_STYLES = new Set<Template['captionStyle']>(['quote', 'divider', 'stamp', 'ruled'])
+
+export function templateStyleCategory(template: Template): StyleCategory {
+  if (template.decoration) return 'overlays'
+  if (GRID_IDS.has(template.id)) return 'grids'
+  if (NOVELTY_IDS.has(template.id)) return 'novelty'
+  if (template.captionStyle && TEXT_FORWARD_CAPTION_STYLES.has(template.captionStyle)) return 'text'
+  return 'classic'
+}
+
+export const STYLE_FILTERS: { id: StyleCategory | 'all'; label: string }[] = [
+  { id: 'all', label: 'All styles' },
+  { id: 'classic', label: 'Classic' },
+  { id: 'grids', label: 'Grids' },
+  { id: 'overlays', label: 'Overlays' },
+  { id: 'text', label: 'Text-forward' },
+  { id: 'novelty', label: 'Novelty' },
+]
+
 export function getTemplate(id: string): Template {
   return TEMPLATES.find((t) => t.id === id) ?? TEMPLATES[0]
 }

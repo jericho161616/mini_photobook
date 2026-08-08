@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { DEFAULT_SIZE_ID, getSize } from '../data/sizes'
-import { getTemplate } from '../data/templates'
+import { getTemplate, type StyleCategory } from '../data/templates'
 import {
   applyTemplateToPage,
   autoLayout,
@@ -72,6 +72,8 @@ interface StoreState {
   /** The one freely placed sticker or text box currently selected, if any. */
   selectedDecoration: DecorationRef | null
   shapeFilter: Shape | 'all'
+  /** A second, orthogonal narrowing of the Layout panel's template grid — see StyleCategory. */
+  styleFilter: StyleCategory | 'all'
   importing: boolean
   /**
    * Photos "picked up" by clicking them rather than dragging — each slot
@@ -99,6 +101,7 @@ interface StoreState {
   setActiveHalf: (halfIndex: 0 | 1) => void
   select: (ref: SlotRef | null) => void
   setShapeFilter: (shape: Shape | 'all') => void
+  setStyleFilter: (style: StyleCategory | 'all') => void
   applyTemplate: (templateId: string) => void
   /** Sets one half's own layout on a Split at Fold page. */
   applyHalfTemplate: (pageIndex: number, halfIndex: 0 | 1, templateId: string) => void
@@ -234,6 +237,7 @@ export const useStore = create<StoreState>((set, get) => {
     selected: null,
     selectedDecoration: null,
     shapeFilter: 'all',
+    styleFilter: 'all',
     importing: false,
     armedPhotoIds: [],
     importNotice: null,
@@ -421,6 +425,10 @@ export const useStore = create<StoreState>((set, get) => {
 
     setShapeFilter(shapeFilter) {
       set({ shapeFilter })
+    },
+
+    setStyleFilter(styleFilter) {
+      set({ styleFilter })
     },
 
     applyTemplate(templateId) {

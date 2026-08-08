@@ -284,6 +284,16 @@ grid all use that instead of decoding the full-resolution original at
 postage-stamp size. Only the main editing canvas and the PDF export touch
 the full-resolution file.
 
+**A reorganized Layout panel and Selected Photo panel**, once both had grown
+long enough to make the thing you wanted hard to find. The Layout panel now
+splits into two collapsible sections — "Choose a template" (open by default)
+and "Page styling" (background tint and margin, collapsed by default since
+it's changed far less often) — and a second "style" filter (Classic / Grids
+/ Overlays / Text-forward / Novelty) sits alongside the existing shape filter
+so ~40 templates stay browsable. The Selected Photo panel's controls are now
+grouped under Crop / Style / Position headers instead of one flat stack, with
+no change to what any control does.
+
 ## How it's built
 
 | Piece | Choice | Why |

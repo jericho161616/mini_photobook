@@ -93,6 +93,7 @@ export function DecoratePanel() {
   const setPageMarginScale = useStore((s) => s.setPageMarginScale)
   const uploadInputRef = useRef<HTMLInputElement>(null)
   const [browsingPhotos, setBrowsingPhotos] = useState(false)
+  const [photoGridOpen, setPhotoGridOpen] = useState(true)
 
   const page = pages[activePageIndex]
   if (!page) return null
@@ -168,7 +169,16 @@ export function DecoratePanel() {
         {page.backgroundPhotoId !== undefined && (
           <div className="inspector-row bg-photo-row">
             <div className="bg-photo-row-head">
-              <label>Choose photo</label>
+              <button
+                className={`bg-photo-toggle${photoGridOpen ? '' : ' collapsed'}`}
+                onClick={() => setPhotoGridOpen((v) => !v)}
+                aria-expanded={photoGridOpen}
+              >
+                <span className="chev" aria-hidden="true">
+                  ▾
+                </span>
+                Choose photo
+              </button>
               <button
                 className="browse-photos-btn"
                 onClick={() => setBrowsingPhotos(true)}
@@ -177,18 +187,20 @@ export function DecoratePanel() {
                 ⤢ Browse all
               </button>
             </div>
-            <div className="bg-photo-grid">
-              {photos.map((p) => (
-                <button
-                  key={p.id}
-                  className={`bg-photo-thumb${page.backgroundPhotoId === p.id ? ' active' : ''}`}
-                  style={{ backgroundImage: `url(${photoThumbUrl(p)})` }}
-                  onClick={() => setPageBackgroundPhoto(activePageIndex, p.id)}
-                  aria-pressed={page.backgroundPhotoId === p.id}
-                  title={p.name}
-                />
-              ))}
-            </div>
+            {photoGridOpen && (
+              <div className="bg-photo-grid">
+                {photos.map((p) => (
+                  <button
+                    key={p.id}
+                    className={`bg-photo-thumb${page.backgroundPhotoId === p.id ? ' active' : ''}`}
+                    style={{ backgroundImage: `url(${photoThumbUrl(p)})` }}
+                    onClick={() => setPageBackgroundPhoto(activePageIndex, p.id)}
+                    aria-pressed={page.backgroundPhotoId === p.id}
+                    title={p.name}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
 

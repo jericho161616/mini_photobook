@@ -1828,8 +1828,30 @@ kbd {
   width: 100%;
 }
 
-.bg-photo-row-head label {
-  width: auto;
+.bg-photo-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 11px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.bg-photo-toggle:hover {
+  color: var(--ink);
+}
+
+.bg-photo-toggle .chev {
+  font-size: 10px;
+  transition: transform 0.15s ease;
+}
+
+.bg-photo-toggle.collapsed .chev {
+  transform: rotate(-90deg);
 }
 
 .browse-photos-btn {

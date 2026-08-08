@@ -6,9 +6,10 @@ import {
   isDarkColor,
   isOverlaySlot,
   resolveOverlayPosition,
+  resolveSlotStyle,
   slotPixelRect,
   slotRotationDeg,
-  stampScallopPoints,
+  stampClipPathCss,
 } from '../lib/imageUtils'
 import type { DecorationRef } from '../state/useStore'
 import type { CustomSticker, Page, Photo, Sticker, TextBox } from '../types'
@@ -187,12 +188,7 @@ export function PageView({
               fontFamily: fontStack((page.textStyle ?? DEFAULT_TEXT_STYLE).font),
               fontWeight: (page.textStyle ?? DEFAULT_TEXT_STYLE).bold ? 700 : 400,
               color: onDark ? '#c9bfa4' : undefined,
-              clipPath:
-                template.captionStyle === 'stamp'
-                  ? `polygon(${stampScallopPoints(textRect.w, textRect.h)
-                      .map((p) => `${p.x}px ${p.y}px`)
-                      .join(', ')})`
-                  : undefined,
+              clipPath: template.captionStyle === 'stamp' ? stampClipPathCss(textRect.w, textRect.h) : undefined,
             }}
           >
             {template.captionStyle === 'quote' && <span className="quote-mark" aria-hidden="true">&ldquo;</span>}
@@ -225,17 +221,7 @@ export function PageView({
                     onSelect={() => onSelectSlot(slotIndex, halfIndex as 0 | 1)}
                     onDropPhoto={(photoId) => onDropPhoto(slotIndex, photoId, halfIndex as 0 | 1)}
                     onPan={(x, y) => onPan(slotIndex, x, y, halfIndex as 0 | 1)}
-                    framed={
-                      halfTemplate.id === 'instantGrid' ||
-                      halfTemplate.id === 'polaroidStrip' ||
-                      placement?.frame === 'polaroid'
-                    }
-                    poster={halfTemplate.decoration === 'poster' && slotIndex >= 1}
-                    circle={halfTemplate.decoration === 'circle' && slotIndex === 1}
-                    hairline={placement?.frame === 'hairline'}
-                    stamp={halfTemplate.id === 'postageStampDuo' || placement?.frame === 'stamp'}
-                    windowSlot={halfTemplate.decoration === 'window' && slotIndex >= 1}
-                    forceFilter={halfTemplate.decoration === 'window' && slotIndex === 0 ? 'bw' : undefined}
+                    {...resolveSlotStyle(halfTemplate, slotIndex, placement)}
                     rotationDeg={slotRotationDeg(halfTemplate, slotIndex, placement)}
                     hasArmedPhoto={hasArmedPhoto}
                     quickPick={
@@ -274,11 +260,7 @@ export function PageView({
                       fontWeight: halfStyle.bold ? 700 : 400,
                       color: onDark ? '#c9bfa4' : undefined,
                       clipPath:
-                        halfTemplate.captionStyle === 'stamp'
-                          ? `polygon(${stampScallopPoints(inner.w, inner.h)
-                              .map((p) => `${p.x}px ${p.y}px`)
-                              .join(', ')})`
-                          : undefined,
+                        halfTemplate.captionStyle === 'stamp' ? stampClipPathCss(inner.w, inner.h) : undefined,
                     }}
                   >
                     {halfTemplate.captionStyle === 'quote' && (
@@ -355,17 +337,7 @@ export function PageView({
                   onSelect={() => onSelectSlot(slotIndex)}
                   onDropPhoto={(photoId) => onDropPhoto(slotIndex, photoId)}
                   onPan={(x, y) => onPan(slotIndex, x, y)}
-                  framed={
-                    template.id === 'instantGrid' ||
-                    template.id === 'polaroidStrip' ||
-                    placement?.frame === 'polaroid'
-                  }
-                  poster={template.decoration === 'poster' && slotIndex >= 1}
-                  circle={template.decoration === 'circle' && slotIndex === 1}
-                  hairline={placement?.frame === 'hairline'}
-                  stamp={template.id === 'postageStampDuo' || placement?.frame === 'stamp'}
-                  windowSlot={template.decoration === 'window' && slotIndex >= 1}
-                  forceFilter={template.decoration === 'window' && slotIndex === 0 ? 'bw' : undefined}
+                  {...resolveSlotStyle(template, slotIndex, placement)}
                   rotationDeg={slotRotationDeg(template, slotIndex, placement)}
                   hasArmedPhoto={hasArmedPhoto}
                   quickPick={

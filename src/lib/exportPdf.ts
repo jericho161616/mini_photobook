@@ -1,18 +1,27 @@
 import { DEFAULT_TEXT_STYLE, fontSizeScale, fontStack } from '../data/fonts'
 import { getTemplate } from '../data/templates'
+import { DEFAULT_TAPE_COLOR } from '../components/AttachmentGraphic'
 import { decorationHost, pagePlacements, resolvePageSize } from './autoLayout'
 import {
   CIRCLE_BORDER_RATIO,
+  CLIP_ASPECT,
+  CLIP_WIDTH_RATIO,
   coverGeometry,
   FRAME_INSET_RATIO,
   isDarkColor,
   isOverlaySlot,
+  PAPERCLIP_ASPECT,
+  PAPERCLIP_WIDTH_RATIO,
   POSTER_BORDER_RATIO,
   resolveOverlayPosition,
+  resolveSlotStyle,
   slotPixelRect,
   slotRotationDeg,
   STAMP_INSET_RATIO,
   stampScallopPoints,
+  TAPE_HEIGHT_RATIO,
+  TAPE_ROTATION_DEG,
+  TAPE_WIDTH_RATIO,
 } from './imageUtils'
 import type {
   BookSize,
@@ -36,8 +45,6 @@ const FILTER_CANVAS: Record<string, string> = {
   sepia: 'sepia(0.75) saturate(1.1)',
   negative: 'invert(1) hue-rotate(180deg)',
 }
-
-const DEFAULT_TAPE_COLOR_CANVAS = 'rgba(232, 217, 160, 0.85)'
 
 const TAPE_COLORS: Record<string, string> = {
   'tape-yellow': 'rgba(232, 217, 160, 0.85)',
@@ -135,26 +142,26 @@ async function renderPage(
     color: string | undefined,
   ) => {
     if (type === 'tape') {
-      const w = rect.w * 0.4
-      const h = rect.h * 0.16
+      const w = rect.w * TAPE_WIDTH_RATIO
+      const h = rect.h * TAPE_HEIGHT_RATIO
       const x = rect.x + rect.w * 0.3
       const y = rect.y - rect.h * 0.06
       const cx = x + w / 2
       const cy = y + h / 2
       ctx.save()
       ctx.translate(cx, cy)
-      ctx.rotate((-3 * Math.PI) / 180)
+      ctx.rotate((TAPE_ROTATION_DEG * Math.PI) / 180)
       ctx.translate(-cx, -cy)
       ctx.shadowColor = 'rgba(0,0,0,0.2)'
       ctx.shadowBlur = rect.w * 0.01
-      ctx.fillStyle = color ?? DEFAULT_TAPE_COLOR_CANVAS
+      ctx.fillStyle = color ?? DEFAULT_TAPE_COLOR
       ctx.fillRect(x, y, w, h)
       ctx.restore()
       return
     }
     if (type === 'clip') {
-      const w = rect.w * 0.15
-      const h = w * (34 / 26)
+      const w = rect.w * CLIP_WIDTH_RATIO
+      const h = w * CLIP_ASPECT
       const x = rect.x + rect.w / 2 - w / 2
       const y = rect.y - rect.h * 0.09
       ctx.save()
@@ -171,8 +178,8 @@ async function renderPage(
       ctx.restore()
       return
     }
-    const w = rect.w * 0.11
-    const h = w * (44 / 20)
+    const w = rect.w * PAPERCLIP_WIDTH_RATIO
+    const h = w * PAPERCLIP_ASPECT
     const x = rect.x + rect.w * 0.03
     const y = rect.y - rect.h * 0.1
     ctx.save()
@@ -186,6 +193,16 @@ async function renderPage(
     ctx.lineTo(x + w * 0.2, y + h * 0.18)
     ctx.stroke()
     ctx.restore()
+  }
+
+  /** The Stamp frame/caption's scalloped cream card — filled (and left as the active clip) for the caller to draw into. */
+  const fillScallopCard = (rect: { x: number; y: number; w: number; h: number }) => {
+    const points = stampScallopPoints(rect.w, rect.h).map((p) => ({ x: rect.x + p.x, y: rect.y + p.y }))
+    ctx.beginPath()
+    points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)))
+    ctx.closePath()
+    ctx.fillStyle = '#f2ead2'
+    ctx.fill()
   }
 
   /**
@@ -264,13 +281,8 @@ async function renderPage(
       return
     }
     if (opts.stamp) {
-      const points = stampScallopPoints(rect.w, rect.h).map((p) => ({ x: rect.x + p.x, y: rect.y + p.y }))
       ctx.save()
-      ctx.beginPath()
-      points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)))
-      ctx.closePath()
-      ctx.fillStyle = '#f2ead2'
-      ctx.fill()
+      fillScallopCard(rect)
       ctx.clip()
       const inset = Math.min(rect.w, rect.h) * STAMP_INSET_RATIO
       drawPhoto(
@@ -347,13 +359,8 @@ async function renderPage(
 
     let innerRect = rect
     if (captionStyle === 'stamp') {
-      const points = stampScallopPoints(rect.w, rect.h).map((p) => ({ x: rect.x + p.x, y: rect.y + p.y }))
       ctx.save()
-      ctx.beginPath()
-      points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)))
-      ctx.closePath()
-      ctx.fillStyle = '#f2ead2'
-      ctx.fill()
+      fillScallopCard(rect)
       ctx.restore()
       innerRect = { x: rect.x + rect.w * 0.08, y: rect.y, w: rect.w * 0.84, h: rect.h }
     }
@@ -530,16 +537,7 @@ async function renderPage(
           { x: outer.x + inner.x, y: outer.y + inner.y, w: inner.w, h: inner.h },
           placement,
           {
-            framed:
-              halfTemplate.id === 'instantGrid' ||
-              halfTemplate.id === 'polaroidStrip' ||
-              placement?.frame === 'polaroid',
-            poster: halfTemplate.decoration === 'poster' && slotIndex >= 1,
-            circle: halfTemplate.decoration === 'circle' && slotIndex === 1,
-            hairline: placement?.frame === 'hairline',
-            stamp: halfTemplate.id === 'postageStampDuo' || placement?.frame === 'stamp',
-            windowSlot: halfTemplate.decoration === 'window' && slotIndex >= 1,
-            forceFilter: halfTemplate.decoration === 'window' && slotIndex === 0 ? 'bw' : undefined,
+            ...resolveSlotStyle(halfTemplate, slotIndex, placement),
             rotationDeg: slotRotationDeg(halfTemplate, slotIndex, placement),
           },
         )
@@ -567,13 +565,7 @@ async function renderPage(
         : slot
       const rect = slotPixelRect(positioned, pageW, pageH, marginRatio)
       drawSlot(rect, placement, {
-        framed: template.id === 'instantGrid' || template.id === 'polaroidStrip' || placement?.frame === 'polaroid',
-        poster: template.decoration === 'poster' && slotIndex >= 1,
-        circle: template.decoration === 'circle' && slotIndex === 1,
-        hairline: placement?.frame === 'hairline',
-        stamp: template.id === 'postageStampDuo' || placement?.frame === 'stamp',
-        windowSlot: template.decoration === 'window' && slotIndex >= 1,
-        forceFilter: template.decoration === 'window' && slotIndex === 0 ? 'bw' : undefined,
+        ...resolveSlotStyle(template, slotIndex, placement),
         rotationDeg: slotRotationDeg(template, slotIndex, placement),
       })
     })

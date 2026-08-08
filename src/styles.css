@@ -1182,6 +1182,13 @@ input:focus-visible,
   pointer-events: none;
 }
 
+/*
+ * Attachment proportions below are mirrored in exportPdf.ts's drawAttachment
+ * via the named ratio constants in lib/imageUtils.ts (TAPE_WIDTH_RATIO,
+ * TAPE_HEIGHT_RATIO, TAPE_ROTATION_DEG, CLIP_WIDTH_RATIO, CLIP_ASPECT,
+ * PAPERCLIP_WIDTH_RATIO, PAPERCLIP_ASPECT) — CSS can't import those directly,
+ * so keep this block in sync with them by hand if either changes.
+ */
 .attachment-tape {
   position: absolute;
   top: -6%;

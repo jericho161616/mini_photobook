@@ -1,4 +1,4 @@
-import type { Photo, Placement, SlotRect, Template } from '../types'
+import type { Photo, PhotoFilter, Placement, SlotRect, Template } from '../types'
 
 type OverlayPosition = NonNullable<Placement['overlayPosition']>
 
@@ -23,6 +23,21 @@ export const CIRCLE_BORDER_RATIO = 0.045
 /** Margin between a Stamp-framed photo and its scalloped cut edge, relative to the shorter side. */
 export const STAMP_INSET_RATIO = 0.05
 
+/**
+ * Tape/clip/paperclip geometry, relative to the attaching slot's own size —
+ * shared so the editor's CSS (styles.css's .attachment-* / .poster-tape
+ * rules, expressed the same way in percent) and exportPdf's canvas drawing
+ * agree on proportions. CSS can't import these directly, so keep the two in
+ * sync by hand if either changes.
+ */
+export const TAPE_ROTATION_DEG = -3
+export const TAPE_WIDTH_RATIO = 0.4
+export const TAPE_HEIGHT_RATIO = 0.16
+export const CLIP_WIDTH_RATIO = 0.15
+export const CLIP_ASPECT = 34 / 26
+export const PAPERCLIP_WIDTH_RATIO = 0.11
+export const PAPERCLIP_ASPECT = 44 / 20
+
 type DecorationTemplate = Pick<Template, 'decoration' | 'slotRotations'>
 
 /** True for a 'poster'/'window' decoration's overlay slot(s) — every slot after the first. */
@@ -43,6 +58,42 @@ export function slotRotationDeg(
   const isPoster = template.decoration === 'poster' && slotIndex >= 1
   const base = template.slotRotations?.[slotIndex] ?? (isPoster ? POSTER_ROTATION_DEG : 0)
   return base + (placement?.rotation ?? 0)
+}
+
+export interface SlotStyle {
+  framed: boolean
+  poster: boolean
+  circle: boolean
+  hairline: boolean
+  stamp: boolean
+  windowSlot: boolean
+  forceFilter: PhotoFilter | undefined
+}
+
+/**
+ * Every decorative slot style in one place — which frame/decoration a given
+ * slot gets, from the template's own design (Instant Grid, Polaroid Strip,
+ * Postage Stamp Duo's forced frames; poster/circle/window decorations) and
+ * the photo's own placement (frame/hairline/stamp choice). Shared by
+ * PageView's two render branches (whole-page and Split at Fold half) and
+ * exportPdf's matching two loops, so all four agree on exactly the same
+ * rules.
+ */
+export function resolveSlotStyle(
+  template: Pick<Template, 'id' | 'decoration'>,
+  slotIndex: number,
+  placement: Placement | null | undefined,
+): SlotStyle {
+  return {
+    framed:
+      template.id === 'instantGrid' || template.id === 'polaroidStrip' || placement?.frame === 'polaroid',
+    poster: template.decoration === 'poster' && slotIndex >= 1,
+    circle: template.decoration === 'circle' && slotIndex === 1,
+    hairline: placement?.frame === 'hairline',
+    stamp: template.id === 'postageStampDuo' || placement?.frame === 'stamp',
+    windowSlot: template.decoration === 'window' && slotIndex >= 1,
+    forceFilter: template.decoration === 'window' && slotIndex === 0 ? 'bw' : undefined,
+  }
 }
 
 /**
@@ -319,6 +370,13 @@ export function stampScallopPoints(w: number, h: number): { x: number; y: number
   edge(w, h, 0, h, perSide(w))
   edge(0, h, 0, 0, perSide(h))
   return points
+}
+
+/** The Stamp frame's scalloped edge as a CSS `clip-path: polygon(...)` value, for a box of the given pixel size. */
+export function stampClipPathCss(w: number, h: number): string {
+  return `polygon(${stampScallopPoints(w, h)
+    .map((p) => `${p.x}px ${p.y}px`)
+    .join(', ')})`
 }
 
 /** Pixel rect of a slot inside a page of the given pixel size, honoring margin. */

@@ -2,6 +2,7 @@ import { getTemplate } from '../data/templates'
 import { isOverlaySlot, MAX_ZOOM, MIN_ZOOM } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
 import type { Placement, PhotoFilter } from '../types'
+import { DEFAULT_TAPE_COLOR } from './AttachmentGraphic'
 
 const FILTERS: { id: PhotoFilter | 'none'; label: string }[] = [
   { id: 'none', label: 'Color' },
@@ -25,7 +26,7 @@ const ATTACHMENTS: { id: 'none' | NonNullable<Placement['attachment']>; label: s
 ]
 
 const TAPE_COLORS = [
-  { id: 'cream', color: 'rgba(232, 217, 160, 0.85)', label: 'Cream' },
+  { id: 'cream', color: DEFAULT_TAPE_COLOR, label: 'Cream' },
   { id: 'blush', color: 'rgba(227, 184, 176, 0.85)', label: 'Blush' },
   { id: 'sage', color: 'rgba(185, 196, 168, 0.85)', label: 'Sage' },
   { id: 'brass', color: 'rgba(169, 130, 47, 0.75)', label: 'Brass' },
@@ -64,8 +65,8 @@ export function SlotInspector() {
       ? selectedPage?.halves?.[selected.halfIndex].templateId
       : selectedPage?.templateId
   const template = templateId ? getTemplate(templateId) : undefined
-  const isPosterSlot = !!(template && selected && template.decoration === 'poster' && selected.slotIndex >= 1)
   const isOverlay = !!(template && selected && isOverlaySlot(template, selected.slotIndex))
+  const isPosterSlot = isOverlay && template?.decoration === 'poster'
 
   return (
     <section className="panel">

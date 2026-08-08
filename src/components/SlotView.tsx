@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   CIRCLE_BORDER_RATIO,
   coverGeometry,
@@ -6,8 +6,8 @@ import {
   photoThumbUrl,
   photoUrl,
   POSTER_BORDER_RATIO,
+  stampClipPathCss,
   STAMP_INSET_RATIO,
-  stampScallopPoints,
 } from '../lib/imageUtils'
 import type { Photo, Placement, PhotoFilter } from '../types'
 import { AttachmentGraphic } from './AttachmentGraphic'
@@ -118,12 +118,9 @@ export function SlotView({
   const photoBox = { w: box.w - inset * 2, h: box.h - inset * 2 }
 
   // Same points feed exportPdf's canvas path, so the cut edge prints exactly
-  // as shown here.
-  const stampClipPath = stamp
-    ? `polygon(${stampScallopPoints(box.w, box.h)
-        .map((p) => `${p.x}px ${p.y}px`)
-        .join(', ')})`
-    : undefined
+  // as shown here. Memoized on the box's own size so a drag/pan elsewhere on
+  // the page — which re-renders this slot too — doesn't recompute it.
+  const stampClipPath = useMemo(() => (stamp ? stampClipPathCss(box.w, box.h) : undefined), [stamp, box.w, box.h])
 
   const geo =
     photo && placement ? coverGeometry(photo.width / photo.height, photoBox.w, photoBox.h, placement) : null

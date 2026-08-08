@@ -176,7 +176,10 @@ export function SlotView({
     .filter(Boolean)
     .join(' ')
 
-  function handleClick() {
+  function handleClick(e: React.MouseEvent) {
+    // Stops here so a slot click selects/picks a photo instead of also
+    // bubbling up to the page background's click-to-zoom handler.
+    e.stopPropagation()
     // A filled slot, or one being handed an armed photo, behaves exactly as
     // before — onSelect already knows to place the armed photo instead of
     // just selecting when one is picked up (see SpreadCanvas).

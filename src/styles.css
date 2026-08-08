@@ -655,6 +655,16 @@ input:focus-visible,
   flex: 0 0 auto;
 }
 
+/* Only the spread's own pages take a click-to-zoom — the zoom overlay's page
+   has no onClick, and .page-zoom-frame .page below overrides this back out. */
+.spread .page:not(.blank) {
+  cursor: zoom-in;
+}
+
+.page-zoom-frame .page {
+  cursor: default;
+}
+
 .page.left {
   border-radius: 4px 0 0 4px;
 }
@@ -982,6 +992,7 @@ input:focus-visible,
   transition: outline-color 0.1s;
   padding: 0;
   border: none;
+  cursor: pointer;
 }
 
 .slot:hover {

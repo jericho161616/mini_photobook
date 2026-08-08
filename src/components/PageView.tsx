@@ -117,10 +117,17 @@ export function PageView({
       className={`page ${side}${page.locked ? ' locked' : ''}`}
       style={{ width, height, backgroundColor: page.backgroundColor }}
       data-page-index={pageIndex}
+      // Clicking the page itself (its margin, not a slot/sticker/button, all of
+      // which stop propagation) is the click-to-zoom shortcut — skip it while a
+      // photo is armed so that click can still land on a slot to place it.
+      onClick={onFullscreen && !hasArmedPhoto ? onFullscreen : undefined}
     >
       <button
         className="page-lock"
-        onClick={onToggleLock}
+        onClick={(e) => {
+          e.stopPropagation()
+          onToggleLock()
+        }}
         aria-label={page.locked ? `Unlock page ${pageIndex + 1}` : `Lock page ${pageIndex + 1}`}
         title={page.locked ? 'Unlock this page' : 'Lock this page to protect it from edits'}
       >

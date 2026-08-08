@@ -294,12 +294,6 @@ so ~40 templates stay browsable. The Selected Photo panel's controls are now
 grouped under Crop / Style / Position headers instead of one flat stack, with
 no change to what any control does.
 
-**Click a page's margin to zoom into just that page.** The spread still shows
-both pages of a book at once by default, but clicking anywhere on a page's
-background — not a slot, sticker, or button, which all keep their own
-click behavior — opens that one page full-screen. Esc, the × button, or a
-click outside the page closes it and returns to the two-page spread.
-
 ## How it's built
 
 | Piece | Choice | Why |

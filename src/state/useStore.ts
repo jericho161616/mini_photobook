@@ -10,6 +10,7 @@ import {
   placementFor,
   reconcileTemplates,
   regenerateUnlocked,
+  removePageAt as removePageFromList,
   resizePages,
 } from '../lib/autoLayout'
 import * as storage from '../lib/db'
@@ -100,6 +101,8 @@ interface StoreState {
   setPageCount: (count: number) => void
   /** Inserts one new blank page at `position` (shifting later pages back), instead of only ever appending at the end. No-op at MAX_PAGES. */
   insertPageAt: (position: number) => void
+  /** Removes the single page at `index`, shifting later pages forward. No-op on a locked page or at MIN_PAGES. */
+  removePageAt: (index: number) => void
   regenerate: () => void
   setActivePage: (index: number) => void
   setActiveHalf: (halfIndex: 0 | 1) => void
@@ -404,6 +407,24 @@ export const useStore = create<StoreState>((set, get) => {
       set({
         pages: insertPage(pages, position, size),
         activePageIndex: position,
+        activeHalfIndex: 0,
+        selected: null,
+      })
+      persist()
+    },
+
+    removePageAt(index) {
+      const { pages, activePageIndex } = get()
+      const page = pages[index]
+      if (!page || page.locked || pages.length <= MIN_PAGES) return
+      recordHistory()
+      const nextPages = removePageFromList(pages, index)
+      // Keep viewing the same content: a page removed ahead of the active one
+      // shifts everything after it back by one index.
+      const nextActive = index < activePageIndex ? activePageIndex - 1 : activePageIndex
+      set({
+        pages: nextPages,
+        activePageIndex: Math.min(nextActive, nextPages.length - 1),
         activeHalfIndex: 0,
         selected: null,
       })

@@ -291,6 +291,20 @@ export function insertPage(pages: Page[], position: number, size: BookSize): Pag
 }
 
 /**
+ * Removes a single page at `index`, unlike resizePages which only ever trims
+ * from the end. Refuses a locked page, and refuses to go below MIN_PAGES —
+ * the caller should keep its delete control disabled in either case rather
+ * than rely on this being a silent no-op.
+ */
+export function removePageAt(pages: Page[], index: number): Page[] {
+  if (pages.length <= MIN_PAGES) return pages
+  if (pages[index]?.locked) return pages
+  const next = [...pages]
+  next.splice(index, 1)
+  return next
+}
+
+/**
  * When the book size changes, some templates may now be too dense. Swap those
  * pages to the closest allowed layout, carrying over as many photos as fit.
  */

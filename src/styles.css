@@ -1817,13 +1817,47 @@ kbd {
 
 .bg-photo-row {
   align-items: flex-start;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bg-photo-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.bg-photo-row-head label {
+  width: auto;
+}
+
+.browse-photos-btn {
+  background: transparent;
+  border: none;
+  color: var(--brass);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
+
+.browse-photos-btn:hover:not(:disabled) {
+  color: var(--brass-soft);
+  text-decoration: underline;
+}
+
+.browse-photos-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .bg-photo-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  flex: 1;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  width: 100%;
 }
 
 .bg-photo-thumb {

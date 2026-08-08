@@ -1,70 +1,72 @@
 /*
- * "Ink & Parchment" — aged-paper cream with a deep ink accent in light mode,
- * a near-black ground with parchment panels and antique gold in dark mode.
- * --navy and --brass keep their original roles (cool/dark primary accent,
- * warm secondary accent) even though neither is literally navy or brass, so
- * the rest of the stylesheet didn't need to change to pick up the colors.
+ * "Slate Studio" — flat panels, hairline dividers instead of card borders and
+ * shadows, and one quiet slate-blue accent reserved for whatever's active
+ * (a tab underline, a selected template, the primary button) rather than
+ * spread across two competing accent colors. --navy and --brass keep their
+ * original roles (dark ink fill for buttons/active chips, lighter highlight
+ * accent for selection) even though both are now the same slate-blue family,
+ * so the rest of the stylesheet didn't need to change to pick up the colors.
  */
 :root {
-  --paper: #ece4d0;
-  --ink: #241f16;
-  --ink-soft: #6b5f4a;
-  --linen: #ddd2b4;
-  --linen-deep: #cabb92;
-  --navy: #2b2419;
-  --navy-soft: #4a3f2c;
-  --brass: #a9822f;
-  --brass-soft: #c9a24a;
-  --line: #c4b78e;
-  --page-stock: #f7f2e4;
-  --shadow: 0 1px 2px rgba(36, 31, 22, 0.08), 0 8px 24px rgba(36, 31, 22, 0.1);
+  --paper: #f5f5f4;
+  --ink: #1c1d1e;
+  --ink-soft: #7d8083;
+  --linen: #ffffff;
+  --linen-deep: #edecea;
+  --navy: #33495c;
+  --navy-soft: #4a6478;
+  --brass: #5c7992;
+  --brass-soft: #7d97ac;
+  --line: #e2e1dd;
+  --page-stock: #ffffff;
+  --shadow: 0 1px 2px rgba(15, 17, 20, 0.05), 0 4px 14px rgba(15, 17, 20, 0.06);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #1c1a17;
-    --ink: #ece4d3;
-    --ink-soft: #a99d84;
-    --linen: #26231e;
-    --linen-deep: #332e26;
-    --navy: #c9b98a;
-    --navy-soft: #dccb9c;
-    --brass: #c9a24a;
-    --brass-soft: #e0bd6c;
-    --line: #3d372c;
-    --page-stock: #f2ead2;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+    --paper: #17181a;
+    --ink: #ececed;
+    --ink-soft: #9a9c9e;
+    --linen: #201f22;
+    --linen-deep: #29282b;
+    --navy: #7d97ac;
+    --navy-soft: #93acbf;
+    --brass: #93acbf;
+    --brass-soft: #a9c0d0;
+    --line: #343336;
+    --page-stock: #f4f4f2;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.3);
   }
 }
 
 :root[data-theme='dark'] {
-  --paper: #1c1a17;
-  --ink: #ece4d3;
-  --ink-soft: #a99d84;
-  --linen: #26231e;
-  --linen-deep: #332e26;
-  --navy: #c9b98a;
-  --navy-soft: #dccb9c;
-  --brass: #c9a24a;
-  --brass-soft: #e0bd6c;
-  --line: #3d372c;
-  --page-stock: #f2ead2;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+  --paper: #17181a;
+  --ink: #ececed;
+  --ink-soft: #9a9c9e;
+  --linen: #201f22;
+  --linen-deep: #29282b;
+  --navy: #7d97ac;
+  --navy-soft: #93acbf;
+  --brass: #93acbf;
+  --brass-soft: #a9c0d0;
+  --line: #343336;
+  --page-stock: #f4f4f2;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 
 :root[data-theme='light'] {
-  --paper: #ece4d0;
-  --ink: #241f16;
-  --ink-soft: #6b5f4a;
-  --linen: #ddd2b4;
-  --linen-deep: #cabb92;
-  --navy: #2b2419;
-  --navy-soft: #4a3f2c;
-  --brass: #a9822f;
-  --brass-soft: #c9a24a;
-  --line: #c4b78e;
-  --page-stock: #f7f2e4;
-  --shadow: 0 1px 2px rgba(36, 31, 22, 0.08), 0 8px 24px rgba(36, 31, 22, 0.1);
+  --paper: #f5f5f4;
+  --ink: #1c1d1e;
+  --ink-soft: #7d8083;
+  --linen: #ffffff;
+  --linen-deep: #edecea;
+  --navy: #33495c;
+  --navy-soft: #4a6478;
+  --brass: #5c7992;
+  --brass-soft: #7d97ac;
+  --line: #e2e1dd;
+  --page-stock: #ffffff;
+  --shadow: 0 1px 2px rgba(15, 17, 20, 0.05), 0 4px 14px rgba(15, 17, 20, 0.06);
 }
 
 * {
@@ -144,14 +146,16 @@ input:focus-visible,
   flex-wrap: wrap;
   padding: 14px 20px;
   background: var(--linen);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  box-shadow: var(--shadow);
+  border: none;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
 }
 
 .brand {
-  font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif;
-  font-size: 20px;
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-size: 18px;
   white-space: nowrap;
   background: none;
   border: none;
@@ -168,8 +172,9 @@ input:focus-visible,
   border: none;
   border-bottom: 1px solid transparent;
   color: var(--ink);
-  font-family: Georgia, serif;
-  font-size: 15px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14px;
   padding: 3px 2px;
   min-width: 140px;
 }
@@ -314,9 +319,9 @@ input:focus-visible,
 .panel {
   background: var(--linen);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 14px;
-  box-shadow: var(--shadow);
+  box-shadow: none;
 }
 
 .sidebar {
@@ -354,8 +359,8 @@ input:focus-visible,
   padding-right: 0;
   background: var(--linen);
   border: 1px solid var(--line);
-  border-radius: 10px;
-  box-shadow: var(--shadow);
+  border-radius: 8px;
+  box-shadow: none;
   gap: 0;
 }
 
@@ -639,32 +644,45 @@ input:focus-visible,
   min-height: 0;
 }
 
-.spread {
+.page-row {
   display: flex;
-  background: var(--linen-deep);
-  padding: 18px;
-  border-radius: 10px;
-  box-shadow: var(--shadow);
+  align-items: center;
+  gap: 16px;
   max-width: 100%;
+}
+
+.page-nav {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--linen);
+  color: var(--ink);
+  font-size: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow);
+}
+
+.page-nav:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.page-nav:hover:not(:disabled) {
+  border-color: var(--navy-soft);
+  color: var(--navy-soft);
 }
 
 .page {
   background: var(--page-stock);
   position: relative;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
   flex: 0 0 auto;
-}
-
-.page.left {
-  border-radius: 4px 0 0 4px;
-}
-
-.page.right {
-  border-radius: 0 4px 4px 0;
-}
-
-.page.blank {
-  opacity: 0.35;
 }
 
 .page-bg-photo {
@@ -720,76 +738,6 @@ input:focus-visible,
 
 .page-lock:hover {
   opacity: 1;
-}
-
-.page-fullscreen {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  z-index: 2;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(0, 0, 0, 0.4);
-  color: #fff;
-  font-size: 13px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  opacity: 0.35;
-  transition: opacity 0.15s;
-}
-
-.page:hover .page-fullscreen {
-  opacity: 0.9;
-}
-
-.page-fullscreen:hover {
-  opacity: 1;
-}
-
-.page-zoom-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  background: rgba(0, 0, 0, 0.72);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.page-zoom-frame {
-  position: relative;
-}
-
-.page-zoom-frame .page {
-  border-radius: 6px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-}
-
-.page-zoom-close {
-  position: absolute;
-  top: -40px;
-  right: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  font-size: 20px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.page-zoom-close:hover {
-  background: rgba(255, 255, 255, 0.3);
 }
 
 .page-size-picker {
@@ -853,18 +801,6 @@ input:focus-visible,
   height: 0;
   border-top: 2px dashed var(--brass-soft);
   transform: translateY(-1px);
-}
-
-.gutter {
-  width: 10px;
-  flex: 0 0 auto;
-  background: linear-gradient(
-    90deg,
-    rgba(0, 0, 0, 0.14),
-    rgba(0, 0, 0, 0.02) 30%,
-    rgba(0, 0, 0, 0.02) 70%,
-    rgba(0, 0, 0, 0.14)
-  );
 }
 
 .slots {
@@ -1384,7 +1320,7 @@ input:focus-visible,
 .shape-chip {
   background: var(--paper);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 6px;
   padding: 5px 12px;
   font-size: 11px;
   color: var(--ink-soft);
@@ -1430,7 +1366,7 @@ input:focus-visible,
 .style-chip {
   background: var(--paper);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 6px;
   padding: 5px 12px;
   font-size: 11px;
   color: var(--ink-soft);
@@ -2302,8 +2238,10 @@ kbd {
 }
 
 .library-head h1 {
-  font-family: Georgia, 'Iowan Old Style', serif;
-  font-size: 24px;
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-size: 22px;
   margin: 0;
   text-wrap: balance;
 }
@@ -2430,7 +2368,7 @@ kbd {
 }
 
 .book-title {
-  font-family: Georgia, serif;
+  font-family: inherit;
   font-size: 14.5px;
   font-weight: 600;
   flex: 1;
@@ -2450,7 +2388,7 @@ kbd {
 }
 
 .book-title-input {
-  font-family: Georgia, serif;
+  font-family: inherit;
   font-size: 14.5px;
   font-weight: 600;
   flex: 1;
@@ -2566,7 +2504,7 @@ kbd {
 }
 
 .modal h2 {
-  font-family: Georgia, serif;
+  font-family: inherit;
   font-size: 17px;
   margin: 0;
   font-weight: 600;
@@ -2589,7 +2527,7 @@ kbd {
   padding: 9px 11px;
   font-size: 14px;
   color: var(--ink);
-  font-family: Georgia, serif;
+  font-family: inherit;
 }
 
 .size-grid-mini {

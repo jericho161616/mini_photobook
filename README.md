@@ -164,11 +164,13 @@ quiet divider line, labeled accordingly) round out the template library —
 Contact Sheet and Confetti Scatter need a Large-trim size or bigger to fit
 their photo count.
 
-**View a page full-screen.** A small ⤢ button in a page's bottom-right corner
-opens it at a much larger size in an overlay, so you can check crops and
-details up close without squinting at the two-page spread. It's the same
-live page underneath — drag, pan, and click-to-place all still work — click
-the × or press Esc to close it.
+**One page on screen, always.** The canvas shows exactly one page at a time,
+sized to fill as much of it as it can, rather than pairing pages up like an
+open book — a two-page spread mostly wasted space (a blank placeholder next
+to a lone opening page, or dead air below a short, wide A4 Folded sheet)
+without actually helping you work on either page faster. The ‹ › arrows
+beside the page (or the filmstrip below) move to the page before or after,
+one at a time — you never see two at once.
 
 **Undo and redo.** Ctrl+Z (Cmd+Z on Mac) steps back through layout, text,
 photo-placement, and decoration changes; Ctrl+Shift+Z or Ctrl+Y steps forward
@@ -305,6 +307,14 @@ layer. Prints exactly as shown, same as everything else.
 downloadable image — a quick way to check the whole book's flow without
 paging through it one screen at a time. It reuses the exact same per-page
 drawing code as the real PDF export, just at thumbnail resolution.
+
+**"Slate Studio" — a flatter, quieter interface.** The whole app's chrome was
+redone: flat panels with hairline dividers instead of card borders and
+shadows, a plain sans-serif in place of the old serif headings, and one quiet
+slate-blue accent reserved for whatever's active — a tab underline, a
+selected template, the primary button — instead of two competing warm
+accents. None of it touches the book itself: every template, decoration,
+font choice for your own page text, and feature works exactly as before.
 
 ## How it's built
 

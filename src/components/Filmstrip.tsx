@@ -4,7 +4,7 @@ import { getTemplate } from '../data/templates'
 import { resolvePageSize } from '../lib/autoLayout'
 import { photoThumbUrl } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
-import { MAX_PAGES, type Photo } from '../types'
+import { MAX_PAGES, MIN_PAGES, type Photo } from '../types'
 
 const THUMB_WIDTH = 72
 
@@ -16,7 +16,9 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
   const movePage = useStore((s) => s.movePage)
   const togglePageLock = useStore((s) => s.togglePageLock)
   const insertPageAt = useStore((s) => s.insertPageAt)
+  const removePageAt = useStore((s) => s.removePageAt)
   const canInsert = pages.length < MAX_PAGES
+  const canRemove = pages.length > MIN_PAGES
 
   const [dragFrom, setDragFrom] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
@@ -134,6 +136,19 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
               >
                 {page.locked ? '🔒' : '🔓'}
               </button>
+              {!page.locked && canRemove && (
+                <button
+                  className="fs-delete"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    removePageAt(index)
+                  }}
+                  aria-label={`Delete page ${index + 1}`}
+                  title="Delete this page (Ctrl+Z to undo)"
+                >
+                  ×
+                </button>
+              )}
             </div>
             <span className="fs-num mono">{index + 1}</span>
             </div>

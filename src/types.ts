@@ -228,8 +228,12 @@ export interface Page {
   /** Freely placed decorations — unused while `halves` is set; see HalfLayout. */
   stickers?: Sticker[]
   textBoxes?: TextBox[]
-  /** A tinted "cardstock" page background. Undefined means the default paper color. */
+  /** A tinted "cardstock" page background. Undefined means the default paper color. Mutually exclusive with backgroundPhotoId. */
   backgroundColor?: string
+  /** A full-bleed photo behind this page's slots. Any photo can be reused here even if it's also placed in a slot. Unavailable on Full Bleed / Full Sheet templates, which are already entirely one photo. */
+  backgroundPhotoId?: string
+  /** How much to darken backgroundPhotoId for legibility, 0–100. Meaningless without one. */
+  backgroundDim?: number
   /** Multiplies the template's own margin — 1 is the default, smaller is tighter, larger is looser. */
   marginScale?: number
 }

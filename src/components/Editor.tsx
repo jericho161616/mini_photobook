@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getSize } from '../data/sizes'
-import { exportToPdf } from '../lib/exportPdf'
+import { exportBookOverview, exportToPdf } from '../lib/exportPdf'
 import type { ThemeChoice } from '../lib/theme'
 import { useStore } from '../state/useStore'
 import { ExportRangeModal } from './ExportRangeModal'
@@ -35,6 +35,7 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
   const [exporting, setExporting] = useState(false)
   const [progress, setProgress] = useState({ done: 0, total: 0 })
   const [error, setError] = useState<string | null>(null)
+  const [previewing, setPreviewing] = useState(false)
   const [slideshowOpen, setSlideshowOpen] = useState(false)
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [exportRangeOpen, setExportRangeOpen] = useState(false)
@@ -81,6 +82,18 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
     [pages, photos, customStickers, sizeId, title],
   )
 
+  const handlePreview = useCallback(async () => {
+    setPreviewing(true)
+    setError(null)
+    try {
+      await exportBookOverview({ pages, photos, customStickers, size: getSize(sizeId), title })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Preview failed')
+    } finally {
+      setPreviewing(false)
+    }
+  }, [pages, photos, customStickers, sizeId, title])
+
   if (!ready) {
     return (
       <div className="app">
@@ -94,6 +107,8 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
       <TopBar
         onExport={() => setExportRangeOpen(true)}
         exporting={exporting}
+        onPreview={handlePreview}
+        previewing={previewing}
         onPlay={() => setSlideshowOpen(true)}
         onGoToLibrary={() => {
           flushPending()

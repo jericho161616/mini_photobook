@@ -5,6 +5,7 @@ import { PAGE_MARGIN_RATIO } from '../lib/exportPdf'
 import {
   isDarkColor,
   isOverlaySlot,
+  photoUrl,
   resolveOverlayPosition,
   resolveSlotStyle,
   slotPixelRect,
@@ -108,9 +109,11 @@ export function PageView({
   const textRect = template.textSlot
     ? slotPixelRect(template.textSlot, width, height, marginRatio)
     : null
-  // A dark page background (e.g. the Night preset) needs light parchment text
-  // instead of the usual dark ink, or the caption/note would be unreadable.
-  const onDark = page.backgroundColor ? isDarkColor(page.backgroundColor) : false
+  const backgroundPhoto = page.backgroundPhotoId ? photos.get(page.backgroundPhotoId) : undefined
+  // A dark page background (the Night preset, or any background photo — which
+  // reads busy enough on its own to warrant the same light parchment text as
+  // a dark tint) needs light text instead of the usual dark ink.
+  const onDark = Boolean(backgroundPhoto) || (page.backgroundColor ? isDarkColor(page.backgroundColor) : false)
 
   return (
     <div
@@ -118,6 +121,20 @@ export function PageView({
       style={{ width, height, backgroundColor: page.backgroundColor }}
       data-page-index={pageIndex}
     >
+      {backgroundPhoto && (
+        <>
+          <div
+            className="page-bg-photo"
+            style={{ backgroundImage: `url(${photoUrl(backgroundPhoto)})` }}
+            aria-hidden="true"
+          />
+          <div
+            className="page-bg-dim"
+            style={{ opacity: (page.backgroundDim ?? 35) / 100 }}
+            aria-hidden="true"
+          />
+        </>
+      )}
       <button
         className="page-lock"
         onClick={onToggleLock}

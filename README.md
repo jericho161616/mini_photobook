@@ -294,6 +294,18 @@ so ~40 templates stay browsable. The Selected Photo panel's controls are now
 grouped under Crop / Style / Position headers instead of one flat stack, with
 no change to what any control does.
 
+**A background photo for any page**, alongside the existing tinted-cardstock
+option — pick any photo (even one already placed in a slot elsewhere) to fill
+the whole page behind its slots, with a Darken slider so foreground photos
+and captions stay legible. Not offered on Full Bleed or Full Sheet templates,
+since those pages are already entirely one photo with nothing behind them to
+layer. Prints exactly as shown, same as everything else.
+
+**Preview Book**, next to Export PDF, renders every page in order into one
+downloadable image — a quick way to check the whole book's flow without
+paging through it one screen at a time. It reuses the exact same per-page
+drawing code as the real PDF export, just at thumbnail resolution.
+
 ## How it's built
 
 | Piece | Choice | Why |

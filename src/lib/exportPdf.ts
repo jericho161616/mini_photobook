@@ -85,18 +85,21 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
 /**
  * Pages are drawn straight onto a canvas at print resolution rather than
  * screenshotting the editor, so the output is genuinely 300 DPI instead of an
- * upscaled screen capture.
+ * upscaled screen capture. Exported so the book-overview grid can reuse the
+ * exact same drawing code at a much lower resolution, since a thumbnail
+ * needs to look like the page, not print from it.
  */
-async function renderPage(
+export async function renderPage(
   page: Page,
   size: BookSize,
   photoMap: Map<string, ImageBitmap>,
   customStickerMap: Map<string, ImageBitmap>,
   background: string,
   title: string,
+  dpi: number = DPI,
 ): Promise<string> {
-  const pageW = Math.round(size.widthIn * DPI)
-  const pageH = Math.round(size.heightIn * DPI)
+  const pageW = Math.round(size.widthIn * dpi)
+  const pageH = Math.round(size.heightIn * dpi)
 
   const canvas = document.createElement('canvas')
   canvas.width = pageW
@@ -108,11 +111,25 @@ async function renderPage(
   ctx.fillRect(0, 0, pageW, pageH)
   ctx.imageSmoothingQuality = 'high'
 
+  const backgroundBitmap = page.backgroundPhotoId ? photoMap.get(page.backgroundPhotoId) : undefined
+  if (backgroundBitmap) {
+    const geo = coverGeometry(backgroundBitmap.width / backgroundBitmap.height, pageW, pageH, {
+      offsetX: 0,
+      offsetY: 0,
+      zoom: 1,
+    })
+    ctx.drawImage(backgroundBitmap, geo.x, geo.y, geo.drawWidth, geo.drawHeight)
+    ctx.fillStyle = `rgba(10, 8, 5, ${(page.backgroundDim ?? 35) / 100})`
+    ctx.fillRect(0, 0, pageW, pageH)
+  }
+
   const template = getTemplate(page.templateId)
   const marginRatio = template.bleed ? 0 : PAGE_MARGIN_RATIO * (page.marginScale ?? 1)
-  // A dark page background (e.g. the Night preset) needs light parchment text
-  // instead of the usual dark ink, same rule the editor uses.
-  const onDark = page.backgroundColor ? isDarkColor(page.backgroundColor) : false
+  // A dark page background (the Night preset, or any background photo, which
+  // reads busy enough to warrant the same light parchment text as a dark
+  // tint) needs light text instead of the usual dark ink, same rule the
+  // editor uses.
+  const onDark = Boolean(backgroundBitmap) || (page.backgroundColor ? isDarkColor(page.backgroundColor) : false)
   const captionColor = onDark ? '#f2ead2' : '#241f16'
   const noteColor = onDark ? '#c9bfa4' : '#6b5f4a'
 
@@ -607,31 +624,22 @@ function allStickers(page: Page): Sticker[] {
   return page.stickers ?? []
 }
 
-export interface ExportOptions {
-  pages: Page[]
-  photos: Photo[]
-  customStickers: CustomSticker[]
-  size: BookSize
-  title: string
-  background?: string
-  onProgress?: (done: number, total: number) => void
-}
-
-export async function exportToPdf({
-  pages,
-  photos,
-  customStickers,
-  size,
-  title,
-  background = '#ffffff',
-  onProgress,
-}: ExportOptions): Promise<void> {
-  // Decode each photo once, not once per page it appears on.
+/**
+ * Decodes only the photos and custom stickers a set of pages actually uses,
+ * once each — shared by the PDF export and the book-overview grid so neither
+ * duplicates the other's decoding work.
+ */
+async function buildBitmapMaps(
+  pages: Page[],
+  photos: Photo[],
+  customStickers: CustomSticker[],
+): Promise<{ photoMap: Map<string, ImageBitmap>; customStickerMap: Map<string, ImageBitmap> }> {
   const needed = new Set<string>()
   for (const page of pages) {
     for (const placement of pagePlacements(page)) {
       if (placement) needed.add(placement.photoId)
     }
+    if (page.backgroundPhotoId) needed.add(page.backgroundPhotoId)
   }
 
   const photoMap = new Map<string, ImageBitmap>()
@@ -659,6 +667,31 @@ export async function exportToPdf({
         customStickerMap.set(custom.id, await createImageBitmap(blob))
       }),
   )
+
+  return { photoMap, customStickerMap }
+}
+
+export interface ExportOptions {
+  pages: Page[]
+  photos: Photo[]
+  customStickers: CustomSticker[]
+  size: BookSize
+  title: string
+  background?: string
+  onProgress?: (done: number, total: number) => void
+}
+
+export async function exportToPdf({
+  pages,
+  photos,
+  customStickers,
+  size,
+  title,
+  background = '#ffffff',
+  onProgress,
+}: ExportOptions): Promise<void> {
+  // Decode each photo once, not once per page it appears on.
+  const { photoMap, customStickerMap } = await buildBitmapMaps(pages, photos, customStickers)
 
   try {
     // Pulled in on demand — the PDF engine is far larger than the editor itself.
@@ -692,6 +725,106 @@ export async function exportToPdf({
 
     const safeTitle = title.trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-') || 'photobook'
     pdf.save(`${safeTitle}.pdf`)
+  } finally {
+    for (const bitmap of photoMap.values()) bitmap.close()
+    for (const bitmap of customStickerMap.values()) bitmap.close()
+  }
+}
+
+// Thumbnail-resolution — plenty to see how a page reads at a glance, and far
+// lighter than decoding every page at print quality just for a preview grid.
+const OVERVIEW_DPI = 60
+const OVERVIEW_COLUMNS = 4
+const OVERVIEW_GAP = 14
+const OVERVIEW_LABEL_H = 20
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = src
+  })
+}
+
+export interface OverviewOptions {
+  pages: Page[]
+  photos: Photo[]
+  customStickers: CustomSticker[]
+  size: BookSize
+  title: string
+  background?: string
+}
+
+/**
+ * Every page of the book, in order, as one downloadable image — so the whole
+ * photobook's flow can be checked at a glance instead of paging through it
+ * one screen at a time. Reuses renderPage (the exact same drawing code as the
+ * real PDF) at a much lower resolution, since this is a look-it-over aid, not
+ * a print asset.
+ */
+export async function exportBookOverview({
+  pages,
+  photos,
+  customStickers,
+  size,
+  title,
+  background = '#ffffff',
+}: OverviewOptions): Promise<void> {
+  const { photoMap, customStickerMap } = await buildBitmapMaps(pages, photos, customStickers)
+
+  try {
+    const thumbs: { img: HTMLImageElement; w: number; h: number }[] = []
+    for (const page of pages) {
+      const pageSize = resolvePageSize(page, size)
+      const dataUrl = await renderPage(page, pageSize, photoMap, customStickerMap, background, title, OVERVIEW_DPI)
+      const img = await loadImage(dataUrl)
+      thumbs.push({ img, w: Math.round(pageSize.widthIn * OVERVIEW_DPI), h: Math.round(pageSize.heightIn * OVERVIEW_DPI) })
+    }
+    if (thumbs.length === 0) return
+
+    const cols = Math.min(OVERVIEW_COLUMNS, thumbs.length)
+    const rows = Math.ceil(thumbs.length / cols)
+    // A uniform grid cell sized to the largest thumbnail — pages can vary in
+    // trim (mixed A4 orientations), so smaller ones center inside their cell.
+    const cellW = Math.max(...thumbs.map((t) => t.w))
+    const cellH = Math.max(...thumbs.map((t) => t.h)) + OVERVIEW_LABEL_H
+
+    const canvas = document.createElement('canvas')
+    canvas.width = cols * cellW + (cols + 1) * OVERVIEW_GAP
+    canvas.height = rows * cellH + (rows + 1) * OVERVIEW_GAP
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Could not create a drawing context for the overview')
+
+    ctx.fillStyle = '#d7d3c8'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.textAlign = 'center'
+    ctx.font = '11px -apple-system, BlinkMacSystemFont, sans-serif'
+
+    thumbs.forEach((thumb, i) => {
+      const col = i % cols
+      const row = Math.floor(i / cols)
+      const cellX = OVERVIEW_GAP + col * (cellW + OVERVIEW_GAP)
+      const cellY = OVERVIEW_GAP + row * (cellH + OVERVIEW_GAP)
+      const x = cellX + (cellW - thumb.w) / 2
+      const y = cellY + (cellH - OVERVIEW_LABEL_H - thumb.h) / 2
+
+      ctx.save()
+      ctx.shadowColor = 'rgba(20, 18, 14, 0.3)'
+      ctx.shadowBlur = 8
+      ctx.shadowOffsetY = 2
+      ctx.drawImage(thumb.img, x, y, thumb.w, thumb.h)
+      ctx.restore()
+
+      ctx.fillStyle = '#4a463c'
+      ctx.fillText(`Page ${i + 1}`, cellX + cellW / 2, cellY + cellH - 4)
+    })
+
+    const safeTitle = title.trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-') || 'photobook'
+    const a = document.createElement('a')
+    a.href = canvas.toDataURL('image/png')
+    a.download = `${safeTitle}-overview.png`
+    a.click()
   } finally {
     for (const bitmap of photoMap.values()) bitmap.close()
     for (const bitmap of customStickerMap.values()) bitmap.close()

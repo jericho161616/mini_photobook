@@ -8,6 +8,8 @@ import { ResetConfirm } from './ResetConfirm'
 interface TopBarProps {
   onExport: () => void
   exporting: boolean
+  onPreview: () => void
+  previewing: boolean
   onPlay: () => void
   onGoToLibrary: () => void
   theme: 'light' | 'dark'
@@ -17,6 +19,8 @@ interface TopBarProps {
 export function TopBar({
   onExport,
   exporting,
+  onPreview,
+  previewing,
   onPlay,
   onGoToLibrary,
   theme,
@@ -145,6 +149,15 @@ export function TopBar({
           title="Play through the book as a slideshow"
         >
           ▶ Play
+        </button>
+
+        <button
+          className="btn"
+          onClick={onPreview}
+          disabled={previewing || pages.length === 0}
+          title="Download an image showing every page's spot in the book, in order"
+        >
+          {previewing ? 'Rendering…' : '⊞ Preview Book'}
         </button>
 
         <button className="btn-primary" onClick={onExport} disabled={exporting}>

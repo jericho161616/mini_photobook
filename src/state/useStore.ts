@@ -133,8 +133,12 @@ interface StoreState {
   setPageTextStyle: (pageIndex: number, style: TextStyle) => void
   /** Sets one half's own note style on a Split at Fold page. */
   setHalfTextStyle: (pageIndex: number, halfIndex: 0 | 1, style: TextStyle) => void
-  /** A tinted "cardstock" background for one page — undefined restores the default paper color. */
+  /** A tinted "cardstock" background for one page — undefined restores the default paper color. Clears backgroundPhotoId. */
   setPageBackground: (pageIndex: number, color: string | undefined) => void
+  /** A full-bleed background photo for one page — undefined removes it. Clears backgroundColor. */
+  setPageBackgroundPhoto: (pageIndex: number, photoId: string | undefined) => void
+  /** How much to darken the background photo, 0–100. */
+  setPageBackgroundDim: (pageIndex: number, dim: number) => void
   /** Multiplies the template's own margin for one page — 1 restores the default. */
   setPageMarginScale: (pageIndex: number, scale: number) => void
   movePage: (from: number, to: number) => void
@@ -628,7 +632,27 @@ export const useStore = create<StoreState>((set, get) => {
       if (get().pages[pageIndex]?.locked) return
       recordHistory()
       mutatePages((pages) =>
-        pages.map((page, i) => (i === pageIndex ? { ...page, backgroundColor: color } : page)),
+        pages.map((page, i) =>
+          i === pageIndex ? { ...page, backgroundColor: color, backgroundPhotoId: undefined } : page,
+        ),
+      )
+    },
+
+    setPageBackgroundPhoto(pageIndex, photoId) {
+      if (get().pages[pageIndex]?.locked) return
+      recordHistory()
+      mutatePages((pages) =>
+        pages.map((page, i) =>
+          i === pageIndex ? { ...page, backgroundPhotoId: photoId, backgroundColor: undefined } : page,
+        ),
+      )
+    },
+
+    setPageBackgroundDim(pageIndex, dim) {
+      if (get().pages[pageIndex]?.locked) return
+      recordHistory()
+      mutatePages((pages) =>
+        pages.map((page, i) => (i === pageIndex ? { ...page, backgroundDim: dim } : page)),
       )
     },
 

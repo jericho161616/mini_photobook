@@ -582,6 +582,20 @@ export const STYLE_FILTERS: { id: StyleCategory | 'all'; label: string }[] = [
   { id: 'novelty', label: 'Novelty' },
 ]
 
+/**
+ * True for a template whose one slot already covers the entire page edge to
+ * edge (Full Bleed, and A4 Folded's Full Sheet) — a background photo would
+ * sit entirely hidden behind it, so the option isn't offered there.
+ */
+export function isFullSheetTemplate(template: Template): boolean {
+  return (
+    !!template.bleed &&
+    template.slots.length === 1 &&
+    template.slots[0].w === 100 &&
+    template.slots[0].h === 100
+  )
+}
+
 export function getTemplate(id: string): Template {
   return TEMPLATES.find((t) => t.id === id) ?? TEMPLATES[0]
 }

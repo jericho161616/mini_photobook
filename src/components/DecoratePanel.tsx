@@ -1,10 +1,11 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { FONT_OPTIONS, FONT_SIZE_OPTIONS, fontSizeScale, fontStack } from '../data/fonts'
 import { getTemplate, isFullSheetTemplate } from '../data/templates'
 import { decorationHost } from '../lib/autoLayout'
 import { photoThumbUrl } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
 import type { Page, StickerType, TextBox, TextStyle } from '../types'
+import { BackgroundPhotoModal } from './BackgroundPhotoModal'
 import { DoodlePad } from './DoodlePad'
 import { PanelSection } from './PanelSection'
 import { StickerGlyph } from './StickerGlyph'
@@ -83,6 +84,7 @@ export function DecoratePanel() {
   const setPageBackgroundCoverage = useStore((s) => s.setPageBackgroundCoverage)
   const setPageMarginScale = useStore((s) => s.setPageMarginScale)
   const uploadInputRef = useRef<HTMLInputElement>(null)
+  const [browsingPhotos, setBrowsingPhotos] = useState(false)
 
   const page = pages[activePageIndex]
   if (!page) return null
@@ -157,7 +159,16 @@ export function DecoratePanel() {
 
         {page.backgroundPhotoId !== undefined && (
           <div className="inspector-row bg-photo-row">
-            <label>Choose photo</label>
+            <div className="bg-photo-row-head">
+              <label>Choose photo</label>
+              <button
+                className="browse-photos-btn"
+                onClick={() => setBrowsingPhotos(true)}
+                disabled={photos.length === 0}
+              >
+                ⤢ Browse all
+              </button>
+            </div>
             <div className="bg-photo-grid">
               {photos.map((p) => (
                 <button
@@ -171,6 +182,10 @@ export function DecoratePanel() {
               ))}
             </div>
           </div>
+        )}
+
+        {browsingPhotos && (
+          <BackgroundPhotoModal pageIndex={activePageIndex} onClose={() => setBrowsingPhotos(false)} />
         )}
 
         {page.backgroundPhotoId !== undefined && (

@@ -552,6 +552,22 @@ export async function renderPage(
 
   /** A sticker — a flat piece of tape, a small line-drawn icon, or the user's own drawing. */
   const drawSticker = (rect: { x: number; y: number; w: number; h: number }, sticker: Sticker) => {
+    // Tilt, mirror and opacity wrap whichever artwork is drawn below, pivoting
+    // on the sticker's own middle to match .sticker-glyph's transform-origin.
+    const rotation = sticker.rotation ?? 0
+    if (rotation || sticker.flipX || sticker.opacity !== undefined) {
+      const cx = rect.x + rect.w / 2
+      const cy = rect.y + rect.h / 2
+      ctx.save()
+      ctx.translate(cx, cy)
+      if (rotation) ctx.rotate((rotation * Math.PI) / 180)
+      if (sticker.flipX) ctx.scale(-1, 1)
+      ctx.translate(-cx, -cy)
+      if (sticker.opacity !== undefined) ctx.globalAlpha = sticker.opacity / 100
+      drawSticker(rect, { ...sticker, rotation: undefined, flipX: undefined, opacity: undefined })
+      ctx.restore()
+      return
+    }
     if (sticker.type === 'custom') {
       const bitmap = sticker.customId ? customStickerMap.get(sticker.customId) : undefined
       if (!bitmap) return
@@ -567,7 +583,9 @@ export async function renderPage(
       ctx.save()
       ctx.shadowColor = 'rgba(0,0,0,0.15)'
       ctx.shadowBlur = rect.h * 0.15
-      ctx.fillStyle = tapeColor
+      // A recolored tape loses its woven pattern and prints as a flat strip,
+      // exactly as .sticker-glyph's background override shows it on screen.
+      ctx.fillStyle = sticker.color ?? tapeColor
       ctx.fillRect(rect.x, rect.y, rect.w, rect.h)
       ctx.restore()
       return
@@ -578,7 +596,7 @@ export async function renderPage(
     const scale = Math.min(rect.w, rect.h) / 24
     ctx.translate(rect.x + (rect.w - 24 * scale) / 2, rect.y + (rect.h - 24 * scale) / 2)
     ctx.scale(scale, scale)
-    ctx.strokeStyle = icon.color
+    ctx.strokeStyle = sticker.color ?? icon.color
     ctx.lineWidth = 1.6
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'

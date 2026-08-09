@@ -941,6 +941,154 @@ input:focus-visible,
 .sticker-glyph {
   position: absolute;
   inset: 0;
+  /* Tilt and mirror pivot on the sticker's own middle, not a corner. */
+  transform-origin: center;
+}
+
+/* ---- Contextual toolbar ---- */
+/*
+ * Floats over the canvas beside whatever decoration is selected, so its
+ * controls sit with the thing they change instead of in a sidebar panel.
+ * Positioned in viewport coordinates by ContextualToolbar.tsx.
+ */
+.ctx-toolbar {
+  position: fixed;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px;
+  max-width: calc(100vw - 20px);
+  flex-wrap: wrap;
+  justify-content: center;
+  background: var(--linen);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.12),
+    0 14px 34px -14px rgba(0, 0, 0, 0.4);
+  animation: ctx-in 0.16s ease-out;
+}
+
+@keyframes ctx-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ctx-toolbar {
+    animation: none;
+  }
+}
+
+.ctx-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 7px;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.ctx-btn svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.ctx-btn:hover:not(:disabled) {
+  background: var(--linen-deep);
+}
+
+.ctx-btn.active {
+  background: var(--navy);
+  color: var(--paper);
+}
+
+.ctx-text-btn {
+  font-size: 12.5px;
+}
+
+.ctx-danger {
+  color: #a8483f;
+}
+
+.ctx-danger:hover {
+  background: rgba(168, 72, 63, 0.12);
+}
+
+.ctx-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--line);
+  margin: 0 3px;
+  flex: none;
+}
+
+.ctx-swatch {
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  padding: 0;
+  flex: none;
+  transition: transform 0.12s;
+}
+
+.ctx-swatch:hover {
+  transform: scale(1.14);
+}
+
+.ctx-swatch.active {
+  border-color: var(--brass);
+  box-shadow: 0 0 0 2px var(--brass-soft);
+}
+
+/* "Original color" — a slash over the swatch, since there's no one hue to show. */
+.ctx-swatch-default {
+  background:
+    linear-gradient(to top left, transparent calc(50% - 1px), var(--ink-soft) calc(50% - 1px), var(--ink-soft) calc(50% + 1px), transparent calc(50% + 1px)),
+    var(--paper);
+}
+
+.ctx-select {
+  height: 30px;
+  max-width: 120px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 12.5px;
+  padding: 0 6px;
+}
+
+.ctx-slider {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 6px;
+}
+
+.ctx-slider-label {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.ctx-slider input[type='range'] {
+  width: 78px;
+  accent-color: var(--navy);
 }
 
 .sticker-heart svg,
@@ -1766,11 +1914,6 @@ kbd {
   background: var(--navy);
   border-color: var(--navy);
   color: var(--page-stock);
-}
-
-.italic-btn {
-  font-weight: 400;
-  font-style: italic;
 }
 
 .bold-btn:disabled,
@@ -2948,38 +3091,6 @@ kbd {
 
 .doodle-tray-item:hover .doodle-tray-remove {
   display: flex;
-}
-
-.decoration-editor {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-}
-
-.align-row {
-  display: flex;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.align-btn {
-  flex: 1;
-  padding: 6px;
-  border-radius: 7px;
-  border: 1px solid var(--line);
-  background: var(--paper);
-  color: var(--ink-soft);
-}
-
-.align-btn.active {
-  background: var(--navy);
-  border-color: var(--navy);
-  color: var(--page-stock);
-}
-
-.decoration-remove-btn {
-  width: 100%;
-  margin-top: 12px;
 }
 
 @media (prefers-reduced-motion: reduce) {

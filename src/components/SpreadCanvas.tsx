@@ -236,8 +236,25 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
     return { width, height: width / ratio }
   }, [zoomed, pageSize])
 
+  /**
+   * Clicking bare canvas — not a slot, a decoration, or any control — clears
+   * the selection. Matters more than it used to now that a selection also puts
+   * a floating toolbar on screen: without this there'd be no way to dismiss it
+   * short of selecting something else.
+   */
+  function clearSelectionOnBackdrop(e: React.MouseEvent) {
+    const target = e.target as HTMLElement
+    if (target.closest('.slot, .decoration, button, input, select, textarea, [contenteditable="true"]')) return
+    select(null)
+    selectDecoration(null)
+  }
+
   return (
-    <main className={`canvas-area${armedPhotoIds.length > 0 ? ' armed' : ''}`} ref={areaRef}>
+    <main
+      className={`canvas-area${armedPhotoIds.length > 0 ? ' armed' : ''}`}
+      ref={areaRef}
+      onMouseDown={clearSelectionOnBackdrop}
+    >
       <div className="page-row">
         <button
           className="page-nav prev"

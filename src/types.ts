@@ -46,6 +46,19 @@ export interface Sticker {
   y: number
   w: number
   h: number
+  /** Tilt in degrees. Undefined means untilted. */
+  rotation?: number
+  /** Mirrored left-to-right. Undefined means not mirrored. */
+  flipX?: boolean
+  /**
+   * Overrides the built-in glyph's own fixed color — a flat fill for tape, the
+   * stroke for the line-drawn icons. Deliberately not offered for 'custom'
+   * drawings: recoloring a multi-color drawing to one flat hue looks wrong, so
+   * the toolbar offers opacity there instead.
+   */
+  color?: string
+  /** 0–100. Undefined means fully opaque. */
+  opacity?: number
 }
 
 /**

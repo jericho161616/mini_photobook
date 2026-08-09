@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { getTemplate } from '../data/templates'
 import { isOverlaySlot, MAX_ZOOM, MIN_ZOOM } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
@@ -46,6 +47,40 @@ const OVERLAY_POSITIONS: { id: NonNullable<Placement['overlayPosition']>; label:
   { id: 'bc', label: 'Bottom center' },
   { id: 'br', label: 'Bottom right' },
 ]
+
+/**
+ * One styling choice, collapsed to its current value until opened.
+ *
+ * Deliberately inline rather than in a modal like the layout picker: these are
+ * judged against the live photo on the canvas, and a modal would cover the very
+ * thing you're looking at.
+ */
+function InspectorFold({
+  label,
+  value,
+  children,
+}: {
+  label: string
+  value: string
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className={`inspector-fold${open ? ' open' : ''}`}>
+      <button className="inspector-fold-head" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+        <span className="chev" aria-hidden="true">
+          ▸
+        </span>
+        {label}
+        <span className="val">{value}</span>
+      </button>
+      {open && <div className="inspector-fold-body">{children}</div>}
+    </div>
+  )
+}
+
+const labelFor = <T extends string>(options: { id: T; label: string }[], id: T) =>
+  options.find((o) => o.id === id)?.label ?? '—'
 
 export function SlotInspector() {
   const pages = useStore((s) => s.pages)
@@ -107,8 +142,7 @@ export function SlotInspector() {
           </div>
 
           <p className="cluster-title">Style</p>
-          <div className="inspector-row">
-            <label>Filter</label>
+          <InspectorFold label="Filter" value={labelFor(FILTERS, placement.filter ?? 'none')}>
             <div className="filter-chips-row">
               {FILTERS.map((f) => (
                 <button
@@ -121,10 +155,9 @@ export function SlotInspector() {
                 </button>
               ))}
             </div>
-          </div>
+          </InspectorFold>
 
-          <div className="inspector-row">
-            <label>Frame</label>
+          <InspectorFold label="Frame" value={labelFor(FRAMES, placement.frame ?? 'none')}>
             <div className="filter-chips-row">
               {FRAMES.map((f) => (
                 <button
@@ -137,11 +170,10 @@ export function SlotInspector() {
                 </button>
               ))}
             </div>
-          </div>
+          </InspectorFold>
 
           {!isPosterSlot && (
-            <div className="inspector-row">
-              <label>Attachment</label>
+            <InspectorFold label="Attachment" value={labelFor(ATTACHMENTS, placement.attachment ?? 'none')}>
               <div className="filter-chips-row">
                 {ATTACHMENTS.map((a) => (
                   <button
@@ -154,12 +186,14 @@ export function SlotInspector() {
                   </button>
                 ))}
               </div>
-            </div>
+            </InspectorFold>
           )}
 
           {(isPosterSlot || placement.attachment === 'tape') && (
-            <div className="inspector-row">
-              <label>Tape color</label>
+            <InspectorFold
+              label="Tape color"
+              value={TAPE_COLORS.find((t) => t.color === placement.attachmentColor)?.label ?? 'Cream'}
+            >
               <div className="filter-chips-row">
                 {TAPE_COLORS.map((t) => (
                   <button
@@ -173,7 +207,7 @@ export function SlotInspector() {
                   </button>
                 ))}
               </div>
-            </div>
+            </InspectorFold>
           )}
 
           <p className="cluster-title">Position</p>

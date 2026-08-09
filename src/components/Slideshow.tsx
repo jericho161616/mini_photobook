@@ -6,7 +6,12 @@ import { PAGE_MARGIN_RATIO } from '../lib/exportPdf'
 import { PHOTO_FILTER_CSS, PHOTO_FILTER_OVERLAY, photoUrl, slotPixelRect } from '../lib/imageUtils'
 import type { BookSize, Page, Photo } from '../types'
 
-const ADVANCE_MS = 1500
+/** How long a page stays up before the next one starts fading in. */
+const DEFAULT_ADVANCE_MS = 3000
+const MIN_ADVANCE_MS = 1500
+const MAX_ADVANCE_MS = 8000
+/** Kept in sync with .slideshow-page's own fade animation in styles.css. */
+const FADE_MS = 700
 const MAX_W = 640
 const MAX_H = 640
 
@@ -19,6 +24,157 @@ interface SlideshowProps {
   onClose: () => void
 }
 
+interface SlideshowPageProps {
+  page: Page
+  photos: Map<string, Photo>
+  title: string
+  width: number
+  height: number
+  /** Set on the incoming page so it fades in over the outgoing one. */
+  entering: boolean
+}
+
+/**
+ * One page, rendered read-only at slideshow size. Split out from the
+ * slideshow itself so two can be on screen at once during a crossfade.
+ */
+function SlideshowPage({ page, photos, title, width, height, entering }: SlideshowPageProps) {
+  const template = useMemo(() => getTemplate(page.templateId), [page.templateId])
+  const marginRatio = template.bleed ? 0 : PAGE_MARGIN_RATIO
+  const captionRect = template.caption ? slotPixelRect(template.caption, width, height, marginRatio) : null
+  const textRect = template.textSlot ? slotPixelRect(template.textSlot, width, height, marginRatio) : null
+
+  return (
+    <div
+      className={`page slideshow-page${entering ? ' entering' : ''}`}
+      style={{ width, height }}
+      aria-hidden={!entering}
+    >
+      <div className="slots" style={{ inset: 0 }}>
+        {captionRect && title.trim() && (
+          <div
+            className="page-caption"
+            style={{
+              left: captionRect.x,
+              top: captionRect.y,
+              width: captionRect.w,
+              height: captionRect.h,
+              fontSize: Math.max(7, height * 0.032),
+            }}
+          >
+            {title}
+          </div>
+        )}
+        {textRect && page.text.trim() && (
+          <div
+            className={`page-caption page-note${template.captionStyle === 'centered' ? ' centered' : ''}`}
+            style={{
+              left: textRect.x,
+              top: textRect.y,
+              width: textRect.w,
+              height: textRect.h,
+              fontSize: Math.max(6, height * 0.026),
+              fontFamily: fontStack((page.textStyle ?? DEFAULT_TEXT_STYLE).font),
+              fontWeight: (page.textStyle ?? DEFAULT_TEXT_STYLE).bold ? 700 : 400,
+            }}
+          >
+            {page.text}
+          </div>
+        )}
+        {template.halfSplit &&
+          page.halves &&
+          template.slots.map((region, halfIndex) => {
+            const half = page.halves![halfIndex as 0 | 1]
+            const halfTemplate = getTemplate(half.templateId)
+            if (!halfTemplate.textSlot || !half.text.trim()) return null
+            const outer = slotPixelRect(region, width, height, 0)
+            const inner = slotPixelRect(
+              halfTemplate.textSlot,
+              outer.w,
+              outer.h,
+              halfTemplate.bleed ? 0 : PAGE_MARGIN_RATIO,
+            )
+            const halfStyle = half.textStyle ?? DEFAULT_TEXT_STYLE
+            return (
+              <div
+                key={`note-${halfIndex}`}
+                className={`page-caption page-note${halfTemplate.captionStyle === 'centered' ? ' centered' : ''}`}
+                style={{
+                  left: outer.x + inner.x,
+                  top: outer.y + inner.y,
+                  width: inner.w,
+                  height: inner.h,
+                  fontSize: Math.max(6, outer.h * 0.026),
+                  fontFamily: fontStack(halfStyle.font),
+                  fontWeight: halfStyle.bold ? 700 : 400,
+                }}
+              >
+                {half.text}
+              </div>
+            )
+          })}
+        {(template.halfSplit && page.halves
+          ? template.slots.flatMap((region, halfIndex) => {
+              const half = page.halves![halfIndex as 0 | 1]
+              const halfTemplate = getTemplate(half.templateId)
+              const outer = slotPixelRect(region, width, height, 0)
+              const halfMargin = halfTemplate.bleed ? 0 : PAGE_MARGIN_RATIO
+              return halfTemplate.slots.map((slot, slotIndex) => {
+                const inner = slotPixelRect(slot, outer.w, outer.h, halfMargin)
+                return {
+                  key: `${halfIndex}-${slotIndex}`,
+                  rect: { x: outer.x + inner.x, y: outer.y + inner.y, w: inner.w, h: inner.h },
+                  placement: half.placements[slotIndex],
+                }
+              })
+            })
+          : template.slots.map((slot, slotIndex) => ({
+              key: String(slotIndex),
+              rect: slotPixelRect(slot, width, height, marginRatio),
+              placement: page.placements[slotIndex],
+            }))
+        ).map(({ key, rect, placement }) => {
+          const photo = placement ? photos.get(placement.photoId) : undefined
+          return (
+            <div key={key} className="slot" style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}>
+              {photo && (
+                <>
+                  <img
+                    src={photoUrl(photo)}
+                    alt=""
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      filter: placement?.filter ? PHOTO_FILTER_CSS[placement.filter] : undefined,
+                    }}
+                  />
+                  {placement?.filter && PHOTO_FILTER_OVERLAY[placement.filter] && (
+                    <div
+                      className="photo-texture-overlay"
+                      aria-hidden="true"
+                      style={{
+                        inset: 0,
+                        backgroundImage: PHOTO_FILTER_OVERLAY[placement.filter]!.image,
+                        backgroundRepeat: PHOTO_FILTER_OVERLAY[placement.filter]!.tile ? 'repeat' : 'no-repeat',
+                        backgroundSize: PHOTO_FILTER_OVERLAY[placement.filter]!.tile ? '140px 140px' : '100% 100%',
+                        mixBlendMode: PHOTO_FILTER_OVERLAY[placement.filter]!.blend,
+                        opacity: PHOTO_FILTER_OVERLAY[placement.filter]!.opacity,
+                      }}
+                    />
+                  )}
+                </>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 /**
  * A read-only, full-page look at the book in sequence — for checking how it
  * all flows without the editing chrome in the way. One page at a time rather
@@ -27,7 +183,11 @@ interface SlideshowProps {
 export function Slideshow({ pages, photos, size, title, startIndex, onClose }: SlideshowProps) {
   const [index, setIndex] = useState(startIndex)
   const [playing, setPlaying] = useState(true)
-  const timerRef = useRef<number>()
+  const [advanceMs, setAdvanceMs] = useState(DEFAULT_ADVANCE_MS)
+  // The page being faded out from under the current one, if a change is still
+  // in flight — null once the crossfade has finished.
+  const [outgoing, setOutgoing] = useState<number | null>(null)
+  const lastIndexRef = useRef(index)
 
   const page = pages[index]
   const pageSize = resolvePageSize(page, size)
@@ -36,15 +196,26 @@ export function Slideshow({ pages, photos, size, title, startIndex, onClose }: S
   const pageHeight = ratio >= 1 ? MAX_W / ratio : MAX_H
 
   useEffect(() => {
+    if (lastIndexRef.current === index) return
+    setOutgoing(lastIndexRef.current)
+    lastIndexRef.current = index
+    const t = window.setTimeout(() => setOutgoing(null), FADE_MS)
+    return () => window.clearTimeout(t)
+  }, [index])
+
+  useEffect(() => {
     if (!playing) return
-    timerRef.current = window.setInterval(() => {
+    const timer = window.setInterval(() => {
       setIndex((i) => (i + 1) % pages.length)
-    }, ADVANCE_MS)
-    return () => window.clearInterval(timerRef.current)
-  }, [playing, pages.length])
+    }, advanceMs)
+    return () => window.clearInterval(timer)
+  }, [playing, pages.length, advanceMs])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      // The speed slider is focusable and answers to arrow keys itself —
+      // don't also step the page when it's the one being driven.
+      if ((e.target as HTMLElement | null)?.tagName === 'INPUT') return
       if (e.key === 'Escape') onClose()
       if (e.key === 'ArrowRight') {
         setPlaying(false)
@@ -63,149 +234,33 @@ export function Slideshow({ pages, photos, size, title, startIndex, onClose }: S
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose, pages.length])
 
-  const template = useMemo(() => getTemplate(page.templateId), [page.templateId])
-  const marginRatio = template.bleed ? 0 : PAGE_MARGIN_RATIO
-  const captionRect = template.caption
-    ? slotPixelRect(template.caption, pageWidth, pageHeight, marginRatio)
-    : null
-  const textRect = template.textSlot
-    ? slotPixelRect(template.textSlot, pageWidth, pageHeight, marginRatio)
-    : null
-
   return (
     <div className="overlay slideshow-overlay" role="dialog" aria-modal="true" aria-label="Slideshow">
       <button className="slideshow-close" onClick={onClose} aria-label="Close slideshow">
         ×
       </button>
 
-      <div className="slideshow-stage">
-        <div className="page slideshow-page" style={{ width: pageWidth, height: pageHeight }}>
-          <div className="slots" style={{ inset: 0 }}>
-            {captionRect && title.trim() && (
-              <div
-                className="page-caption"
-                style={{
-                  left: captionRect.x,
-                  top: captionRect.y,
-                  width: captionRect.w,
-                  height: captionRect.h,
-                  fontSize: Math.max(7, pageHeight * 0.032),
-                }}
-              >
-                {title}
-              </div>
-            )}
-            {textRect && page.text.trim() && (
-              <div
-                className={`page-caption page-note${template.captionStyle === 'centered' ? ' centered' : ''}`}
-                style={{
-                  left: textRect.x,
-                  top: textRect.y,
-                  width: textRect.w,
-                  height: textRect.h,
-                  fontSize: Math.max(6, pageHeight * 0.026),
-                  fontFamily: fontStack((page.textStyle ?? DEFAULT_TEXT_STYLE).font),
-                  fontWeight: (page.textStyle ?? DEFAULT_TEXT_STYLE).bold ? 700 : 400,
-                }}
-              >
-                {page.text}
-              </div>
-            )}
-            {template.halfSplit &&
-              page.halves &&
-              template.slots.map((region, halfIndex) => {
-                const half = page.halves![halfIndex as 0 | 1]
-                const halfTemplate = getTemplate(half.templateId)
-                if (!halfTemplate.textSlot || !half.text.trim()) return null
-                const outer = slotPixelRect(region, pageWidth, pageHeight, 0)
-                const inner = slotPixelRect(
-                  halfTemplate.textSlot,
-                  outer.w,
-                  outer.h,
-                  halfTemplate.bleed ? 0 : PAGE_MARGIN_RATIO,
-                )
-                const halfStyle = half.textStyle ?? DEFAULT_TEXT_STYLE
-                return (
-                  <div
-                    key={`note-${halfIndex}`}
-                    className={`page-caption page-note${halfTemplate.captionStyle === 'centered' ? ' centered' : ''}`}
-                    style={{
-                      left: outer.x + inner.x,
-                      top: outer.y + inner.y,
-                      width: inner.w,
-                      height: inner.h,
-                      fontSize: Math.max(6, outer.h * 0.026),
-                      fontFamily: fontStack(halfStyle.font),
-                      fontWeight: halfStyle.bold ? 700 : 400,
-                    }}
-                  >
-                    {half.text}
-                  </div>
-                )
-              })}
-            {(template.halfSplit && page.halves
-              ? template.slots.flatMap((region, halfIndex) => {
-                  const half = page.halves![halfIndex as 0 | 1]
-                  const halfTemplate = getTemplate(half.templateId)
-                  const outer = slotPixelRect(region, pageWidth, pageHeight, 0)
-                  const halfMargin = halfTemplate.bleed ? 0 : PAGE_MARGIN_RATIO
-                  return halfTemplate.slots.map((slot, slotIndex) => {
-                    const inner = slotPixelRect(slot, outer.w, outer.h, halfMargin)
-                    return {
-                      key: `${halfIndex}-${slotIndex}`,
-                      rect: { x: outer.x + inner.x, y: outer.y + inner.y, w: inner.w, h: inner.h },
-                      placement: half.placements[slotIndex],
-                    }
-                  })
-                })
-              : template.slots.map((slot, slotIndex) => ({
-                  key: String(slotIndex),
-                  rect: slotPixelRect(slot, pageWidth, pageHeight, marginRatio),
-                  placement: page.placements[slotIndex],
-                }))
-            ).map(({ key, rect, placement }) => {
-              const photo = placement ? photos.get(placement.photoId) : undefined
-              return (
-                <div
-                  key={key}
-                  className="slot"
-                  style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
-                >
-                  {photo && (
-                    <>
-                      <img
-                        src={photoUrl(photo)}
-                        alt=""
-                        style={{
-                          position: 'absolute',
-                          inset: 0,
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                          filter: placement?.filter ? PHOTO_FILTER_CSS[placement.filter] : undefined,
-                        }}
-                      />
-                      {placement?.filter && PHOTO_FILTER_OVERLAY[placement.filter] && (
-                        <div
-                          className="photo-texture-overlay"
-                          aria-hidden="true"
-                          style={{
-                            inset: 0,
-                            backgroundImage: PHOTO_FILTER_OVERLAY[placement.filter]!.image,
-                            backgroundRepeat: PHOTO_FILTER_OVERLAY[placement.filter]!.tile ? 'repeat' : 'no-repeat',
-                            backgroundSize: PHOTO_FILTER_OVERLAY[placement.filter]!.tile ? '140px 140px' : '100% 100%',
-                            mixBlendMode: PHOTO_FILTER_OVERLAY[placement.filter]!.blend,
-                            opacity: PHOTO_FILTER_OVERLAY[placement.filter]!.opacity,
-                          }}
-                        />
-                      )}
-                    </>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
+      <div className="slideshow-stage" style={{ width: pageWidth, height: pageHeight }}>
+        {outgoing !== null && pages[outgoing] && (
+          <SlideshowPage
+            key={`out-${outgoing}`}
+            page={pages[outgoing]}
+            photos={photos}
+            title={title}
+            width={pageWidth}
+            height={pageHeight}
+            entering={false}
+          />
+        )}
+        <SlideshowPage
+          key={`in-${index}`}
+          page={page}
+          photos={photos}
+          title={title}
+          width={pageWidth}
+          height={pageHeight}
+          entering
+        />
       </div>
 
       <div className="slideshow-controls" onClick={(e) => e.stopPropagation()}>
@@ -239,6 +294,22 @@ export function Slideshow({ pages, photos, size, title, startIndex, onClose }: S
         <span className="mono slideshow-count">
           {index + 1} / {pages.length}
         </span>
+
+        <span className="slideshow-sep" aria-hidden="true" />
+
+        <label className="slideshow-speed">
+          <span className="slideshow-speed-label">Speed</span>
+          <input
+            type="range"
+            min={MIN_ADVANCE_MS}
+            max={MAX_ADVANCE_MS}
+            step={500}
+            value={advanceMs}
+            onChange={(e) => setAdvanceMs(Number(e.target.value))}
+            aria-label="Seconds per page"
+          />
+          <span className="mono slideshow-speed-value">{(advanceMs / 1000).toFixed(1)}s</span>
+        </label>
       </div>
     </div>
   )

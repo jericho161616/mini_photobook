@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { formatDims, getSize } from '../data/sizes'
-import { capacityRange, minPageCount, suggestPageCount } from '../lib/autoLayout'
+import { capacityRange, minPageCount, sizeMinPages, suggestPageCount } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
-import { MAX_PAGES, MIN_PAGES } from '../types'
+import { MAX_PAGES } from '../types'
 import { ResetConfirm } from './ResetConfirm'
 
 interface TopBarProps {
@@ -44,10 +44,10 @@ export function TopBar({
   const overflowing = photos.length > maxCapacity
   const suggestion = suggestPageCount(photos.length, size)
 
-  const minCount = minPageCount(pages)
-  // minPageCount only rises above the book's absolute floor when a locked
-  // page is holding it there.
-  const blockedByLock = pages.length <= minCount && minCount > MIN_PAGES
+  const minCount = minPageCount(pages, size)
+  // minPageCount only rises above the book's own absolute floor when a
+  // locked page is holding it there.
+  const blockedByLock = pages.length <= minCount && minCount > sizeMinPages(size)
   const canDecrease = pages.length > minCount
   const canIncrease = pages.length < MAX_PAGES
 

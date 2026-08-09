@@ -144,6 +144,8 @@ export interface BookSize {
   heightIn: number
   /** Above this, pages start to feel crowded rather than composed. */
   maxPhotosPerPage: number
+  /** Floor for this size's own page count — undefined means the book-wide MIN_PAGES applies. Lets a digital-only size like Instagram Story start (and shrink back down to) a single page. */
+  minPages?: number
 }
 
 export interface Photo {

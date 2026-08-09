@@ -1,9 +1,8 @@
 import { create } from 'zustand'
 import { DEFAULT_SIZE_ID, getSize } from '../data/sizes'
-import { autoLayout, pagePlacements } from '../lib/autoLayout'
+import { autoLayout, pagePlacements, sizeMinPages } from '../lib/autoLayout'
 import * as storage from '../lib/db'
 import { newProjectId } from '../lib/db'
-import { MIN_PAGES } from '../types'
 import type { Page, Photo, Project } from '../types'
 
 export interface BookSummary {
@@ -66,7 +65,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
       id: newProjectId(),
       title: title.trim() || 'Untitled Book',
       sizeId: size.id,
-      pages: autoLayout({ photos: [], size, pageCount: MIN_PAGES }),
+      pages: autoLayout({ photos: [], size, pageCount: sizeMinPages(size) }),
       createdAt: now,
       updatedAt: now,
     }

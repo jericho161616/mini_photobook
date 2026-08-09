@@ -30,7 +30,10 @@ export const TEMPLATES: Template[] = [
     id: 'grid4',
     label: '4 · Grid',
     family: 'Minimal',
-    fits: ['square'],
+    // Also the standard "four-square" story layout — the grid stays evenly
+    // split whether the cells land square (on a square page) or tall (on a
+    // narrow one like Instagram Story).
+    fits: ['square', 'tall'],
     // Same 2×2 idea as Portfolio's grid, but with a wider gutter — the
     // minimalist read is in the extra breathing room between photos.
     slots: [
@@ -38,6 +41,22 @@ export const TEMPLATES: Template[] = [
       { x: 54, y: 0, w: 46, h: 46 },
       { x: 0, y: 54, w: 46, h: 46 },
       { x: 54, y: 54, w: 46, h: 46 },
+    ],
+  },
+  {
+    id: 'sixGrid',
+    label: '6 · Grid',
+    family: 'Minimal',
+    // The 6-photo option of the story grid family — three even rows of two,
+    // plain crops with no card mount, sized for a narrow tall page.
+    fits: ['tall'],
+    slots: [
+      { x: 0, y: 0, w: 46, h: 30 },
+      { x: 54, y: 0, w: 46, h: 30 },
+      { x: 0, y: 35, w: 46, h: 30 },
+      { x: 54, y: 35, w: 46, h: 30 },
+      { x: 0, y: 70, w: 46, h: 30 },
+      { x: 54, y: 70, w: 46, h: 30 },
     ],
   },
   {
@@ -63,7 +82,9 @@ export const TEMPLATES: Template[] = [
     id: 'duoV',
     label: '2 · Side',
     family: 'Minimal',
-    fits: ['wide', 'square'],
+    // Reads as a narrow left/right split on a tall page too — the other
+    // half of "2-photo grid: side-by-side or stacked" (duoH is the stack).
+    fits: ['wide', 'square', 'tall'],
     slots: [
       { x: 0, y: 0, w: 47, h: 100 },
       { x: 53, y: 0, w: 47, h: 100 },
@@ -96,7 +117,9 @@ export const TEMPLATES: Template[] = [
     id: 'trioT',
     label: '3 · Feature',
     family: 'Minimal',
-    fits: ['square', 'wide'],
+    // The "one large box, two smaller ones" of the 3-photo grid family — a
+    // big top photo with room to breathe reads fine narrow-tall too.
+    fits: ['square', 'wide', 'tall'],
     slots: [
       { x: 0, y: 0, w: 100, h: 58 },
       { x: 0, y: 64, w: 47, h: 36 },
@@ -147,7 +170,9 @@ export const TEMPLATES: Template[] = [
     id: 'row3',
     label: '3 · Row',
     family: 'Portfolio',
-    fits: ['wide'],
+    // Also the "split vertically" option of the 3-photo grid family — three
+    // narrow columns read fine on a tall page, same idea as duoV's split.
+    fits: ['wide', 'tall'],
     slots: [
       { x: 0, y: 0, w: 31, h: 100 },
       { x: 34.5, y: 0, w: 31, h: 100 },

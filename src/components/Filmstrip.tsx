@@ -1,10 +1,10 @@
 import { Fragment, useState } from 'react'
 import { getSize, sizeRatio } from '../data/sizes'
 import { getTemplate } from '../data/templates'
-import { resolvePageSize } from '../lib/autoLayout'
+import { resolvePageSize, sizeMinPages } from '../lib/autoLayout'
 import { photoThumbUrl } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
-import { MAX_PAGES, MIN_PAGES, type Photo } from '../types'
+import { MAX_PAGES, type Photo } from '../types'
 
 const THUMB_WIDTH = 72
 
@@ -17,13 +17,12 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
   const togglePageLock = useStore((s) => s.togglePageLock)
   const insertPageAt = useStore((s) => s.insertPageAt)
   const removePageAt = useStore((s) => s.removePageAt)
+  const size = getSize(sizeId)
   const canInsert = pages.length < MAX_PAGES
-  const canRemove = pages.length > MIN_PAGES
+  const canRemove = pages.length > sizeMinPages(size)
 
   const [dragFrom, setDragFrom] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
-
-  const size = getSize(sizeId)
 
   const insertGap = (position: number) => (
     <button

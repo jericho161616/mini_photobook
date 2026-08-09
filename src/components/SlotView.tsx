@@ -4,6 +4,7 @@ import {
   coverGeometry,
   FRAME_INSET_RATIO,
   PHOTO_FILTER_CSS,
+  PHOTO_FILTER_OVERLAY,
   photoThumbUrl,
   photoUrl,
   POSTER_BORDER_RATIO,
@@ -123,6 +124,9 @@ export function SlotView({
   const geo =
     photo && placement ? coverGeometry(photo.width / photo.height, photoBox.w, photoBox.h, placement) : null
 
+  const activeFilter = forceFilter ?? placement?.filter
+  const textureOverlay = activeFilter ? PHOTO_FILTER_OVERLAY[activeFilter] : undefined
+
   // Only worth dragging if the photo actually overflows the slot somewhere.
   const pannable = !!geo && (geo.slackX > 0.5 || geo.slackY > 0.5)
 
@@ -226,22 +230,41 @@ export function SlotView({
           <AttachmentGraphic type={placement.attachment} color={placement.attachmentColor} />
         )}
         {photo && geo ? (
-          <img
-            src={photoUrl(photo)}
-            alt={photo.name}
-            draggable={false}
-            style={{
-              left: inset + geo.x,
-              top: inset + geo.y,
-              width: geo.drawWidth,
-              height: geo.drawHeight,
-              filter: (forceFilter ?? placement?.filter) ? PHOTO_FILTER_CSS[forceFilter ?? placement!.filter!] : undefined,
-            }}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={endPan}
-            onPointerCancel={endPan}
-          />
+          <>
+            <img
+              src={photoUrl(photo)}
+              alt={photo.name}
+              draggable={false}
+              style={{
+                left: inset + geo.x,
+                top: inset + geo.y,
+                width: geo.drawWidth,
+                height: geo.drawHeight,
+                filter: activeFilter ? PHOTO_FILTER_CSS[activeFilter] : undefined,
+              }}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={endPan}
+              onPointerCancel={endPan}
+            />
+            {textureOverlay && (
+              <span
+                className="photo-texture-overlay"
+                aria-hidden="true"
+                style={{
+                  left: inset + geo.x,
+                  top: inset + geo.y,
+                  width: geo.drawWidth,
+                  height: geo.drawHeight,
+                  backgroundImage: textureOverlay.image,
+                  backgroundRepeat: textureOverlay.tile ? 'repeat' : 'no-repeat',
+                  backgroundSize: textureOverlay.tile ? '140px 140px' : '100% 100%',
+                  mixBlendMode: textureOverlay.blend,
+                  opacity: textureOverlay.opacity,
+                }}
+              />
+            )}
+          </>
         ) : (
           <span className="slot-hint">Drop a photo</span>
         )}

@@ -1032,6 +1032,12 @@ input:focus-visible,
   -webkit-user-drag: none;
 }
 
+/* The Film/Paper filters' grain/crease texture — a layer on top of the photo rather than a CSS `filter`, so it renders the same everywhere (see PHOTO_FILTER_OVERLAY). */
+.photo-texture-overlay {
+  position: absolute;
+  pointer-events: none;
+}
+
 .slot.pannable img {
   cursor: grab;
 }

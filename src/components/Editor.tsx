@@ -3,6 +3,7 @@ import { getSize } from '../data/sizes'
 import { exportBookOverview, exportToPdf } from '../lib/exportPdf'
 import type { ThemeChoice } from '../lib/theme'
 import { useStore } from '../state/useStore'
+import { ContextualToolbar } from './ContextualToolbar'
 import { ExportRangeModal } from './ExportRangeModal'
 import { Filmstrip } from './Filmstrip'
 import { PhotoLibrary } from './PhotoLibrary'
@@ -136,6 +137,9 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
       </div>
 
       <Filmstrip photos={photoMap} />
+
+      {/* Floats over the canvas next to whatever is selected — renders nothing at all otherwise. */}
+      <ContextualToolbar />
 
       {libraryOpen && <PhotoLibrary onClose={() => setLibraryOpen(false)} />}
 

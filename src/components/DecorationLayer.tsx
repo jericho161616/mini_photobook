@@ -28,6 +28,31 @@ const MIN_SIZE_PCT = 6
 /** Below this many pixels of movement, a mousedown-then-up counts as a click rather than a drag. */
 const CLICK_THRESHOLD_PX = 3
 
+/** Tape is a colored rectangle drawn by CSS background; the icons are strokes that inherit `color`. */
+export function isTapeSticker(type: Sticker['type']): boolean {
+  return type === 'tape-yellow' || type === 'tape-pink' || type === 'tape-sage'
+}
+
+/**
+ * A sticker's own tilt/mirror/color/opacity as inline style. Shared shape with
+ * exportPdf.ts's drawSticker so a sticker looks the same on screen and in print.
+ */
+export function stickerArtStyle(sticker: Sticker): React.CSSProperties {
+  const rotation = sticker.rotation ?? 0
+  const flip = sticker.flipX ? -1 : 1
+  return {
+    transform: rotation || sticker.flipX ? `rotate(${rotation}deg) scaleX(${flip})` : undefined,
+    // Tape's color is a background fill; every other built-in glyph strokes
+    // with currentColor, so one `color` covers them all.
+    ...(sticker.color
+      ? isTapeSticker(sticker.type)
+        ? { background: sticker.color }
+        : { color: sticker.color }
+      : null),
+    opacity: sticker.opacity !== undefined ? sticker.opacity / 100 : undefined,
+  }
+}
+
 /**
  * Shared drag-to-move / drag-to-resize chrome for one sticker or text box.
  * Tracks the gesture with window-level listeners rather than pointer capture
@@ -236,7 +261,17 @@ export function DecorationLayer({
           onChange={(patch) => onChangeSticker(sticker.id, patch)}
           onDelete={() => onDelete('sticker', sticker.id)}
         >
-          <div className={`sticker-glyph sticker-${sticker.type}`}>
+          {/*
+           * Tilt and mirror are applied to the artwork rather than to the
+           * DecorationBox around it, so the selection ring and its drag/resize
+           * handles stay axis-aligned — a rotated handle is meaningfully
+           * harder to grab, and the box's own gesture math is all in
+           * unrotated screen space.
+           */}
+          <div
+            className={`sticker-glyph sticker-${sticker.type}`}
+            style={stickerArtStyle(sticker)}
+          >
             <StickerGlyph
               type={sticker.type}
               customUrl={sticker.type === 'custom' ? customStickers.find((c) => c.id === sticker.customId)?.dataUrl : undefined}

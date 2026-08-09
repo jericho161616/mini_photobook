@@ -39,11 +39,21 @@ export const NOVELTY_SIZES: BookSize[] = [
  * Instagram Story is the standard 1080×1920 canvas (9:16) — chosen here as
  * 3.6×6.4in so a 300 DPI export lands on exactly 1080×1920 pixels. The
  * template library isn't shape-restricted (templatesForSize only filters by
- * photo count), so every layout up to this size's density already applies
- * here, same as any other size — nothing template-side to add.
+ * photo count), so most layouts up to this size's density already apply here
+ * same as any other size — see templates.ts for the few tagged 'tall' (or
+ * added outright) specifically for the common story grid layouts.
  */
 export const SOCIAL_SIZES: BookSize[] = [
-  { id: 'ig-story', name: 'Instagram Story', widthIn: 3.6, heightIn: 6.4, maxPhotosPerPage: 4 },
+  {
+    id: 'ig-story',
+    name: 'Instagram Story',
+    widthIn: 3.6,
+    heightIn: 6.4,
+    maxPhotosPerPage: 6,
+    // A story is normally one slide at a time, not a bound book — start at a
+    // single page and let the filmstrip's insert control add more on demand.
+    minPages: 1,
+  },
 ]
 
 /** The standard 4×6 in photo-lab print, in both orientations. */

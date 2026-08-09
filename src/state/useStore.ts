@@ -12,10 +12,11 @@ import {
   regenerateUnlocked,
   removePageAt as removePageFromList,
   resizePages,
+  sizeMinPages,
 } from '../lib/autoLayout'
 import * as storage from '../lib/db'
 import { clampOffset, clampZoom, importFiles, releasePhotoUrl } from '../lib/imageUtils'
-import { MAX_PAGES, MIN_PAGES } from '../types'
+import { MAX_PAGES } from '../types'
 import type {
   CustomSticker,
   HalfLayout,
@@ -101,7 +102,7 @@ interface StoreState {
   setPageCount: (count: number) => void
   /** Inserts one new blank page at `position` (shifting later pages back), instead of only ever appending at the end. No-op at MAX_PAGES. */
   insertPageAt: (position: number) => void
-  /** Removes the single page at `index`, shifting later pages forward. No-op on a locked page or at MIN_PAGES. */
+  /** Removes the single page at `index`, shifting later pages forward. No-op on a locked page or at the book's page-count floor. */
   removePageAt: (index: number) => void
   regenerate: () => void
   setActivePage: (index: number) => void
@@ -285,7 +286,7 @@ export const useStore = create<StoreState>((set, get) => {
         // Shouldn't normally happen — My Books always creates the project
         // record before opening it — but a blank starting book is a safe fallback.
         const size = getSize(DEFAULT_SIZE_ID)
-        const pages = autoLayout({ photos: [], size, pageCount: MIN_PAGES })
+        const pages = autoLayout({ photos: [], size, pageCount: sizeMinPages(size) })
         set({
           ready: true,
           projectId,
@@ -414,11 +415,12 @@ export const useStore = create<StoreState>((set, get) => {
     },
 
     removePageAt(index) {
-      const { pages, activePageIndex } = get()
+      const { pages, activePageIndex, sizeId } = get()
       const page = pages[index]
-      if (!page || page.locked || pages.length <= MIN_PAGES) return
+      const size = getSize(sizeId)
+      if (!page || page.locked || pages.length <= sizeMinPages(size)) return
       recordHistory()
-      const nextPages = removePageFromList(pages, index)
+      const nextPages = removePageFromList(pages, index, size)
       // Keep viewing the same content: a page removed ahead of the active one
       // shifts everything after it back by one index.
       const nextActive = index < activePageIndex ? activePageIndex - 1 : activePageIndex
@@ -909,7 +911,7 @@ export const useStore = create<StoreState>((set, get) => {
         photos: [],
         title: 'Untitled Book',
         sizeId: DEFAULT_SIZE_ID,
-        pages: autoLayout({ photos: [], size, pageCount: MIN_PAGES }),
+        pages: autoLayout({ photos: [], size, pageCount: sizeMinPages(size) }),
         customStickers: [],
         activePageIndex: 0,
         selected: null,

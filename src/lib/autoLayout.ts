@@ -3,8 +3,14 @@ import { getTemplate, templatesForSize } from '../data/templates'
 import { MAX_PAGES, MIN_PAGES } from '../types'
 import type { BookSize, HalfLayout, Page, Photo, Placement, Template } from '../types'
 
-export function clampPages(n: number): number {
-  return Math.max(MIN_PAGES, Math.min(MAX_PAGES, n))
+/** A size's own page-count floor — MIN_PAGES unless it declares a lower one (Instagram Story: 1). */
+export function sizeMinPages(size: BookSize): number {
+  return size.minPages ?? MIN_PAGES
+}
+
+export function clampPages(n: number, size?: BookSize): number {
+  const min = size ? sizeMinPages(size) : MIN_PAGES
+  return Math.max(min, Math.min(MAX_PAGES, n))
 }
 
 /**
@@ -13,9 +19,9 @@ export function clampPages(n: number): number {
  * maximum density rather than packing pages full.
  */
 export function suggestPageCount(photoCount: number, size: BookSize): number {
-  if (photoCount === 0) return MIN_PAGES
+  if (photoCount === 0) return sizeMinPages(size)
   const comfortableDensity = Math.max(1, (size.maxPhotosPerPage + 1) / 2)
-  return clampPages(Math.ceil(photoCount / comfortableDensity))
+  return clampPages(Math.ceil(photoCount / comfortableDensity), size)
 }
 
 /**
@@ -174,7 +180,7 @@ export interface AutoLayoutOptions {
  * so the book doesn't read as the same layout repeated.
  */
 export function autoLayout({ photos, size, pageCount }: AutoLayoutOptions): Page[] {
-  return layoutPages(photos, size, clampPages(pageCount))
+  return layoutPages(photos, size, clampPages(pageCount, size))
 }
 
 /**
@@ -253,9 +259,10 @@ function layoutPages(photos: Photo[], size: BookSize, pages: number): Page[] {
 }
 
 /** Fewest pages the book can shrink to without cutting off a locked page. */
-export function minPageCount(pages: Page[]): number {
+export function minPageCount(pages: Page[], size?: BookSize): number {
   const lastLockedIndex = pages.reduce((last, p, i) => (p.locked ? i : last), -1)
-  return Math.max(MIN_PAGES, lastLockedIndex + 1)
+  const floor = size ? sizeMinPages(size) : MIN_PAGES
+  return Math.max(floor, lastLockedIndex + 1)
 }
 
 /**
@@ -265,7 +272,7 @@ export function minPageCount(pages: Page[]): number {
  * locked page sits furthest back in the book.
  */
 export function resizePages(pages: Page[], pageCount: number, size: BookSize): Page[] {
-  const target = Math.max(clampPages(pageCount), minPageCount(pages))
+  const target = Math.max(clampPages(pageCount, size), minPageCount(pages, size))
   if (pages.length === target) return pages
   if (pages.length > target) return pages.slice(0, target)
 
@@ -292,12 +299,12 @@ export function insertPage(pages: Page[], position: number, size: BookSize): Pag
 
 /**
  * Removes a single page at `index`, unlike resizePages which only ever trims
- * from the end. Refuses a locked page, and refuses to go below MIN_PAGES —
- * the caller should keep its delete control disabled in either case rather
- * than rely on this being a silent no-op.
+ * from the end. Refuses a locked page, and refuses to go below the size's own
+ * page-count floor — the caller should keep its delete control disabled in
+ * either case rather than rely on this being a silent no-op.
  */
-export function removePageAt(pages: Page[], index: number): Page[] {
-  if (pages.length <= MIN_PAGES) return pages
+export function removePageAt(pages: Page[], index: number, size: BookSize): Page[] {
+  if (pages.length <= sizeMinPages(size)) return pages
   if (pages[index]?.locked) return pages
   const next = [...pages]
   next.splice(index, 1)

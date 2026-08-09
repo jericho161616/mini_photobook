@@ -1,7 +1,12 @@
-/** Layout character of a template's slots — lets pages mix freely within one book. */
-export type Shape = 'square' | 'tall' | 'wide'
+/**
+ * Layout character of a template's slots — lets pages mix freely within one
+ * book. 'instagram' isn't ratio-derived like the other three (see
+ * data/sizes.ts's bookShape) — it's a manual tag on the Instagram Story-only
+ * templates, so they can be filtered to as their own group.
+ */
+export type Shape = 'square' | 'tall' | 'wide' | 'instagram'
 
-export type TemplateFamily = 'Minimal' | 'Portfolio'
+export type TemplateFamily = 'Minimal' | 'Portfolio' | 'Instagram'
 
 /**
  * Every option is either already on every computer (no download, ever) or a
@@ -21,7 +26,7 @@ export interface TextStyle {
 }
 
 /** Applied to a photo in its slot — the print itself is untouched, only the placement. */
-export type PhotoFilter = 'bw' | 'sepia' | 'negative'
+export type PhotoFilter = 'bw' | 'sepia' | 'negative' | 'film' | 'paper'
 
 /**
  * The built-ins are drawn with CSS/SVG at render time — nothing downloaded,
@@ -127,6 +132,13 @@ export interface Template {
    * no tape, no rotation, no border.
    */
   decoration?: 'poster' | 'circle' | 'beforeAfter' | 'window'
+  /**
+   * What a 'poster'-decorated overlay slot (index 1 onward) is pinned with —
+   * undefined/'tape' matches the original look (Poster Overlay, Overlapping
+   * Duo); 'paperclip' swaps in the paperclip graphic instead; 'none' drops
+   * the attachment entirely for a plain bordered card with no pin.
+   */
+  posterAttachment?: 'tape' | 'paperclip' | 'none'
   /**
    * A fixed tilt per slot, baked into the design (Confetti Scatter) rather
    * than user-adjustable — same idea as Poster Overlay's fixed -6°, just one

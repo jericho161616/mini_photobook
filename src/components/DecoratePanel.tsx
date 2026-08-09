@@ -26,6 +26,8 @@ const BG_FILTERS: { id: PhotoFilter | 'none'; label: string }[] = [
   { id: 'bw', label: 'B&W' },
   { id: 'sepia', label: 'Sepia' },
   { id: 'negative', label: 'Negative' },
+  { id: 'film', label: 'Film' },
+  { id: 'paper', label: 'Paper' },
 ]
 
 const COVERAGE_OPTIONS: { id: NonNullable<Page['backgroundPhotoCoverage']>; label: string; title: string }[] = [

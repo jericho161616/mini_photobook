@@ -1423,6 +1423,13 @@ input:focus-visible,
   height: 8px;
 }
 
+/* Rounded, distinct from the plain-square glyph — a nod to the app-icon shape. */
+.shape-chip[data-shape='instagram'] .glyph {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+}
+
 .shape-chip.active {
   background: var(--navy);
   color: var(--paper);

@@ -35,6 +35,8 @@ interface SlotViewProps {
   framed?: boolean
   /** Taped-on-top styling for a 'poster'-decorated template's overlay slot(s). */
   poster?: boolean
+  /** Which pin a poster slot draws — meaningless unless `poster` is true. Defaults to 'tape'. */
+  posterAttachment?: 'tape' | 'paperclip' | 'none'
   /** Centered circular portrait with a white ring — Circle Inset's second slot. */
   circle?: boolean
   /** A thin outline around the photo — independent of, and combinable with, the template's own styling. */
@@ -63,6 +65,7 @@ export function SlotView({
   onPan,
   framed,
   poster,
+  posterAttachment = 'tape',
   circle,
   hairline,
   stamp,
@@ -211,13 +214,14 @@ export function SlotView({
           if (photoId) onDropPhoto(photoId)
         }}
       >
-        {poster && (
+        {poster && posterAttachment === 'tape' && (
           <span
             className="poster-tape"
             style={{ background: placement?.attachmentColor ?? undefined }}
             aria-hidden="true"
           />
         )}
+        {poster && posterAttachment === 'paperclip' && <AttachmentGraphic type="paperclip" />}
         {!poster && placement?.attachment && (
           <AttachmentGraphic type={placement.attachment} color={placement.attachmentColor} />
         )}

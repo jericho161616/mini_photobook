@@ -10,11 +10,31 @@ function nextPhotoId(): string {
 
 export const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
 
+/**
+ * A soft crease/fold shading, self-contained as a data URI so it needs no
+ * markup mounted anywhere else in the app — multiplies a mottled darkening
+ * over the source photo, read as light printed on paper rather than a
+ * flat color adjustment. exportPdf.ts approximates the same look with a
+ * canvas composite instead, since browser support for referencing an SVG
+ * filter from a canvas's own `filter` property is inconsistent.
+ */
+const PAPER_CREASE_SVG =
+  "<svg xmlns='http://www.w3.org/2000/svg'><filter id='paperCrease' x='-20%' y='-20%' width='140%' height='140%'>" +
+  "<feTurbulence type='fractalNoise' baseFrequency='0.006 0.01' numOctaves='2' seed='11' result='n'/>" +
+  "<feColorMatrix in='n' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.55 0.55 0.55 0 -0.72' result='a'/>" +
+  "<feComponentTransfer in='a' result='crease'><feFuncA type='gamma' amplitude='0.55' exponent='2.4' offset='0'/></feComponentTransfer>" +
+  "<feFlood flood-color='#4a4136' result='shadowColor'/>" +
+  "<feComposite in='shadowColor' in2='crease' operator='in' result='shadowLayer'/>" +
+  "<feBlend in='SourceGraphic' in2='shadowLayer' mode='multiply'/>" +
+  '</filter></svg>'
+
 /** Shared with SlotView and PageView so a photo's filter reads identically whether it's in a slot or a page background. */
 export const PHOTO_FILTER_CSS: Record<PhotoFilter, string> = {
   bw: 'grayscale(1)',
   sepia: 'sepia(0.75) saturate(1.1)',
   negative: 'invert(1) hue-rotate(180deg)',
+  film: 'sepia(0.22) saturate(1.4) contrast(1.08) brightness(1.05) hue-rotate(-8deg)',
+  paper: `url("data:image/svg+xml,${encodeURIComponent(PAPER_CREASE_SVG)}#paperCrease")`,
 }
 
 /**
@@ -75,26 +95,33 @@ export interface SlotStyle {
   stamp: boolean
   windowSlot: boolean
   forceFilter: PhotoFilter | undefined
+  /** Meaningless unless `poster` is true — which pin a poster-decorated overlay slot draws, if any. */
+  posterAttachment: 'tape' | 'paperclip' | 'none'
 }
 
 /**
  * Every decorative slot style in one place — which frame/decoration a given
  * slot gets, from the template's own design (Instant Grid, Polaroid Strip,
- * Postage Stamp Duo's forced frames; poster/circle/window decorations) and
- * the photo's own placement (frame/hairline/stamp choice). Shared by
- * PageView's two render branches (whole-page and Split at Fold half) and
- * exportPdf's matching two loops, so all four agree on exactly the same
- * rules.
+ * Instagram Contact Strip, Postage Stamp Duo's forced frames; poster/circle/
+ * window decorations) and the photo's own placement (frame/hairline/stamp
+ * choice). Shared by PageView's two render branches (whole-page and Split at
+ * Fold half) and exportPdf's matching two loops, so all four agree on
+ * exactly the same rules.
  */
 export function resolveSlotStyle(
-  template: Pick<Template, 'id' | 'decoration'>,
+  template: Pick<Template, 'id' | 'decoration' | 'posterAttachment'>,
   slotIndex: number,
   placement: Placement | null | undefined,
 ): SlotStyle {
+  const poster = template.decoration === 'poster' && slotIndex >= 1
   return {
     framed:
-      template.id === 'instantGrid' || template.id === 'polaroidStrip' || placement?.frame === 'polaroid',
-    poster: template.decoration === 'poster' && slotIndex >= 1,
+      template.id === 'instantGrid' ||
+      template.id === 'polaroidStrip' ||
+      template.id === 'igContactStrip' ||
+      placement?.frame === 'polaroid',
+    poster,
+    posterAttachment: poster ? (template.posterAttachment ?? 'tape') : 'tape',
     circle: template.decoration === 'circle' && slotIndex === 1,
     hairline: placement?.frame === 'hairline',
     stamp: template.id === 'postageStampDuo' || placement?.frame === 'stamp',

@@ -10,31 +10,53 @@ function nextPhotoId(): string {
 
 export const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
 
-/**
- * A soft crease/fold shading, self-contained as a data URI so it needs no
- * markup mounted anywhere else in the app — multiplies a mottled darkening
- * over the source photo, read as light printed on paper rather than a
- * flat color adjustment. exportPdf.ts approximates the same look with a
- * canvas composite instead, since browser support for referencing an SVG
- * filter from a canvas's own `filter` property is inconsistent.
- */
-const PAPER_CREASE_SVG =
-  "<svg xmlns='http://www.w3.org/2000/svg'><filter id='paperCrease' x='-20%' y='-20%' width='140%' height='140%'>" +
-  "<feTurbulence type='fractalNoise' baseFrequency='0.006 0.01' numOctaves='2' seed='11' result='n'/>" +
-  "<feColorMatrix in='n' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.55 0.55 0.55 0 -0.72' result='a'/>" +
-  "<feComponentTransfer in='a' result='crease'><feFuncA type='gamma' amplitude='0.55' exponent='2.4' offset='0'/></feComponentTransfer>" +
-  "<feFlood flood-color='#4a4136' result='shadowColor'/>" +
-  "<feComposite in='shadowColor' in2='crease' operator='in' result='shadowLayer'/>" +
-  "<feBlend in='SourceGraphic' in2='shadowLayer' mode='multiply'/>" +
-  '</filter></svg>'
-
 /** Shared with SlotView and PageView so a photo's filter reads identically whether it's in a slot or a page background. */
 export const PHOTO_FILTER_CSS: Record<PhotoFilter, string> = {
   bw: 'grayscale(1)',
   sepia: 'sepia(0.75) saturate(1.1)',
   negative: 'invert(1) hue-rotate(180deg)',
   film: 'sepia(0.22) saturate(1.4) contrast(1.08) brightness(1.05) hue-rotate(-8deg)',
-  paper: `url("data:image/svg+xml,${encodeURIComponent(PAPER_CREASE_SVG)}#paperCrease")`,
+  // Paper carries no color adjustment of its own — see PHOTO_FILTER_OVERLAY,
+  // its whole effect is the crease texture layered on top.
+  paper: 'none',
+}
+
+function svgDataUrl(inner: string): string {
+  return `url("data:image/svg+xml,${encodeURIComponent(inner)}")`
+}
+
+/**
+ * A rendered (not referenced-as-filter) noise/crease texture, laid over a
+ * photo with mix-blend-mode rather than applied via the CSS `filter`
+ * property — `filter: url(#svgFilter)` is unreliable across browsers
+ * (notably Safari), where it silently no-ops and the photo looks untouched.
+ * A background-image + blend-mode overlay has none of that risk; every
+ * browser that can show an <img> can show this. exportPdf.ts's canvas
+ * export draws the same idea with actual composite operations.
+ */
+export const PHOTO_FILTER_OVERLAY: Partial<
+  Record<PhotoFilter, { image: string; blend: 'multiply' | 'overlay'; opacity: number; tile?: boolean }>
+> = {
+  paper: {
+    image: svgDataUrl(
+      "<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400'>" +
+        "<filter id='c'><feTurbulence type='fractalNoise' baseFrequency='0.012 0.018' numOctaves='2' seed='11'/>" +
+        "<feColorMatrix type='matrix' values='0 0 0 0 0.42 0 0 0 0 0.37 0 0 0 0 0.3 0.55 0.55 0.55 0 -0.5'/></filter>" +
+        "<rect width='100%' height='100%' filter='url(#c)'/></svg>",
+    ),
+    blend: 'multiply',
+    opacity: 0.65,
+  },
+  film: {
+    image: svgDataUrl(
+      "<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'>" +
+        "<filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter>" +
+        "<rect width='100%' height='100%' filter='url(#g)'/></svg>",
+    ),
+    blend: 'overlay',
+    opacity: 0.22,
+    tile: true,
+  },
 }
 
 /**

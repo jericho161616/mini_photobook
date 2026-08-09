@@ -6,6 +6,7 @@ import {
   isDarkColor,
   isOverlaySlot,
   PHOTO_FILTER_CSS,
+  PHOTO_FILTER_OVERLAY,
   photoUrl,
   resolveOverlayPosition,
   resolveSlotStyle,
@@ -131,6 +132,7 @@ export function PageView({
   // reads busy enough on its own to warrant the same light parchment text as
   // a dark tint) needs light text instead of the usual dark ink.
   const onDark = Boolean(backgroundPhoto) || (page.backgroundColor ? isDarkColor(page.backgroundColor) : false)
+  const bgTextureOverlay = page.backgroundPhotoFilter ? PHOTO_FILTER_OVERLAY[page.backgroundPhotoFilter] : undefined
 
   return (
     <div
@@ -149,6 +151,20 @@ export function PageView({
             }}
             aria-hidden="true"
           />
+          {bgTextureOverlay && (
+            <div
+              className="photo-texture-overlay"
+              style={{
+                inset: backgroundPhotoInset(page.backgroundPhotoCoverage),
+                backgroundImage: bgTextureOverlay.image,
+                backgroundRepeat: bgTextureOverlay.tile ? 'repeat' : 'no-repeat',
+                backgroundSize: bgTextureOverlay.tile ? '140px 140px' : 'cover',
+                mixBlendMode: bgTextureOverlay.blend,
+                opacity: bgTextureOverlay.opacity,
+              }}
+              aria-hidden="true"
+            />
+          )}
           <div
             className="page-bg-dim"
             style={{

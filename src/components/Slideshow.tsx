@@ -3,7 +3,7 @@ import { DEFAULT_TEXT_STYLE, fontStack } from '../data/fonts'
 import { getTemplate } from '../data/templates'
 import { resolvePageSize } from '../lib/autoLayout'
 import { PAGE_MARGIN_RATIO } from '../lib/exportPdf'
-import { PHOTO_FILTER_CSS, photoUrl, slotPixelRect } from '../lib/imageUtils'
+import { PHOTO_FILTER_CSS, PHOTO_FILTER_OVERLAY, photoUrl, slotPixelRect } from '../lib/imageUtils'
 import type { BookSize, Page, Photo } from '../types'
 
 const ADVANCE_MS = 1500
@@ -172,18 +172,34 @@ export function Slideshow({ pages, photos, size, title, startIndex, onClose }: S
                   style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
                 >
                   {photo && (
-                    <img
-                      src={photoUrl(photo)}
-                      alt=""
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        filter: placement?.filter ? PHOTO_FILTER_CSS[placement.filter] : undefined,
-                      }}
-                    />
+                    <>
+                      <img
+                        src={photoUrl(photo)}
+                        alt=""
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          filter: placement?.filter ? PHOTO_FILTER_CSS[placement.filter] : undefined,
+                        }}
+                      />
+                      {placement?.filter && PHOTO_FILTER_OVERLAY[placement.filter] && (
+                        <div
+                          className="photo-texture-overlay"
+                          aria-hidden="true"
+                          style={{
+                            inset: 0,
+                            backgroundImage: PHOTO_FILTER_OVERLAY[placement.filter]!.image,
+                            backgroundRepeat: PHOTO_FILTER_OVERLAY[placement.filter]!.tile ? 'repeat' : 'no-repeat',
+                            backgroundSize: PHOTO_FILTER_OVERLAY[placement.filter]!.tile ? '140px 140px' : '100% 100%',
+                            mixBlendMode: PHOTO_FILTER_OVERLAY[placement.filter]!.blend,
+                            opacity: PHOTO_FILTER_OVERLAY[placement.filter]!.opacity,
+                          }}
+                        />
+                      )}
+                    </>
                   )}
                 </div>
               )

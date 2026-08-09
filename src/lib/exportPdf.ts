@@ -97,6 +97,43 @@ function drawPaperCrease(ctx: CanvasRenderingContext2D, rect: { x: number; y: nu
   ctx.restore()
 }
 
+/** A small tileable speckle pattern for the Film filter's grain — same idea as getPaperTexture, tiled instead of stretched. */
+let grainPattern: CanvasPattern | null = null
+function getGrainPattern(ctx: CanvasRenderingContext2D): CanvasPattern {
+  if (grainPattern) return grainPattern
+  const size = 140
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const tctx = canvas.getContext('2d')!
+  const img = tctx.createImageData(size, size)
+  let seed = 7
+  const rand = () => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff
+    return seed / 0x7fffffff
+  }
+  for (let i = 0; i < img.data.length; i += 4) {
+    const v = Math.round(rand() * 255)
+    img.data[i] = v
+    img.data[i + 1] = v
+    img.data[i + 2] = v
+    img.data[i + 3] = 255
+  }
+  tctx.putImageData(img, 0, 0)
+  grainPattern = ctx.createPattern(canvas, 'repeat')!
+  return grainPattern
+}
+
+/** Overlays fine grain speckle over `rect` — call with the same clip already active as the photo it's shading. */
+function drawFilmGrain(ctx: CanvasRenderingContext2D, rect: { x: number; y: number; w: number; h: number }) {
+  ctx.save()
+  ctx.globalAlpha = 0.16
+  ctx.globalCompositeOperation = 'overlay'
+  ctx.fillStyle = getGrainPattern(ctx)
+  ctx.fillRect(rect.x, rect.y, rect.w, rect.h)
+  ctx.restore()
+}
+
 const TAPE_COLORS: Record<string, string> = {
   'tape-yellow': 'rgba(232, 217, 160, 0.85)',
   'tape-pink': 'rgba(227, 184, 176, 0.85)',
@@ -198,6 +235,7 @@ export async function renderPage(
     ctx.drawImage(backgroundBitmap, bgRect.x + geo.x, bgRect.y + geo.y, geo.drawWidth, geo.drawHeight)
     ctx.filter = 'none'
     if (page.backgroundPhotoFilter === 'paper') drawPaperCrease(ctx, bgRect)
+    if (page.backgroundPhotoFilter === 'film') drawFilmGrain(ctx, bgRect)
     ctx.fillStyle = `rgba(10, 8, 5, ${(page.backgroundDim ?? 35) / 100})`
     ctx.fillRect(bgRect.x, bgRect.y, bgRect.w, bgRect.h)
     ctx.restore()
@@ -230,6 +268,7 @@ export async function renderPage(
     ctx.drawImage(bitmap, rect.x + geo.x, rect.y + geo.y, geo.drawWidth, geo.drawHeight)
     ctx.filter = 'none'
     if (filterKey === 'paper') drawPaperCrease(ctx, rect)
+    if (filterKey === 'film') drawFilmGrain(ctx, rect)
     ctx.restore()
   }
 

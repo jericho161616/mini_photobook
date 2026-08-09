@@ -9,6 +9,8 @@ const FILTERS: { id: PhotoFilter | 'none'; label: string }[] = [
   { id: 'bw', label: 'B&W' },
   { id: 'sepia', label: 'Sepia' },
   { id: 'negative', label: 'Negative' },
+  { id: 'film', label: 'Film' },
+  { id: 'paper', label: 'Paper' },
 ]
 
 const FRAMES: { id: 'none' | 'hairline' | 'polaroid' | 'stamp'; label: string }[] = [

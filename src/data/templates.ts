@@ -569,6 +569,142 @@ export const TEMPLATES: Template[] = [
     textSlot: { x: 12, y: 38, w: 76, h: 24 },
     captionStyle: 'divider',
   },
+
+  // ---- Instagram Story only — see data/sizes.ts's SOCIAL_SIZES ----
+  {
+    id: 'igAsymCol',
+    label: '5 · Asymmetric Column',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: ['ig-story'],
+    slots: [
+      { x: 0, y: 0, w: 48, h: 58 },
+      { x: 0, y: 62, w: 48, h: 36 },
+      { x: 52, y: 0, w: 48, h: 22 },
+      { x: 52, y: 26, w: 48, h: 40 },
+      { x: 52, y: 70, w: 48, h: 28 },
+    ],
+  },
+  {
+    id: 'igFeatureStrip',
+    label: '4 · Feature + Strip',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: ['ig-story'],
+    slots: [
+      { x: 0, y: 0, w: 38, h: 100 },
+      { x: 42, y: 0, w: 58, h: 30 },
+      { x: 42, y: 35, w: 58, h: 30 },
+      { x: 42, y: 70, w: 58, h: 30 },
+    ],
+  },
+  {
+    id: 'igStripFeature',
+    label: '5 · Strip + Feature',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: ['ig-story'],
+    slots: [
+      { x: 0, y: 0, w: 38, h: 22 },
+      { x: 0, y: 26, w: 38, h: 22 },
+      { x: 0, y: 52, w: 38, h: 22 },
+      { x: 0, y: 78, w: 38, h: 22 },
+      { x: 42, y: 0, w: 58, h: 100 },
+    ],
+  },
+  {
+    id: 'igMixedRows',
+    label: '5 · Mixed Rows',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: ['ig-story'],
+    slots: [
+      { x: 0, y: 0, w: 42, h: 26 },
+      { x: 46, y: 6, w: 54, h: 24 },
+      { x: 0, y: 34, w: 100, h: 30 },
+      { x: 0, y: 68, w: 48, h: 30 },
+      { x: 52, y: 68, w: 48, h: 30 },
+    ],
+  },
+  {
+    id: 'igStaggered',
+    label: '4 · Staggered',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: ['ig-story'],
+    slots: [
+      { x: 0, y: 0, w: 52, h: 44 },
+      { x: 56, y: 0, w: 44, h: 56 },
+      { x: 0, y: 62, w: 38, h: 36 },
+      { x: 42, y: 64, w: 58, h: 34 },
+    ],
+  },
+  {
+    id: 'igContactStrip',
+    label: '4 · Contact Strip',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: ['ig-story'],
+    // Framed like Instant Grid / Polaroid Strip (see resolveSlotStyle) — a
+    // narrow centered column with generous margin on both sides, reading as
+    // a photo-booth strip rather than an edge-to-edge grid.
+    slots: [
+      { x: 30, y: 2, w: 40, h: 22 },
+      { x: 30, y: 26, w: 40, h: 22 },
+      { x: 30, y: 50, w: 40, h: 22 },
+      { x: 30, y: 74, w: 40, h: 22 },
+    ],
+  },
+  {
+    id: 'igPosterDuo',
+    label: '3 · Poster Duo',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: ['ig-story'],
+    bleed: true,
+    decoration: 'poster',
+    // Straight, not tossed-on — unlike Poster Overlay/Overlapping Duo, these
+    // insets stack cleanly rather than tilting.
+    posterAttachment: 'none',
+    slotRotations: [0, 0, 0],
+    slots: [
+      { x: 0, y: 0, w: 100, h: 100 },
+      { x: 22, y: 18, w: 56, h: 28 },
+      { x: 22, y: 50, w: 56, h: 28 },
+    ],
+  },
+  {
+    id: 'igPaperclipNote',
+    label: '2 · Paperclip Note',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: ['ig-story'],
+    bleed: true,
+    decoration: 'poster',
+    posterAttachment: 'paperclip',
+    slotRotations: [0, 0],
+    slots: [
+      { x: 0, y: 0, w: 100, h: 100 },
+      { x: 14, y: 24, w: 72, h: 46 },
+    ],
+  },
+  {
+    id: 'igScattered',
+    label: '4 · Scattered',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: ['ig-story'],
+    bleed: true,
+    decoration: 'poster',
+    posterAttachment: 'none',
+    slotRotations: [0, 0, 0, 0],
+    slots: [
+      { x: 0, y: 0, w: 100, h: 100 },
+      { x: 22, y: 14, w: 22, h: 14 },
+      { x: 64, y: 34, w: 22, h: 14 },
+      { x: 44, y: 56, w: 22, h: 14 },
+    ],
+  },
 ]
 
 export const SHAPE_FILTERS: { id: Shape | 'all'; label: string }[] = [
@@ -576,6 +712,7 @@ export const SHAPE_FILTERS: { id: Shape | 'all'; label: string }[] = [
   { id: 'square', label: 'Square' },
   { id: 'tall', label: 'Tall' },
   { id: 'wide', label: 'Wide' },
+  { id: 'instagram', label: 'Instagram' },
 ]
 
 /**
@@ -586,8 +723,19 @@ export const SHAPE_FILTERS: { id: Shape | 'all'; label: string }[] = [
  */
 export type StyleCategory = 'classic' | 'grids' | 'overlays' | 'text' | 'novelty'
 
-const GRID_IDS = new Set(['grid4', 'squareGrid4', 'instantGrid', 'contactSheet', 'asymGrid'])
-const NOVELTY_IDS = new Set(['polaroid', 'polaroidNote', 'polaroidStrip', 'confettiScatter'])
+const GRID_IDS = new Set([
+  'grid4',
+  'squareGrid4',
+  'instantGrid',
+  'contactSheet',
+  'asymGrid',
+  'igAsymCol',
+  'igFeatureStrip',
+  'igStripFeature',
+  'igMixedRows',
+  'igStaggered',
+])
+const NOVELTY_IDS = new Set(['polaroid', 'polaroidNote', 'polaroidStrip', 'confettiScatter', 'igContactStrip'])
 const TEXT_FORWARD_CAPTION_STYLES = new Set<Template['captionStyle']>(['quote', 'divider', 'stamp', 'ruled'])
 
 export function templateStyleCategory(template: Template): StyleCategory {

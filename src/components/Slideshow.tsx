@@ -3,13 +3,8 @@ import { DEFAULT_TEXT_STYLE, fontStack } from '../data/fonts'
 import { getTemplate } from '../data/templates'
 import { resolvePageSize } from '../lib/autoLayout'
 import { PAGE_MARGIN_RATIO } from '../lib/exportPdf'
-import { photoUrl, slotPixelRect } from '../lib/imageUtils'
+import { PHOTO_FILTER_CSS, photoUrl, slotPixelRect } from '../lib/imageUtils'
 import type { BookSize, Page, Photo } from '../types'
-
-const FILTER_CSS: Record<string, string> = {
-  bw: 'grayscale(1)',
-  sepia: 'sepia(0.75) saturate(1.1)',
-}
 
 const ADVANCE_MS = 1500
 const MAX_W = 640
@@ -186,7 +181,7 @@ export function Slideshow({ pages, photos, size, title, startIndex, onClose }: S
                         width: '100%',
                         height: '100%',
                         objectFit: 'cover',
-                        filter: placement?.filter ? FILTER_CSS[placement.filter] : undefined,
+                        filter: placement?.filter ? PHOTO_FILTER_CSS[placement.filter] : undefined,
                       }}
                     />
                   )}

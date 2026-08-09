@@ -44,6 +44,57 @@ const FILTER_CANVAS: Record<string, string> = {
   bw: 'grayscale(1)',
   sepia: 'sepia(0.75) saturate(1.1)',
   negative: 'invert(1) hue-rotate(180deg)',
+  film: 'sepia(0.22) saturate(1.4) contrast(1.08) brightness(1.05) hue-rotate(-8deg)',
+  // 'paper' isn't here on purpose — see drawPaperCrease below.
+}
+
+/**
+ * A reusable mottled-shadow texture, composited over a photo with
+ * 'multiply' to read as light printed on a creased sheet rather than a flat
+ * color adjustment — the print equivalent of imageUtils.ts's PAPER_CREASE_SVG
+ * filter. Built once (a canvas `filter: url(#svgFilterId)` isn't reliably
+ * supported across browsers, so this uses plain composite ops instead) and
+ * reused for every 'paper'-filtered photo in the export.
+ */
+let paperTextureCanvas: HTMLCanvasElement | null = null
+function getPaperTexture(): HTMLCanvasElement {
+  if (paperTextureCanvas) return paperTextureCanvas
+  const size = 512
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const tctx = canvas.getContext('2d')!
+  tctx.fillStyle = '#808080'
+  tctx.fillRect(0, 0, size, size)
+  // A small LCG instead of Math.random so the texture is identical on every
+  // export rather than reshuffling the crease pattern each time.
+  let seed = 42
+  const rand = () => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff
+    return seed / 0x7fffffff
+  }
+  tctx.filter = 'blur(22px)'
+  for (let i = 0; i < 28; i++) {
+    const x = rand() * size
+    const y = rand() * size
+    const r = 40 + rand() * 90
+    tctx.fillStyle = rand() > 0.5 ? 'rgba(60,52,40,0.22)' : 'rgba(255,250,235,0.18)'
+    tctx.beginPath()
+    tctx.arc(x, y, r, 0, Math.PI * 2)
+    tctx.fill()
+  }
+  tctx.filter = 'none'
+  paperTextureCanvas = canvas
+  return canvas
+}
+
+/** Multiplies the paper-crease texture over `rect` — call with the same clip already active as the photo it's shading. */
+function drawPaperCrease(ctx: CanvasRenderingContext2D, rect: { x: number; y: number; w: number; h: number }) {
+  ctx.save()
+  ctx.globalAlpha = 0.28
+  ctx.globalCompositeOperation = 'multiply'
+  ctx.drawImage(getPaperTexture(), rect.x, rect.y, rect.w, rect.h)
+  ctx.restore()
 }
 
 const TAPE_COLORS: Record<string, string> = {
@@ -143,9 +194,10 @@ export async function renderPage(
     ctx.beginPath()
     ctx.rect(bgRect.x, bgRect.y, bgRect.w, bgRect.h)
     ctx.clip()
-    ctx.filter = page.backgroundPhotoFilter ? FILTER_CANVAS[page.backgroundPhotoFilter] : 'none'
+    ctx.filter = page.backgroundPhotoFilter ? (FILTER_CANVAS[page.backgroundPhotoFilter] ?? 'none') : 'none'
     ctx.drawImage(backgroundBitmap, bgRect.x + geo.x, bgRect.y + geo.y, geo.drawWidth, geo.drawHeight)
     ctx.filter = 'none'
+    if (page.backgroundPhotoFilter === 'paper') drawPaperCrease(ctx, bgRect)
     ctx.fillStyle = `rgba(10, 8, 5, ${(page.backgroundDim ?? 35) / 100})`
     ctx.fillRect(bgRect.x, bgRect.y, bgRect.w, bgRect.h)
     ctx.restore()
@@ -174,9 +226,10 @@ export async function renderPage(
     ctx.beginPath()
     ctx.rect(rect.x, rect.y, rect.w, rect.h)
     ctx.clip()
-    ctx.filter = filterKey ? FILTER_CANVAS[filterKey] : 'none'
+    ctx.filter = filterKey ? (FILTER_CANVAS[filterKey] ?? 'none') : 'none'
     ctx.drawImage(bitmap, rect.x + geo.x, rect.y + geo.y, geo.drawWidth, geo.drawHeight)
     ctx.filter = 'none'
+    if (filterKey === 'paper') drawPaperCrease(ctx, rect)
     ctx.restore()
   }
 
@@ -262,6 +315,7 @@ export async function renderPage(
     opts: {
       framed?: boolean
       poster?: boolean
+      posterAttachment?: 'tape' | 'paperclip' | 'none'
       circle?: boolean
       hairline?: boolean
       stamp?: boolean
@@ -297,8 +351,9 @@ export async function renderPage(
         opts.forceFilter,
       )
       ctx.restore()
-      // A poster slot always carries its own tape, same as SlotView's unconditional render.
-      drawAttachment(rect, 'tape', placement.attachmentColor)
+      // Same pin SlotView draws — 'tape' unless the template says otherwise.
+      const attachment = opts.posterAttachment ?? 'tape'
+      if (attachment !== 'none') drawAttachment(rect, attachment, placement.attachmentColor)
       return
     }
     if (opts.circle) {

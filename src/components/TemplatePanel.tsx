@@ -1,73 +1,46 @@
-import { Fragment } from 'react'
+import { useState } from 'react'
 import { foldOrientationForSize, getSize } from '../data/sizes'
-import {
-  getTemplate,
-  MAX_PHOTOS_PER_HALF,
-  SHAPE_FILTERS,
-  STYLE_FILTERS,
-  templateStyleCategory,
-  templatesForHalf,
-  templatesForSize,
-} from '../data/templates'
+import { getTemplate, MAX_PHOTOS_PER_HALF, templatesForHalf, templatesForSize } from '../data/templates'
 import { resolvePageSize } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
-import type { Shape, Template, TemplateFamily } from '../types'
-import { PanelSection } from './PanelSection'
+import type { Template } from '../types'
+import { LayoutPickerModal } from './LayoutPickerModal'
 
-/** A grid of template swatches — reused for both the whole-page picker and each half's own. */
-function TemplateGrid({
-  templates,
-  activeId,
-  maxSlots,
-  onPick,
-}: {
-  templates: Template[]
-  activeId: string | undefined
-  maxSlots: number
-  onPick: (templateId: string) => void
-}) {
-  let lastFamily: TemplateFamily | null = null
+/** A small preview of a template's own slot arrangement, at the size the summary row uses. */
+function TemplateThumb({ template }: { template: Template }) {
   return (
-    <div className="template-grid">
-      {templates.map((template) => {
-        const showFamily = template.family !== lastFamily
-        lastFamily = template.family
-        const isActive = activeId === template.id
-        const tooDense = template.slots.length > maxSlots
+    <span className="icon layout-current-icon" aria-hidden="true">
+      {template.slots.map((slot, i) => (
+        <span
+          key={i}
+          className="s"
+          style={{ left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.w}%`, height: `${slot.h}%` }}
+        />
+      ))}
+    </span>
+  )
+}
 
-        return (
-          <Fragment key={template.id}>
-            {showFamily && <div className="family-label">{template.family}</div>}
-            <button
-              className={`tmpl${isActive ? ' active' : ''}`}
-              onClick={() => onPick(template.id)}
-              disabled={tooDense}
-              title={
-                tooDense
-                  ? `Needs a larger book — ${template.slots.length} photos exceeds this size's limit of ${maxSlots}`
-                  : template.label
-              }
-              aria-pressed={isActive}
-            >
-              <span className="icon">
-                {template.slots.map((slot, i) => (
-                  <span
-                    key={i}
-                    className="s"
-                    style={{
-                      left: `${slot.x}%`,
-                      top: `${slot.y}%`,
-                      width: `${slot.w}%`,
-                      height: `${slot.h}%`,
-                    }}
-                  />
-                ))}
-              </span>
-              <span className="label">{template.label}</span>
-            </button>
-          </Fragment>
-        )
-      })}
+/** The current layout plus a button that opens the full library — the same "show state, hide options" shape the Book Size panel uses. */
+function CurrentLayoutRow({
+  label,
+  template,
+  onOpen,
+}: {
+  label: string
+  template: Template | undefined
+  onOpen: () => void
+}) {
+  return (
+    <div className="layout-current">
+      {template && <TemplateThumb template={template} />}
+      <div className="layout-current-text">
+        <span className="layout-current-label">{label}</span>
+        <span className="layout-current-name">{template?.label ?? 'None'}</span>
+      </div>
+      <button className="btn" onClick={onOpen}>
+        Change
+      </button>
     </div>
   )
 }
@@ -76,28 +49,19 @@ export function TemplatePanel() {
   const sizeId = useStore((s) => s.sizeId)
   const pages = useStore((s) => s.pages)
   const activePageIndex = useStore((s) => s.activePageIndex)
-  const shapeFilter = useStore((s) => s.shapeFilter)
-  const setShapeFilter = useStore((s) => s.setShapeFilter)
-  const styleFilter = useStore((s) => s.styleFilter)
-  const setStyleFilter = useStore((s) => s.setStyleFilter)
   const applyTemplate = useStore((s) => s.applyTemplate)
   const applyHalfTemplate = useStore((s) => s.applyHalfTemplate)
   const activeHalfIndex = useStore((s) => s.activeHalfIndex)
   const setActiveHalf = useStore((s) => s.setActiveHalf)
+
+  // Which picker is open, if any — the whole sheet's, or one half's.
+  const [picking, setPicking] = useState<'page' | 'half' | null>(null)
 
   const bookSize = getSize(sizeId)
   const currentPage = pages[activePageIndex]
   // A page's own orientation override changes which templates actually apply
   // to it (an A4 Folded page only ever offers its fold-aware layouts).
   const size = currentPage ? resolvePageSize(currentPage, bookSize) : bookSize
-
-  const byShape = <T extends { fits: Shape[] }>(templates: T[]) =>
-    templates.filter((t) => shapeFilter === 'all' || t.fits.includes(shapeFilter))
-  const byStyle = (templates: Template[]) =>
-    templates.filter((t) => styleFilter === 'all' || templateStyleCategory(t) === styleFilter)
-
-  const visible = byStyle(byShape(templatesForSize(size)))
-  const halfTemplates = byStyle(byShape(templatesForHalf()))
 
   const containerTemplate = currentPage ? getTemplate(currentPage.templateId) : undefined
   const isSplit = Boolean(containerTemplate?.halfSplit && currentPage?.halves)
@@ -106,13 +70,8 @@ export function TemplatePanel() {
   const halfLabels: [string, string] =
     foldOrientation === 'horizontal' ? ['Top half', 'Bottom half'] : ['Left half', 'Right half']
 
-  // The two sheet templates decide how a folded page is divided, so they're
-  // never shape-filtered — filtering them away would strand the page in
-  // whichever mode it's already in.
-  const sheetTemplates = isFolded ? templatesForSize(size) : visible
-  // Shape chips only drive the general library, which a folded page reaches
-  // through its halves — so they're pointless on an unsplit folded page.
-  const showShapeChips = !isFolded || isSplit
+  const halfTemplateId = currentPage?.halves?.[activeHalfIndex].templateId
+  const halfTemplate = halfTemplateId ? getTemplate(halfTemplateId) : undefined
 
   return (
     <section className="panel">
@@ -133,91 +92,68 @@ export function TemplatePanel() {
         ) : (
           <>
             Up to <span className="mono">{size.maxPhotosPerPage}</span> photos per page at this size.
-            Filter by shape and mix them freely across the book.
+            Mix them freely across the book.
           </>
         )}
       </p>
 
-      <PanelSection title="Choose a template" defaultOpen>
-        {showShapeChips && (
-          <div className="shape-chips">
-            {SHAPE_FILTERS.map((shape) => (
+      <CurrentLayoutRow
+        label={isFolded ? 'The sheet' : 'Current layout'}
+        template={containerTemplate}
+        onOpen={() => setPicking('page')}
+      />
+
+      {/* One half at a time — showing both at once made for a very long panel
+          and easy mis-clicks into the wrong half. */}
+      {isSplit && currentPage?.halves && (
+        <div className="half-panel">
+          <div className="half-tabs" role="tablist" aria-label="Which half to lay out">
+            {([0, 1] as const).map((halfIndex) => (
               <button
-                key={shape.id}
-                className={`shape-chip${shapeFilter === shape.id ? ' active' : ''}`}
-                data-shape={shape.id}
-                onClick={() => setShapeFilter(shape.id)}
-                aria-pressed={shapeFilter === shape.id}
+                key={halfIndex}
+                role="tab"
+                className={`half-tab${activeHalfIndex === halfIndex ? ' active' : ''}`}
+                aria-selected={activeHalfIndex === halfIndex}
+                onClick={() => setActiveHalf(halfIndex)}
               >
-                {shape.id !== 'all' && <span className="glyph" />}
-                {shape.label}
+                {halfLabels[halfIndex]}
               </button>
             ))}
           </div>
-        )}
-
-        {showShapeChips && (
-          <div className="style-chips">
-            {STYLE_FILTERS.map((style) => (
-              <button
-                key={style.id}
-                className={`style-chip${styleFilter === style.id ? ' active' : ''}`}
-                onClick={() => setStyleFilter(style.id)}
-                aria-pressed={styleFilter === style.id}
-              >
-                {style.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {isFolded ? (
-          <>
-            <div className="sheet-panel">
-              <p className="layout-section-title">The sheet</p>
-              <TemplateGrid
-                templates={sheetTemplates}
-                activeId={currentPage?.templateId}
-                maxSlots={size.maxPhotosPerPage}
-                onPick={applyTemplate}
-              />
-            </div>
-
-            {/* One half at a time — showing both grids at once made for a very
-                long panel and easy mis-clicks into the wrong half. */}
-            {isSplit && currentPage?.halves && (
-              <div className="half-panel">
-                <div className="half-tabs" role="tablist" aria-label="Which half to lay out">
-                  {([0, 1] as const).map((halfIndex) => (
-                    <button
-                      key={halfIndex}
-                      role="tab"
-                      className={`half-tab${activeHalfIndex === halfIndex ? ' active' : ''}`}
-                      aria-selected={activeHalfIndex === halfIndex}
-                      onClick={() => setActiveHalf(halfIndex)}
-                    >
-                      {halfLabels[halfIndex]}
-                    </button>
-                  ))}
-                </div>
-                <TemplateGrid
-                  templates={halfTemplates}
-                  activeId={currentPage.halves[activeHalfIndex].templateId}
-                  maxSlots={MAX_PHOTOS_PER_HALF}
-                  onPick={(templateId) => applyHalfTemplate(activePageIndex, activeHalfIndex, templateId)}
-                />
-              </div>
-            )}
-          </>
-        ) : (
-          <TemplateGrid
-            templates={visible}
-            activeId={currentPage?.templateId}
-            maxSlots={size.maxPhotosPerPage}
-            onPick={applyTemplate}
+          <CurrentLayoutRow
+            label={halfLabels[activeHalfIndex]}
+            template={halfTemplate}
+            onOpen={() => setPicking('half')}
           />
-        )}
-      </PanelSection>
+        </div>
+      )}
+
+      {picking === 'page' && (
+        <LayoutPickerModal
+          templates={templatesForSize(size)}
+          activeId={currentPage?.templateId}
+          maxSlots={size.maxPhotosPerPage}
+          // The two sheet templates decide how a folded page is divided, so
+          // they're never filtered — filtering them away would strand the page
+          // in whichever mode it's already in.
+          showFilters={!isFolded}
+          title={isFolded ? 'Choose a sheet layout' : 'Choose a layout'}
+          onPick={applyTemplate}
+          onClose={() => setPicking(null)}
+        />
+      )}
+
+      {picking === 'half' && (
+        <LayoutPickerModal
+          templates={templatesForHalf()}
+          activeId={halfTemplateId}
+          maxSlots={MAX_PHOTOS_PER_HALF}
+          showFilters
+          title={`Choose a layout — ${halfLabels[activeHalfIndex].toLowerCase()}`}
+          onPick={(templateId) => applyHalfTemplate(activePageIndex, activeHalfIndex, templateId)}
+          onClose={() => setPicking(null)}
+        />
+      )}
     </section>
   )
 }

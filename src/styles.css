@@ -469,27 +469,73 @@ input:focus-visible,
 }
 
 /* compact "current size" summary, shown instead of the full grid */
-.size-current {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 10px 12px;
+/* ---- Top bar overflow menu ---- */
+.topbar-more {
+  position: relative;
 }
 
-.size-current-text {
+.topbar-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 45;
+  min-width: 190px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  min-width: 0;
+  padding: 5px;
+  background: var(--linen);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.12),
+    0 14px 34px -14px rgba(0, 0, 0, 0.4);
 }
 
-.size-current-text .name {
+.topbar-menu button {
+  border: none;
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-family: inherit;
+}
+
+.topbar-menu button:hover:not(:disabled) {
+  background: var(--paper);
+}
+
+.topbar-menu button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.topbar-menu button.danger {
+  color: #a8483f;
+}
+
+.size-panel-compact {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+}
+
+.size-compact-name {
   font-size: 12.5px;
   font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.size-compact-dims {
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-left: auto;
+  flex: none;
 }
 
 .size-picker-card {
@@ -1537,6 +1583,116 @@ input:focus-visible,
 }
 
 /* ---- Template picker ---- */
+/* ---- Collapsible styling rows (Selected Photo) ---- */
+.inspector-fold {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.inspector-fold-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  background: var(--linen);
+  border: none;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: left;
+}
+
+.inspector-fold-head:hover {
+  background: var(--paper);
+}
+
+.inspector-fold-head .val {
+  margin-left: auto;
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inspector-fold-head .chev {
+  font-size: 9px;
+  color: var(--ink-soft);
+  transition: transform 0.15s ease;
+  flex: none;
+}
+
+.inspector-fold.open .inspector-fold-head .chev {
+  transform: rotate(90deg);
+}
+
+.inspector-fold-body {
+  padding: 2px 10px 10px;
+}
+
+/* ---- Layout panel: current layout summary ---- */
+.layout-current {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.layout-current-icon {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+}
+
+.layout-current-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.layout-current-label {
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.layout-current-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- Layout picker modal ---- */
+.layout-picker-card {
+  width: min(920px, 92vw);
+}
+
+.layout-picker-filters {
+  flex: 0 0 auto;
+}
+
+.layout-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 12px;
+  align-items: start;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
 .shape-chips {
   display: flex;
   gap: 6px;
@@ -1658,12 +1814,6 @@ input:focus-visible,
   display: flex;
   flex-direction: column;
   gap: 0;
-}
-
-.template-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
 }
 
 .half-tabs {
@@ -2309,15 +2459,72 @@ kbd {
   gap: 20px;
 }
 
+/* Sized to the page so the outgoing and incoming pages can stack exactly. */
 .slideshow-stage {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
+  flex: 0 0 auto;
 }
 
 .slideshow-page {
+  position: absolute;
+  inset: 0;
   border-radius: 4px;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+}
+
+/*
+ * The incoming page fades up over the outgoing one, which just sits still
+ * underneath — both are opaque, so covering one with the other reads as a
+ * crossfade without needing to animate them in opposite directions.
+ * Duration is mirrored by FADE_MS in Slideshow.tsx.
+ */
+.slideshow-page.entering {
+  animation: slideshow-fade 700ms ease both;
+}
+
+@keyframes slideshow-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slideshow-page.entering {
+    animation: none;
+  }
+}
+
+.slideshow-sep {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.25);
+  margin: 0 4px;
+}
+
+.slideshow-speed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.slideshow-speed-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.slideshow-speed input[type='range'] {
+  width: 96px;
+  accent-color: #fff;
+}
+
+.slideshow-speed-value {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  width: 34px;
+  text-align: right;
 }
 
 .slideshow-page .slots {
@@ -2986,17 +3193,17 @@ kbd {
   margin-bottom: 4px;
 }
 
-.doodle-pad {
-  margin-top: 8px;
-  padding: 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--page-stock);
+/* Sized to the viewport rather than the sidebar — the whole point of moving
+   the pad into a modal is that it finally has room to draw in. */
+.doodle-card {
+  width: min(620px, 92vw);
 }
 
 .doodle-canvas {
   width: 100%;
+  max-height: min(56vh, 520px);
   aspect-ratio: 1;
+  margin: 0 auto;
   display: block;
   background: #fff;
   border: 1px dashed var(--line);
@@ -3026,8 +3233,42 @@ kbd {
   box-shadow: 0 0 0 2px var(--page-stock), 0 0 0 3px var(--brass);
 }
 
-.doodle-pad .slot-controls {
-  margin-top: 10px;
+.doodle-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px 18px;
+  flex-wrap: wrap;
+  flex: 0 0 auto;
+}
+
+.doodle-tool-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.doodle-tool-label {
+  font-size: 11px;
+  color: var(--ink-soft);
+  flex: none;
+}
+
+.doodle-size-range {
+  width: 96px;
+  accent-color: var(--navy);
+}
+
+/* Shows the actual nib at the actual size and opacity, so the slider means something. */
+.doodle-size-preview {
+  display: block;
+  border-radius: 50%;
+  flex: none;
+}
+
+.doodle-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .doodle-tray {

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { formatDims, getSize } from '../data/sizes'
 import { capacityRange, minPageCount, sizeMinPages, suggestPageCount } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
@@ -38,6 +38,26 @@ export function TopBar({
   const canUndo = useStore((s) => s.undoStack.length > 0)
   const canRedo = useStore((s) => s.redoStack.length > 0)
   const [confirmingReset, setConfirmingReset] = useState(false)
+  // Reset and Preview Book are occasional — tucked behind "More" so the bar
+  // isn't ten controls all shouting equally loudly.
+  const [moreOpen, setMoreOpen] = useState(false)
+  const moreRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!moreOpen) return
+    function onDown(e: MouseEvent) {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false)
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMoreOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [moreOpen])
 
   const size = getSize(sizeId)
   const [, maxCapacity] = capacityRange(pages.length, size)
@@ -64,14 +84,6 @@ export function TopBar({
         aria-label="Book title"
         placeholder="Untitled Book"
       />
-
-      <button
-        className="btn btn-quiet"
-        onClick={() => setConfirmingReset(true)}
-        title="Delete every photo and page, and start a new book"
-      >
-        Reset
-      </button>
 
       <div className="topbar-group">
         <button
@@ -151,18 +163,48 @@ export function TopBar({
           ▶ Play
         </button>
 
-        <button
-          className="btn"
-          onClick={onPreview}
-          disabled={previewing || pages.length === 0}
-          title="Download an image showing every page's spot in the book, in order"
-        >
-          {previewing ? 'Rendering…' : '⊞ Preview Book'}
-        </button>
-
         <button className="btn-primary" onClick={onExport} disabled={exporting}>
           {exporting ? 'Exporting…' : 'Export PDF'}
         </button>
+
+        <div className="topbar-more" ref={moreRef}>
+          <button
+            className="btn"
+            onClick={() => setMoreOpen((v) => !v)}
+            aria-expanded={moreOpen}
+            aria-haspopup="menu"
+            aria-label="More actions"
+            title="More actions"
+          >
+            ⋯
+          </button>
+          {moreOpen && (
+            <div className="topbar-menu" role="menu">
+              <button
+                role="menuitem"
+                onClick={() => {
+                  setMoreOpen(false)
+                  onPreview()
+                }}
+                disabled={previewing || pages.length === 0}
+                title="Download an image showing every page's spot in the book, in order"
+              >
+                {previewing ? 'Rendering…' : '⊞ Preview whole book'}
+              </button>
+              <button
+                role="menuitem"
+                className="danger"
+                onClick={() => {
+                  setMoreOpen(false)
+                  setConfirmingReset(true)
+                }}
+                title="Delete every photo and page, and start a new book"
+              >
+                Reset book…
+              </button>
+            </div>
+          )}
+        </div>
 
         <button
           className="btn theme-toggle"

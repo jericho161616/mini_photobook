@@ -34,6 +34,18 @@ export const NOVELTY_SIZES: BookSize[] = [
   { id: 'polaroid', name: 'Polaroid', widthIn: 3.5, heightIn: 4.2, maxPhotosPerPage: 1 },
 ]
 
+/**
+ * Digital-only, vertical formats sized for a phone screen rather than print.
+ * Instagram Story is the standard 1080×1920 canvas (9:16) — chosen here as
+ * 3.6×6.4in so a 300 DPI export lands on exactly 1080×1920 pixels. The
+ * template library isn't shape-restricted (templatesForSize only filters by
+ * photo count), so every layout up to this size's density already applies
+ * here, same as any other size — nothing template-side to add.
+ */
+export const SOCIAL_SIZES: BookSize[] = [
+  { id: 'ig-story', name: 'Instagram Story', widthIn: 3.6, heightIn: 6.4, maxPhotosPerPage: 4 },
+]
+
 /** The standard 4×6 in photo-lab print, in both orientations. */
 export const PRINT_SIZES: BookSize[] = [
   { id: '4r', name: '4R', widthIn: 4, heightIn: 6, maxPhotosPerPage: 1 },
@@ -62,10 +74,11 @@ export const SIZE_GROUPS: { label: string; sizes: BookSize[] }[] = [
   { label: 'Printer Paper', sizes: PAPER_SIZES },
   { label: 'Photo Prints', sizes: PRINT_SIZES },
   { label: 'Booklet (A4 Folded)', sizes: BOOKLET_SIZES },
+  { label: 'Social', sizes: SOCIAL_SIZES },
   { label: 'Novelty', sizes: NOVELTY_SIZES },
 ]
 
-const ALL_SIZES = [...SIZES, ...PAPER_SIZES, ...PRINT_SIZES, ...BOOKLET_SIZES, ...NOVELTY_SIZES]
+const ALL_SIZES = [...SIZES, ...PAPER_SIZES, ...PRINT_SIZES, ...BOOKLET_SIZES, ...SOCIAL_SIZES, ...NOVELTY_SIZES]
 
 /**
  * The four A4 sizes — flat and folded, each in both orientations — treated as

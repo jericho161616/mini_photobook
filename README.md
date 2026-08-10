@@ -78,6 +78,25 @@ Throughout a post the editor says "slides" where a book says "pages", and shows
 pixels where a book shows inches. Everything else — the templates, the filters,
 frames, tape, stickers, drawing pad, text boxes — is the same editor.
 
+**Seamless carousels.** A layout can be several slides wide. Pick one from the
+Seamless group and the page becomes a single artboard that size; export cuts
+the finished picture into that many images, so a photo lying across a cut
+arrives as two halves on two consecutive slides and swiping reassembles it. The
+cut is a crop of something drawn in one piece, which is why the join is
+pixel-exact rather than nearly right. The editor and the filmstrip draw the
+cuts as dashed guides so you can see what a photo is about to be split by while
+you're still placing it, and one page counts as all of its slides towards the
+20 — a three-slide artboard is labelled 3–5 in the strip.
+
+**Photo layers.** A photo can also be placed on top of a page rather than into
+a slot: drag it anywhere, resize it from the corner, overlap it with others,
+let it hang off the edge, and restack it with bring-to-front and send-to-back.
+Slots are a cage — the template decides where they are and two slots never
+share ground — so this is the only way to get the scattered, overlapping
+collage looks. Add them from the Decorate panel's "Photo layers" section. A
+layer arrives sized to the photo's own shape, so it isn't cropped until you
+crop it, and it carries the same filters, frames and tilt a slotted photo does.
+
 **Sizes across five groups.** Nine standard photobook trims (6×6 up to 14×11),
 the ISO paper sizes a home printer actually takes (A6–A3, including A4
 Landscape), the standard 4R photo-lab print in both orientations, a Polaroid-style
@@ -393,10 +412,26 @@ identical.
 `renderPageCanvas` in `lib/exportPdf.ts` plays the same role one level up: the
 PDF export, the PNG export, and the whole-book overview grid all draw through
 it, so a slide and a page are the same picture at different resolutions rather
-than three drawing paths that can drift apart.
+than three drawing paths that can drift apart. A spanning artboard is drawn
+through it too, at its full strip width, and only cut afterwards — the seam is
+a crop, never a second render.
+
+Two ideas in the codebase are the same shape one level apart, which is worth
+knowing before changing either. `halfSplit` divides one page into independent
+regions; `span` multiplies one page into several output files. And a
+`PhotoBox` is a `TextBox` carrying a picture — which is why photo layers,
+stickers and free text are all handled as "decorations" and share their drag,
+resize and selection behaviour.
 
 ## Ideas not yet built
 
+- A profile-grid planner: the same spanning artboard turned ninety degrees, so
+  photos cross tile boundaries and nine posts assemble into one composition
+- A warning when a photo straddles a cut, so a face never lands on a seam by
+  accident
+- Turning a finished carousel into photobook pages, and back
+- Templates as an importable/exportable file, so layouts can be shared without
+  an account or a server
 - Text/caption blocks on interior pages, not just the cover
 - Background colour or paper stock per book
 - Bleed and safe-area guides for commercial printers (the full-bleed and

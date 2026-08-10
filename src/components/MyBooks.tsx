@@ -40,6 +40,7 @@ function BookCard({ book, onOpen, onRename, onDuplicate, onDelete }: BookCardPro
   const [renaming, setRenaming] = useState(false)
   const [draftTitle, setDraftTitle] = useState(book.project.title)
   const inputRef = useRef<HTMLInputElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (renaming) {
@@ -47,6 +48,24 @@ function BookCard({ book, onOpen, onRename, onDuplicate, onDelete }: BookCardPro
       inputRef.current?.select()
     }
   }, [renaming])
+
+  // Closes on a click elsewhere or Escape, rather than the moment the pointer
+  // leaves — a mouseLeave-only menu snaps shut on the way to its own items.
+  useEffect(() => {
+    if (!menuOpen) return
+    function onDown(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false)
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [menuOpen])
 
   const size = getSize(book.project.sizeId)
 
@@ -97,17 +116,19 @@ function BookCard({ book, onOpen, onRename, onDuplicate, onDelete }: BookCardPro
             </button>
           )}
 
-          <div className="card-actions">
+          <div className="card-actions" ref={menuRef}>
             <button
               className="kebab"
               onClick={() => setMenuOpen((v) => !v)}
-              aria-label="More options"
+              aria-label={`More options for ${book.project.title}`}
               aria-expanded={menuOpen}
+              aria-haspopup="menu"
+              title="Rename, duplicate or delete this book"
             >
               ⋯
             </button>
             {menuOpen && (
-              <div className="menu open" onMouseLeave={() => setMenuOpen(false)}>
+              <div className="menu open" role="menu">
                 <button
                   onClick={() => {
                     setMenuOpen(false)

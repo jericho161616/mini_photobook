@@ -18,6 +18,12 @@
   --brass: #5c7992;
   --brass-soft: #7d97ac;
   --line: #e2e1dd;
+  /* The rail is its own dark surface in both themes — a persistent nav strip
+     that stays put while the drawer beside it swaps content. */
+  --rail: #222326;
+  --rail-ink: #b9bcc0;
+  --rail-ink-on: #ffffff;
+  --rail-active: #34363c;
   --page-stock: #ffffff;
   --shadow: 0 1px 2px rgba(15, 17, 20, 0.05), 0 4px 14px rgba(15, 17, 20, 0.06);
 }
@@ -34,6 +40,10 @@
     --brass: #93acbf;
     --brass-soft: #a9c0d0;
     --line: #343336;
+    --rail: #101113;
+    --rail-ink: #8f9298;
+    --rail-ink-on: #ffffff;
+    --rail-active: #26282d;
     --page-stock: #f4f4f2;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.3);
   }
@@ -50,6 +60,10 @@
   --brass: #93acbf;
   --brass-soft: #a9c0d0;
   --line: #343336;
+  --rail: #101113;
+  --rail-ink: #8f9298;
+  --rail-ink-on: #ffffff;
+  --rail-active: #26282d;
   --page-stock: #f4f4f2;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.3);
 }
@@ -65,6 +79,12 @@
   --brass: #5c7992;
   --brass-soft: #7d97ac;
   --line: #e2e1dd;
+  /* The rail is its own dark surface in both themes — a persistent nav strip
+     that stays put while the drawer beside it swaps content. */
+  --rail: #222326;
+  --rail-ink: #b9bcc0;
+  --rail-ink-on: #ffffff;
+  --rail-active: #34363c;
   --page-stock: #ffffff;
   --shadow: 0 1px 2px rgba(15, 17, 20, 0.05), 0 4px 14px rgba(15, 17, 20, 0.06);
 }
@@ -307,13 +327,177 @@ input:focus-visible,
 }
 
 /* ---- Workspace ---- */
+/*
+ * Rail, drawer, canvas. The two fixed sidebars this replaced were always on
+ * screen and left the page about half the window; the drawer collapses to
+ * nothing, so the canvas can have nearly all of it.
+ */
 .workspace {
   flex: 1 1 auto;
   min-height: 0;
   display: grid;
-  grid-template-columns: 250px minmax(0, 1fr) 240px;
-  gap: 16px;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: 0;
   align-items: stretch;
+}
+
+/* ---- Left icon rail ---- */
+.editor-rail {
+  display: flex;
+  flex-direction: column;
+  width: 68px;
+  flex: none;
+  padding: 8px 0;
+  gap: 2px;
+  background: var(--rail);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow-y: auto;
+}
+
+.rail-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 0 6px;
+  padding: 9px 2px;
+  border: none;
+  border-radius: 9px;
+  background: none;
+  color: var(--rail-ink);
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  transition: background 0.13s, color 0.13s;
+}
+
+.rail-btn svg {
+  width: 19px;
+  height: 19px;
+  display: block;
+}
+
+.rail-btn:hover {
+  color: var(--rail-ink-on);
+  background: var(--rail-active);
+}
+
+.rail-btn.active {
+  color: var(--rail-ink-on);
+  background: var(--rail-active);
+}
+
+.rail-spacer {
+  flex: 1;
+  min-height: 8px;
+}
+
+/* ---- Drawer ---- */
+.editor-drawer {
+  display: flex;
+  flex-direction: column;
+  width: 252px;
+  flex: none;
+  margin-left: 12px;
+  background: var(--linen);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  min-height: 0;
+  transition: width 0.18s ease, margin-left 0.18s ease, opacity 0.14s ease;
+}
+
+.editor-drawer.collapsed {
+  width: 0;
+  margin-left: 0;
+  border-width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editor-drawer {
+    transition: none;
+  }
+}
+
+.drawer-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  padding: 11px 12px 9px;
+  border-bottom: 1px solid var(--line);
+}
+
+.drawer-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.drawer-collapse {
+  margin-left: auto;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 5px;
+  background: none;
+  color: var(--ink-soft);
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.drawer-collapse svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.drawer-collapse:hover {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.drawer-body {
+  flex: 1;
+  min-height: 0;
+  /* Fixed so the panels inside don't reflow while the drawer animates shut. */
+  min-width: 252px;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+/* Panels sit directly in the drawer now — their own card chrome would be a
+   box inside a box. */
+.drawer-body > .panel {
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+.drawer-body > .panel > h2 {
+  display: none;
+}
+
+/* Book size is its own drawer section now, so the compact inline row it used
+   in the old sidebar would read as a stray pill. */
+.drawer-body > .size-panel-compact {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 12px;
+}
+
+.canvas-area {
+  margin-left: 12px;
 }
 
 .panel {
@@ -324,84 +508,12 @@ input:focus-visible,
   box-shadow: none;
 }
 
-.sidebar {
+/* The photo tray is the dominant content in its drawer, so it takes whatever
+   height is left rather than scrolling in a small box with space idle below. */
+.drawer-body > .panel.panel-grow {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  min-width: 0;
-  min-height: 0;
-  overflow-y: auto;
-  padding-right: 2px;
-}
-
-.sidebar > .panel {
-  flex: 0 0 auto;
-}
-
-/* The photo panel is the dominant content in its sidebar, so it takes
-   whatever height the other (compact) panels leave behind instead of
-   scrolling in a small fixed box while that space sits empty below it. */
-.sidebar > .panel.panel-grow {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-/*
- * The tabbed right sidebar (Photo/Note/Layout/Decorate) is one card with its
- * own tab row pinned at the top — overflow: hidden here so the tab row can
- * never scroll out of reach; .tab-content is the part that actually scrolls
- * when whichever panel is open (the doodle pad, say) runs long.
- */
-.sidebar-tabbed {
-  overflow: hidden;
-  padding-right: 0;
-  background: var(--linen);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  box-shadow: none;
-  gap: 0;
-}
-
-.sidebar-tabbed .tab-row {
-  display: flex;
-  flex: 0 0 auto;
-  border-bottom: 1px solid var(--line);
-}
-
-.sidebar-tabbed .tab-btn {
-  flex: 1;
-  padding: 11px 4px;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--ink-soft);
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-}
-
-.sidebar-tabbed .tab-btn.active {
-  color: var(--navy);
-  border-bottom-color: var(--brass);
-  background: var(--page-stock);
-}
-
-.sidebar-tabbed .tab-content {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 14px;
-}
-
-/* The active panel sits directly in the tab card, so it drops its own
-   card chrome rather than nesting a card inside a card. */
-.sidebar-tabbed .tab-content > .panel {
-  background: none;
-  border: none;
-  box-shadow: none;
-  padding: 0;
+  min-height: 100%;
 }
 
 .panel h2 .count {

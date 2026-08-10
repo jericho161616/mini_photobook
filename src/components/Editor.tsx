@@ -4,15 +4,17 @@ import { exportBookOverview, exportToPdf } from '../lib/exportPdf'
 import type { ThemeChoice } from '../lib/theme'
 import { useStore } from '../state/useStore'
 import { ContextualToolbar } from './ContextualToolbar'
+import { EditorDrawer } from './EditorDrawer'
+import { EditorRail, type RailSection } from './EditorRail'
 import { ExportRangeModal } from './ExportRangeModal'
 import { Filmstrip } from './Filmstrip'
 import { PhotoLibrary } from './PhotoLibrary'
-import { PhotoTray } from './PhotoTray'
-import { RightSidebarTabs } from './RightSidebarTabs'
-import { SizePanel } from './SizePanel'
 import { Slideshow } from './Slideshow'
 import { SpreadCanvas } from './SpreadCanvas'
 import { TopBar } from './TopBar'
+
+/** Remembered across sessions: whoever closes the panel to get room usually wants it to stay closed. */
+const DRAWER_OPEN_KEY = 'moments.drawerOpen'
 
 interface EditorProps {
   projectId: string
@@ -32,6 +34,8 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
   const title = useStore((s) => s.title)
   const setActivePage = useStore((s) => s.setActivePage)
   const activePageIndex = useStore((s) => s.activePageIndex)
+  const selected = useStore((s) => s.selected)
+  const select = useStore((s) => s.select)
 
   const [exporting, setExporting] = useState(false)
   const [progress, setProgress] = useState({ done: 0, total: 0 })
@@ -40,6 +44,33 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
   const [slideshowOpen, setSlideshowOpen] = useState(false)
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [exportRangeOpen, setExportRangeOpen] = useState(false)
+  const [railSection, setRailSection] = useState<RailSection>('photos')
+  const [drawerOpen, setDrawerOpen] = useState(
+    () => localStorage.getItem(DRAWER_OPEN_KEY) !== 'false',
+  )
+
+  useEffect(() => {
+    localStorage.setItem(DRAWER_OPEN_KEY, String(drawerOpen))
+  }, [drawerOpen])
+
+  // Selecting a photo slot turns the drawer into that photo's controls — the
+  // panel is never a dead end telling you to go click something.
+  const showingSelectedPhoto = selected !== null
+
+  function pickSection(section: RailSection) {
+    // Clicking the section already showing collapses the drawer, the usual
+    // rail-and-drawer behaviour.
+    if (section === railSection && drawerOpen && !showingSelectedPhoto) {
+      setDrawerOpen(false)
+      return
+    }
+    // Asking for a section while a photo is selected means you're done with
+    // that photo — otherwise the drawer would stay on its controls and the
+    // rail click would look ignored.
+    select(null)
+    setRailSection(section)
+    setDrawerOpen(true)
+  }
 
   useEffect(() => {
     void init(projectId)
@@ -126,14 +157,17 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
       )}
 
       <div className="workspace">
-        <aside className="sidebar">
-          <SizePanel />
-          <PhotoTray onOpenLibrary={() => setLibraryOpen(true)} />
-        </aside>
+        <EditorRail active={railSection} open={drawerOpen && !showingSelectedPhoto} onPick={pickSection} />
+
+        <EditorDrawer
+          section={railSection}
+          open={drawerOpen}
+          showingSelectedPhoto={showingSelectedPhoto}
+          onOpenLibrary={() => setLibraryOpen(true)}
+          onCollapse={() => setDrawerOpen(false)}
+        />
 
         <SpreadCanvas photos={photoMap} onOpenLibrary={() => setLibraryOpen(true)} />
-
-        <RightSidebarTabs />
       </div>
 
       <Filmstrip photos={photoMap} />

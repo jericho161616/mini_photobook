@@ -782,6 +782,113 @@ export const TEMPLATES: Template[] = [
       { x: 52, y: 69, w: 48, h: 31 },
     ],
   },
+
+  // ---- Seamless: one artboard cut into several slides ----
+  //
+  // Every rect below is a percentage of the *whole strip*, not of one slide,
+  // and the cuts fall at even fractions of it (a 3-wide strip is cut at 33.3%
+  // and 66.7%). Slots are placed to straddle those numbers on purpose: a
+  // photo lying across a cut arrives as two halves on two consecutive slides,
+  // and swiping reassembles it. That is the entire trick — there is no
+  // special-casing anywhere, only rectangles that happen to overlap a cut.
+  //
+  // All of them bleed, because a margin would draw a visible frame around
+  // each slide and undo the effect.
+  {
+    id: 'seamPano3',
+    label: '1 · Panorama — 3 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 3,
+    bleed: true,
+    // The simplest case, and the one to try first: a single wide photo cut
+    // into three. Best with something genuinely panoramic.
+    slots: [{ x: 0, y: 0, w: 100, h: 100 }],
+  },
+  {
+    id: 'seamPano2',
+    label: '1 · Panorama — 2 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 2,
+    bleed: true,
+    slots: [{ x: 0, y: 0, w: 100, h: 100 }],
+  },
+  {
+    id: 'seamBand3',
+    label: '4 · Band — 3 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 3,
+    bleed: true,
+    // A wide photo running the full height behind, with three portraits laid
+    // over the middle band. The second and third straddle the two cuts.
+    slots: [
+      { x: 0, y: 0, w: 30, h: 100 },
+      { x: 24, y: 18, w: 22, h: 64 },
+      { x: 52, y: 12, w: 24, h: 76 },
+      { x: 78, y: 20, w: 22, h: 60 },
+    ],
+  },
+  {
+    id: 'seamStagger3',
+    label: '6 · Staggered — 3 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 3,
+    bleed: true,
+    // Two rows at different heights, offset so the seams land inside photos
+    // rather than in the gaps between them.
+    slots: [
+      { x: 0, y: 4, w: 24, h: 52 },
+      { x: 26, y: 14, w: 26, h: 52 },
+      { x: 54, y: 2, w: 22, h: 54 },
+      { x: 78, y: 12, w: 22, h: 52 },
+      { x: 8, y: 60, w: 30, h: 38 },
+      { x: 44, y: 68, w: 34, h: 32 },
+    ],
+  },
+  {
+    id: 'seamFilm3',
+    label: '6 · Film Strip — 3 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 3,
+    bleed: true,
+    // An even run of frames at one height, like a contact strip unrolled
+    // across the whole carousel. Every seam falls mid-frame.
+    slots: [
+      { x: 1, y: 26, w: 15, h: 48 },
+      { x: 17.5, y: 26, w: 15, h: 48 },
+      { x: 34, y: 26, w: 15, h: 48 },
+      { x: 50.5, y: 26, w: 15, h: 48 },
+      { x: 67, y: 26, w: 15, h: 48 },
+      { x: 83.5, y: 26, w: 15, h: 48 },
+    ],
+  },
+  {
+    id: 'seamMinimal3',
+    label: '4 · Quiet Band — 3 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 3,
+    bleed: true,
+    // The minimalist read: small photos in a narrow band with most of the
+    // frame left empty, so the ground does the work. Pair it with a page
+    // background colour from the Decorate panel.
+    slots: [
+      { x: 4, y: 38, w: 12, h: 24 },
+      { x: 27, y: 30, w: 18, h: 40 },
+      { x: 56, y: 36, w: 13, h: 28 },
+      { x: 78, y: 32, w: 17, h: 36 },
+    ],
+  },
 ]
 
 export const SHAPE_FILTERS: { id: Shape | 'all'; label: string }[] = [
@@ -798,7 +905,7 @@ export const SHAPE_FILTERS: { id: Shape | 'all'; label: string }[] = [
  * from each template's own existing fields rather than a new one on
  * `Template`, so this is purely a browsing aid, not a data change.
  */
-export type StyleCategory = 'classic' | 'grids' | 'overlays' | 'text' | 'novelty'
+export type StyleCategory = 'seamless' | 'classic' | 'grids' | 'overlays' | 'text' | 'novelty'
 
 const GRID_IDS = new Set([
   'grid4',
@@ -818,6 +925,9 @@ const NOVELTY_IDS = new Set(['polaroid', 'polaroidNote', 'polaroidStrip', 'confe
 const TEXT_FORWARD_CAPTION_STYLES = new Set<Template['captionStyle']>(['quote', 'divider', 'stamp', 'ruled'])
 
 export function templateStyleCategory(template: Template): StyleCategory {
+  // Spanning comes first: how many slides a layout covers matters more than
+  // what it puts on them, and it's the one thing you can't get any other way.
+  if (template.span && template.span > 1) return 'seamless'
   if (template.decoration) return 'overlays'
   if (GRID_IDS.has(template.id)) return 'grids'
   if (NOVELTY_IDS.has(template.id)) return 'novelty'
@@ -827,6 +937,7 @@ export function templateStyleCategory(template: Template): StyleCategory {
 
 export const STYLE_FILTERS: { id: StyleCategory | 'all'; label: string }[] = [
   { id: 'all', label: 'All styles' },
+  { id: 'seamless', label: 'Seamless' },
   { id: 'classic', label: 'Classic' },
   { id: 'grids', label: 'Grids' },
   { id: 'overlays', label: 'Overlays' },
@@ -864,9 +975,31 @@ export function getTemplate(id: string): Template {
  */
 export function templatesForSize(size: BookSize): Template[] {
   return TEMPLATES.filter((t) => {
-    if (t.slots.length > size.maxPhotosPerPage) return false
+    // A spanning layout's slots are spread over several slides, so its density
+    // is judged per slide rather than against the whole strip at once.
+    const perSlide = t.slots.length / (t.span ?? 1)
+    if (perSlide > size.maxPhotosPerPage) return false
     if (t.onlyFor) return t.onlyFor.includes(size.id)
     return !FOLD_SIZE_IDS.has(size.id)
+  })
+}
+
+/**
+ * Narrows templatesForSize to what this particular page could actually take.
+ * The only thing that gets excluded is a spanning layout wide enough to push
+ * the carousel past its slide limit — offering one and then silently refusing
+ * it would be worse than not offering it.
+ */
+export function templatesForPage(
+  size: BookSize,
+  currentSpan: number,
+  otherSlides: number,
+  maxSlides: number,
+): Template[] {
+  return templatesForSize(size).filter((t) => {
+    const span = t.span ?? 1
+    if (span === currentSpan) return true
+    return otherSlides + span <= maxSlides
   })
 }
 

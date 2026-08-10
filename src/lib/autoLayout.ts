@@ -142,8 +142,16 @@ function makePage(templateId: string, photos: (Placement | null)[] = []): Page {
  * Split at Fold page saved by an older build still opens with its halves.
  */
 export function normalizePages(pages: Page[]): Page[] {
-  return pages.map((page) => {
-    if (!getTemplate(page.templateId).halfSplit) return page
+  return pages.map((original) => {
+    // The template is the authority on how wide a page is; spanSlides is only
+    // a copy kept for arithmetic. Re-derive it so a page saved before spanning
+    // existed, or by a build whose templates have since changed, still opens
+    // at the width its layout expects.
+    const template = getTemplate(original.templateId)
+    const span = template.span && template.span > 1 ? template.span : undefined
+    const page = span === original.spanSlides ? original : { ...original, spanSlides: span }
+
+    if (!template.halfSplit) return page
     if (!page.halves) return { ...page, halves: seededHalves(page.placements[0], page.placements[1]) }
     // Halves saved before per-half notes existed have no text of their own.
     const [a, b] = page.halves
@@ -169,9 +177,12 @@ export function applyTemplateToPage(page: Page, templateId: string): Page {
 
   const photos = pagePlacements(page).filter((p): p is Placement => p !== null)
   const placements = template.slots.map((_, i) => photos[i] ?? null)
-  const { halves: _drop, ...withoutHalves } = page
+  const { halves: _drop, spanSlides: _dropSpan, ...withoutHalves } = page
   const next: Page = { ...withoutHalves, templateId, placements }
 
+  // A spanning template widens the page; leaving one narrows it back, which is
+  // why spanSlides is dropped above rather than carried over.
+  if (template.span && template.span > 1) next.spanSlides = template.span
   if (template.halfSplit) next.halves = seededHalves(photos[0], photos[1])
   return next
 }
@@ -358,6 +369,47 @@ export function fitPageToSize(page: Page, size: BookSize): Page {
 export function resolvePageSize(page: Page, bookSize: BookSize): BookSize {
   if (!page.sizeId) return bookSize
   return getSize(page.sizeId)
+}
+
+/** How many slides this one page cuts into — 1 for everything but a spanning artboard. */
+export function spanOf(page: Page): number {
+  return Math.max(1, Math.round(page.spanSlides ?? 1))
+}
+
+/**
+ * The canvas a page is actually composed on. For an ordinary page that's just
+ * its size; for a spanning artboard it's that size repeated sideways, since
+ * the whole strip is drawn as one picture and cut afterwards.
+ *
+ * Everything downstream — the editor's aspect ratio, the filmstrip thumbnail,
+ * the render — reads the artboard, so a slot rect stays a plain percentage of
+ * whatever it sits on and no code has to know about seams to place a photo.
+ */
+export function artboardSize(page: Page, bookSize: BookSize): BookSize {
+  const size = resolvePageSize(page, bookSize)
+  const span = spanOf(page)
+  if (span === 1) return size
+  return {
+    ...size,
+    widthIn: size.widthIn * span,
+    social: size.social ? { w: size.social.w * span, h: size.social.h } : undefined,
+  }
+}
+
+/**
+ * How many images this set of pages exports to — the number that matters for
+ * the carousel cap, since one spanning page can be several slides on its own.
+ */
+export function totalSlides(pages: Page[]): number {
+  return pages.reduce((total, page) => total + spanOf(page), 0)
+}
+
+/**
+ * Where a page's slides start, counting from 1 — so a 3-wide artboard sitting
+ * after two ordinary slides is labelled 3–5 rather than 3.
+ */
+export function firstSlideNumber(pages: Page[], pageIndex: number): number {
+  return totalSlides(pages.slice(0, pageIndex)) + 1
 }
 
 /**

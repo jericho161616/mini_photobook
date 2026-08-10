@@ -1,4 +1,4 @@
-import { resolvePageSize } from './autoLayout'
+import { artboardSize, spanOf, totalSlides } from './autoLayout'
 import { DPI, buildBitmapMaps, renderPageCanvas } from './exportPdf'
 import { zipStore, type ZipEntry } from './zip'
 import type { BookSize, CustomSticker, Page, Photo } from '../types'
@@ -45,6 +45,30 @@ export function slugify(title: string): string {
   return slug || 'post'
 }
 
+/**
+ * Cuts a spanning artboard into the individual slides it's made of. The strip
+ * is drawn once at full width and then copied out in slide-sized pieces, so a
+ * photo lying across a cut simply ends up in both halves — there is no
+ * splitting logic anywhere, only a crop.
+ */
+function sliceArtboard(artboard: HTMLCanvasElement, slides: number): HTMLCanvasElement[] {
+  if (slides <= 1) return [artboard]
+  const width = Math.round(artboard.width / slides)
+  return Array.from({ length: slides }, (_, i) => {
+    const slide = document.createElement('canvas')
+    slide.width = width
+    slide.height = artboard.height
+    const ctx = slide.getContext('2d')
+    if (!ctx) throw new Error('Could not create a drawing context to cut the slides apart')
+    // The last slice takes whatever rounding left over, so N slides always add
+    // back up to the full artboard with no seam of blank pixels at the end.
+    const from = i * width
+    const take = i === slides - 1 ? artboard.width - from : width
+    ctx.drawImage(artboard, from, 0, take, artboard.height, 0, 0, take, artboard.height)
+    return slide
+  })
+}
+
 function canvasToPng(canvas: HTMLCanvasElement): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
@@ -81,32 +105,40 @@ export async function exportSlidesAsPng({
 
   try {
     const slug = slugify(title)
+    // One page is not one slide once artboards can span, so the count that
+    // drives numbering and progress is the number of files, not of pages.
+    const slides = totalSlides(pages)
     // Two digits for a ten-slide carousel, so the files sort in posting order
     // in every file manager rather than going 1, 10, 11, 2.
-    const width = String(startNumber + pages.length - 1).length
+    const width = String(startNumber + slides - 1).length
     const files: { name: string; blob: Blob }[] = []
 
-    for (let i = 0; i < pages.length; i++) {
-      // A page can override the project's size, so each slide's canvas is
-      // resolved individually rather than assumed to match the default.
-      const pageSize = resolvePageSize(pages[i], size)
+    for (const page of pages) {
+      // A page can override the project's size, and a spanning page is drawn
+      // at its full strip width, so both are resolved per page rather than
+      // assumed to match the project default.
+      const board = artboardSize(page, size)
       const canvas = await renderPageCanvas(
-        pages[i],
-        pageSize,
+        page,
+        board,
         photoMap,
         customStickerMap,
         background,
         title,
         DPI,
-        pageSize.social,
+        board.social,
       )
-      files.push({
-        name: `${slug}-${String(startNumber + i).padStart(width, '0')}.png`,
-        blob: await canvasToPng(canvas),
-      })
-      onProgress?.(i + 1, pages.length)
-      // Yield so the progress indicator can actually paint between slides.
-      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      for (const slide of sliceArtboard(canvas, spanOf(page))) {
+        const number = startNumber + files.length
+        files.push({
+          name: `${slug}-${String(number).padStart(width, '0')}.png`,
+          blob: await canvasToPng(slide),
+        })
+        onProgress?.(files.length, slides)
+        // Yield so the progress indicator can actually paint between slides.
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      }
     }
 
     if (files.length === 0) return

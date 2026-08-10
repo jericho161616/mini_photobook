@@ -441,8 +441,16 @@ export function slotPixelRect(
   pageWidth: number,
   pageHeight: number,
   marginRatio: number,
+  /**
+   * How many slides `pageWidth` covers. A margin is a ratio of the page it
+   * sits on, so on a three-slide artboard a naive horizontal margin would
+   * come out three times the vertical one. Dividing by the span measures it
+   * against a single slide instead, and the border stays even all the way
+   * round. Ordinary pages pass nothing and are unaffected.
+   */
+  spanSlides = 1,
 ) {
-  const inset = { x: pageWidth * marginRatio, y: pageHeight * marginRatio }
+  const inset = { x: (pageWidth / spanSlides) * marginRatio, y: pageHeight * marginRatio }
   const innerW = pageWidth - inset.x * 2
   const innerH = pageHeight - inset.y * 2
   return {

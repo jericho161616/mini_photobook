@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { a4FamilyOptions, foldOrientationForSize, getSize, sizeRatio } from '../data/sizes'
-import { resolvePageSize, usedPhotoIds } from '../lib/autoLayout'
+import { artboardSize, resolvePageSize, usedPhotoIds } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
 import type { Page, Photo } from '../types'
 import { PageView } from './PageView'
@@ -142,15 +142,22 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
   }, [undo, redo])
 
   const page: Page | undefined = pages[activePageIndex]
+  // Two different sizes matter here. `pageSize` is one slide — what the fold
+  // guide and the A4 size picker care about. `boardSize` is the whole strip a
+  // spanning layout is composed on, which is what decides the shape on screen.
   const pageSize = page ? resolvePageSize(page, size) : size
+  const boardSize = page ? artboardSize(page, size) : size
 
   const dims = useMemo(() => {
     const availableW = Math.max(160, area.width - PAGE_CHROME_X)
     const availableH = Math.max(160, area.height - PAGE_CHROME_Y)
-    const ratio = sizeRatio(pageSize)
-    const width = Math.min(MAX_PAGE_WIDTH, availableW, availableH * ratio)
+    const ratio = sizeRatio(boardSize)
+    // A three-slide strip is three times as wide as a page, so it gets the
+    // room to match rather than being squeezed into a single page's cap.
+    const maxWidth = MAX_PAGE_WIDTH * Math.sqrt(boardSize.widthIn / pageSize.widthIn)
+    const width = Math.min(maxWidth, availableW, availableH * ratio)
     return { width, height: width / ratio }
-  }, [area, pageSize])
+  }, [area, boardSize, pageSize])
 
   const foldOrientation = foldOrientationForSize(pageSize.id)
   const familyOptions = a4FamilyOptions(pageSize.id)
@@ -229,12 +236,12 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
   // own available space, preserving the page's own aspect ratio.
   const zoomDims = useMemo(() => {
     if (!zoomed) return null
-    const ratio = sizeRatio(pageSize)
-    const maxW = window.innerWidth * 0.86
+    const ratio = sizeRatio(boardSize)
+    const maxW = window.innerWidth * 0.94
     const maxH = window.innerHeight * 0.86
     const width = Math.min(maxW, maxH * ratio)
     return { width, height: width / ratio }
-  }, [zoomed, pageSize])
+  }, [zoomed, boardSize])
 
   /**
    * Clicking bare canvas — not a slot, a decoration, or any control — clears

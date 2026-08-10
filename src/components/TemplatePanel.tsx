@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { foldOrientationForSize, getSize } from '../data/sizes'
-import { getTemplate, MAX_PHOTOS_PER_HALF, templatesForHalf, templatesForSize } from '../data/templates'
-import { resolvePageSize } from '../lib/autoLayout'
+import { getTemplate, MAX_PHOTOS_PER_HALF, templatesForHalf, templatesForPage } from '../data/templates'
+import { maxPagesForSize, resolvePageSize, spanOf, totalSlides } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
 import type { Template } from '../types'
 import { LayoutPickerModal } from './LayoutPickerModal'
@@ -73,6 +73,17 @@ export function TemplatePanel() {
   const halfTemplateId = currentPage?.halves?.[activeHalfIndex].templateId
   const halfTemplate = halfTemplateId ? getTemplate(halfTemplateId) : undefined
 
+  // What the rest of the project already costs in slides, so the picker can
+  // leave out any spanning layout too wide to fit in what's left.
+  const currentSpan = currentPage ? spanOf(currentPage) : 1
+  const otherSlides = totalSlides(pages) - currentSpan
+  const pageTemplates = templatesForPage(
+    size,
+    currentSpan,
+    otherSlides,
+    maxPagesForSize(bookSize),
+  )
+
   return (
     <section className="panel">
       <h2>Layout</h2>
@@ -130,7 +141,7 @@ export function TemplatePanel() {
 
       {picking === 'page' && (
         <LayoutPickerModal
-          templates={templatesForSize(size)}
+          templates={pageTemplates}
           activeId={currentPage?.templateId}
           maxSlots={size.maxPhotosPerPage}
           // The two sheet templates decide how a folded page is divided, so

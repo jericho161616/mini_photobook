@@ -6,7 +6,7 @@
  */
 export type Shape = 'square' | 'tall' | 'wide' | 'instagram'
 
-export type TemplateFamily = 'Minimal' | 'Portfolio' | 'Instagram'
+export type TemplateFamily = 'Minimal' | 'Portfolio' | 'Instagram' | 'Seamless'
 
 /**
  * Every option is either already on every computer (no download, ever) or a
@@ -158,6 +158,20 @@ export interface Template {
    * angle per slot instead of only the second one.
    */
   slotRotations?: number[]
+  /**
+   * How many slides wide this layout is. Undefined (or 1) is the ordinary
+   * case: one page, one output file.
+   *
+   * Above 1 the page becomes a *spanning artboard* — its slots are
+   * percentages of the whole strip rather than of one slide, and the export
+   * cuts the finished render into this many separate images. A photo whose
+   * slot crosses one of those cuts is split across two slides, which is what
+   * makes a carousel read as one continuous picture when you swipe it.
+   *
+   * Same idea as `halfSplit`, one level up: that divides a single page into
+   * regions, this multiplies a single page into files.
+   */
+  span?: number
 }
 
 export interface BookSize {
@@ -263,6 +277,14 @@ export interface Page {
   sizeId?: string
   /** Set only when this page's template is one of the two "Split at Fold" ones. */
   halves?: [HalfLayout, HalfLayout]
+  /**
+   * Set from the template's own `span` — how many slides this one page cuts
+   * into at export. Undefined means one, the ordinary case. Copied onto the
+   * page rather than read from the template every time so that page-count
+   * arithmetic doesn't have to resolve a template to know how much room a
+   * page takes up.
+   */
+  spanSlides?: number
   /** Freely placed decorations — unused while `halves` is set; see HalfLayout. */
   stickers?: Sticker[]
   textBoxes?: TextBox[]

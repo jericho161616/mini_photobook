@@ -1,7 +1,7 @@
 import { DEFAULT_TEXT_STYLE, fontSizeScale, fontStack } from '../data/fonts'
 import { getTemplate } from '../data/templates'
 import { DEFAULT_TAPE_COLOR } from '../components/AttachmentGraphic'
-import { decorationHost, pagePlacements, resolvePageSize } from './autoLayout'
+import { decorationHost, pagePlacements, resolvePageSize, spanOf } from './autoLayout'
 import {
   CIRCLE_BORDER_RATIO,
   CLIP_ASPECT,
@@ -250,6 +250,9 @@ export async function renderPageCanvas(
 
   const template = getTemplate(page.templateId)
   const marginRatio = template.bleed ? 0 : PAGE_MARGIN_RATIO * (page.marginScale ?? 1)
+  // Slot rects on a spanning artboard are percentages of the whole strip, so
+  // only the margin needs to know how wide it is — see slotPixelRect.
+  const span = spanOf(page)
   // A dark page background (the Night preset, or any background photo, which
   // reads busy enough to warrant the same light parchment text as a dark
   // tint) needs light text instead of the usual dark ink, same rule the
@@ -727,7 +730,7 @@ export async function renderPageCanvas(
       const positioned = isOverlaySlot(template, slotIndex)
         ? resolveOverlayPosition(slot, placement?.overlayPosition)
         : slot
-      const rect = slotPixelRect(positioned, pageW, pageH, marginRatio)
+      const rect = slotPixelRect(positioned, pageW, pageH, marginRatio, span)
       drawSlot(rect, placement, {
         ...resolveSlotStyle(template, slotIndex, placement),
         rotationDeg: slotRotationDeg(template, slotIndex, placement),
@@ -740,7 +743,7 @@ export async function renderPageCanvas(
 
   // Mirrors the on-screen caption so the printed cover matches the editor.
   if (template.caption && title.trim()) {
-    const rect = slotPixelRect(template.caption, pageW, pageH, PAGE_MARGIN_RATIO)
+    const rect = slotPixelRect(template.caption, pageW, pageH, PAGE_MARGIN_RATIO, span)
     ctx.fillStyle = captionColor
     ctx.font = `${Math.round(pageH * 0.032)}px Georgia, "Times New Roman", serif`
     ctx.textAlign = 'center'
@@ -750,7 +753,7 @@ export async function renderPageCanvas(
 
   if (template.textSlot && page.text.trim()) {
     drawNote(
-      slotPixelRect(template.textSlot, pageW, pageH, marginRatio),
+      slotPixelRect(template.textSlot, pageW, pageH, marginRatio, span),
       page.text,
       pageH,
       page.textStyle ?? DEFAULT_TEXT_STYLE,

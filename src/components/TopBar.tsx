@@ -6,6 +6,7 @@ import {
   minPageCount,
   sizeMinPages,
   suggestPageCount,
+  totalSlides,
 } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
 import { ResetConfirm } from './ResetConfirm'
@@ -79,7 +80,11 @@ export function TopBar({
   const blockedByLock = pages.length <= minCount && minCount > sizeMinPages(size)
   const canDecrease = pages.length > minCount
   const maxCount = maxPagesForSize(size)
-  const canIncrease = pages.length < maxCount
+  // One page is not always one slide: a spanning artboard exports several.
+  // The number shown, and the ceiling it's checked against, are both slides.
+  const slideCount = totalSlides(pages)
+  const shown = isPost ? slideCount : pages.length
+  const canIncrease = pages.length < maxCount && slideCount < maxCount
 
   return (
     <header className="topbar">
@@ -139,7 +144,7 @@ export function TopBar({
           >
             −
           </button>
-          <span className="mono page-count">{pages.length}</span>
+          <span className="mono page-count">{shown}</span>
           <button
             className="btn page-step"
             onClick={() => setPageCount(pages.length + 1)}
@@ -183,7 +188,7 @@ export function TopBar({
           {exporting
             ? 'Exporting…'
             : isPost
-              ? `Export ${pages.length} PNG${pages.length === 1 ? '' : 's'}`
+              ? `Export ${slideCount} PNG${slideCount === 1 ? '' : 's'}`
               : 'Export PDF'}
         </button>
 

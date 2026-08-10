@@ -1,7 +1,14 @@
 import { Fragment, useState } from 'react'
 import { getSize, sizeRatio } from '../data/sizes'
 import { getTemplate } from '../data/templates'
-import { maxPagesForSize, resolvePageSize, sizeMinPages } from '../lib/autoLayout'
+import {
+  artboardSize,
+  firstSlideNumber,
+  maxPagesForSize,
+  sizeMinPages,
+  spanOf,
+  totalSlides,
+} from '../lib/autoLayout'
 import { photoThumbUrl } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
 import type { Photo } from '../types'
@@ -21,7 +28,10 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
   const isPost = !!size.social
   const unit = isPost ? 'slide' : 'page'
   const maxPages = maxPagesForSize(size)
-  const canInsert = pages.length < maxPages
+  // A spanning artboard is several slides on its own, so what's left is
+  // measured in slides rather than in filmstrip items.
+  const slides = totalSlides(pages)
+  const canInsert = pages.length < maxPages && slides < maxPages
   const canRemove = pages.length > sizeMinPages(size)
 
   const [dragFrom, setDragFrom] = useState<number | null>(null)
@@ -50,12 +60,18 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
       {insertGap(0)}
       {pages.map((page, index) => {
         const template = getTemplate(page.templateId)
-        const ratio = sizeRatio(resolvePageSize(page, size))
-        const height = THUMB_WIDTH / ratio
+        const span = spanOf(page)
+        const ratio = sizeRatio(artboardSize(page, size))
+        // A spanning page gets a proportionally wider thumbnail, so the strip
+        // shows at a glance that one item is three slides rather than one.
+        const width = THUMB_WIDTH * span
+        const height = width / ratio
+        const first = firstSlideNumber(pages, index)
+        const label = span > 1 ? `${first}–${first + span - 1}` : String(first)
         return (
           <Fragment key={page.id}>
             <div className="fs-item">
-            <div className="fs-page-wrap" style={{ width: THUMB_WIDTH, height }}>
+            <div className="fs-page-wrap" style={{ width, height }}>
               <button
                 className={[
                   'fs-page',
@@ -82,7 +98,7 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
                   setDragFrom(null)
                   setDragOver(null)
                 }}
-                aria-label={`${isPost ? 'Slide' : 'Page'} ${index + 1}`}
+                aria-label={`${isPost ? 'Slide' : 'Page'} ${label}`}
                 aria-current={index === activePageIndex}
               >
                 <span className="fs-slots">
@@ -132,6 +148,14 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
                         )
                       })}
                 </span>
+                {span > 1 &&
+                  Array.from({ length: span - 1 }, (_, i) => (
+                    <span
+                      key={`seam-${i}`}
+                      className="fs-seam"
+                      style={{ left: `${((i + 1) / span) * 100}%` }}
+                    />
+                  ))}
               </button>
               <button
                 className="fs-lock"
@@ -158,7 +182,7 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
                 </button>
               )}
             </div>
-            <span className="fs-num mono">{index + 1}</span>
+            <span className="fs-num mono">{label}</span>
             </div>
             {insertGap(index + 1)}
           </Fragment>

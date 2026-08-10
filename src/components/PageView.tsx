@@ -1,6 +1,6 @@
 import { DEFAULT_TEXT_STYLE, fontSizeScale, fontStack } from '../data/fonts'
 import { getTemplate } from '../data/templates'
-import { decorationHost } from '../lib/autoLayout'
+import { decorationHost, spanOf } from '../lib/autoLayout'
 import { PAGE_MARGIN_RATIO } from '../lib/exportPdf'
 import {
   isDarkColor,
@@ -121,11 +121,14 @@ export function PageView({
 
   const template = getTemplate(page.templateId)
   const marginRatio = template.bleed ? 0 : PAGE_MARGIN_RATIO * (page.marginScale ?? 1)
+  // On a spanning artboard `width` covers several slides, so the margin is
+  // measured against one of them — see slotPixelRect.
+  const span = spanOf(page)
   const captionRect = template.caption
-    ? slotPixelRect(template.caption, width, height, marginRatio)
+    ? slotPixelRect(template.caption, width, height, marginRatio, span)
     : null
   const textRect = template.textSlot
-    ? slotPixelRect(template.textSlot, width, height, marginRatio)
+    ? slotPixelRect(template.textSlot, width, height, marginRatio, span)
     : null
   const backgroundPhoto = page.backgroundPhotoId ? photos.get(page.backgroundPhotoId) : undefined
   // A dark page background (the Night preset, or any background photo — which
@@ -214,6 +217,17 @@ export function PageView({
         </select>
       )}
       {foldOrientation && <div className={`fold-guide ${foldOrientation}`} aria-hidden="true" />}
+
+      {/* Where this artboard will be cut into separate slides. A guide only —
+          it marks the boundary, it doesn't constrain anything, so a photo is
+          free to lie across one. */}
+      {span > 1 && (
+        <div className="seam-guides" aria-hidden="true">
+          {Array.from({ length: span - 1 }, (_, i) => (
+            <span key={i} className="seam-guide" style={{ left: `${((i + 1) / span) * 100}%` }} />
+          ))}
+        </div>
+      )}
       <div className="slots" style={{ inset: 0 }}>
         {captionRect && title.trim() && (
           <div
@@ -381,7 +395,7 @@ export function PageView({
               const positioned = isOverlaySlot(template, slotIndex)
                 ? resolveOverlayPosition(slot, placement?.overlayPosition)
                 : slot
-              const rect = slotPixelRect(positioned, width, height, marginRatio)
+              const rect = slotPixelRect(positioned, width, height, marginRatio, span)
               const photo = placement ? photos.get(placement.photoId) : undefined
               const key = quickPick.keyFor(slotIndex)
               return (

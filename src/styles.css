@@ -1030,6 +1030,25 @@ input:focus-visible,
   transform: translateY(-1px);
 }
 
+/* Where a spanning artboard gets cut into separate slides. Drawn like the
+   fold guide, and for the same reason: it marks a boundary you need to see
+   while composing, and it is never part of the exported picture. */
+.seam-guides {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.seam-guide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 2px dashed var(--brass-soft);
+  transform: translateX(-1px);
+}
+
 .slots {
   position: absolute;
   inset: 9%;
@@ -2028,6 +2047,18 @@ input:focus-visible,
   border-radius: 1px;
 }
 
+.tmpl .icon.spanning {
+  width: 92px;
+}
+
+.tmpl-seam {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1px dashed var(--brass-soft);
+}
+
 .tmpl .label {
   font-size: 10px;
   color: var(--ink-soft);
@@ -2392,6 +2423,18 @@ kbd {
   padding: 0;
   border: none;
   overflow: hidden;
+}
+
+/* One cut line per seam on a spanning page's thumbnail, so the strip shows
+   at a glance which item is more than one slide. */
+.fs-seam {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1px dashed var(--brass-soft);
+  pointer-events: none;
+  z-index: 2;
 }
 
 .fs-page.active {

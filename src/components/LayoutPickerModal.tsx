@@ -112,7 +112,10 @@ export function LayoutPickerModal({
               const showFamily = template.family !== lastFamily
               lastFamily = template.family
               const isActive = activeId === template.id
-              const tooDense = template.slots.length > maxSlots
+              const span = template.span ?? 1
+              // Density is per slide, so a 3-wide strip carrying six photos is
+              // two per slide, not six.
+              const tooDense = template.slots.length / span > maxSlots
               return (
                 <Fragment key={template.id}>
                   {showFamily && <div className="family-label">{template.family}</div>}
@@ -126,11 +129,13 @@ export function LayoutPickerModal({
                     title={
                       tooDense
                         ? `Needs a larger book — ${template.slots.length} photos exceeds this size's limit of ${maxSlots}`
-                        : template.label
+                        : span > 1
+                          ? `${template.label} — one picture across ${span} slides`
+                          : template.label
                     }
                     aria-pressed={isActive}
                   >
-                    <span className="icon">
+                    <span className={`icon${span > 1 ? ' spanning' : ''}`}>
                       {template.slots.map((slot, i) => (
                         <span
                           key={i}
@@ -143,6 +148,14 @@ export function LayoutPickerModal({
                           }}
                         />
                       ))}
+                      {span > 1 &&
+                        Array.from({ length: span - 1 }, (_, i) => (
+                          <span
+                            key={`seam-${i}`}
+                            className="tmpl-seam"
+                            style={{ left: `${((i + 1) / span) * 100}%` }}
+                          />
+                        ))}
                     </span>
                     <span className="label">{template.label}</span>
                   </button>

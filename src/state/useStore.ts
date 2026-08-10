@@ -14,6 +14,7 @@ import {
   removePageAt as removePageFromList,
   resizePages,
   sizeMinPages,
+  totalSlides,
 } from '../lib/autoLayout'
 import * as storage from '../lib/db'
 import { clampOffset, clampZoom, importFiles, releasePhotoUrl } from '../lib/imageUtils'
@@ -395,7 +396,10 @@ export const useStore = create<StoreState>((set, get) => {
     insertPageAt(position) {
       const { pages, sizeId } = get()
       const size = getSize(sizeId)
-      if (pages.length >= maxPagesForSize(size)) return
+      const ceiling = maxPagesForSize(size)
+      // Both counts matter: pages, and the slides they export to — a strip of
+      // spanning artboards runs out of slides long before it runs out of pages.
+      if (pages.length >= ceiling || totalSlides(pages) >= ceiling) return
       recordHistory()
       set({
         pages: insertPage(pages, position, size),
@@ -465,12 +469,18 @@ export const useStore = create<StoreState>((set, get) => {
     },
 
     applyTemplate(templateId) {
-      const { activePageIndex, pages: current } = get()
+      const { activePageIndex, pages: current, sizeId } = get()
       if (current[activePageIndex]?.locked) return
-      recordHistory()
-      mutatePages((pages) =>
-        pages.map((page, i) => (i === activePageIndex ? applyTemplateToPage(page, templateId) : page)),
+      // A spanning layout turns one page into several slides, which can carry
+      // a carousel past the platform's own limit. Refuse rather than export
+      // more images than anyone can post; templatesFitting hides these in the
+      // picker, so this is the backstop, not the message.
+      const next = current.map((page, i) =>
+        i === activePageIndex ? applyTemplateToPage(page, templateId) : page,
       )
+      if (totalSlides(next) > maxPagesForSize(getSize(sizeId))) return
+      recordHistory()
+      mutatePages(() => next)
       set({ selected: null })
     },
 

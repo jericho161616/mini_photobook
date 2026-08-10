@@ -1,16 +1,24 @@
 import { bookShape, getSize } from '../data/sizes'
 import { getTemplate, templatesForSize } from '../data/templates'
-import { MAX_PAGES, MIN_PAGES } from '../types'
+import { MAX_PAGES, MAX_SLIDES, MIN_PAGES } from '../types'
 import type { BookSize, HalfLayout, Page, Photo, Placement, Template } from '../types'
 
-/** A size's own page-count floor — MIN_PAGES unless it declares a lower one (Instagram Story: 1). */
+/** A size's own page-count floor — MIN_PAGES unless it declares a lower one (every social format: 1). */
 export function sizeMinPages(size: BookSize): number {
   return size.minPages ?? MIN_PAGES
 }
 
+/**
+ * A size's own ceiling. A post stops at MAX_SLIDES because that's where
+ * Instagram and Facebook stop accepting them; a book stops at MAX_PAGES.
+ */
+export function maxPagesForSize(size?: BookSize): number {
+  return size?.social ? MAX_SLIDES : MAX_PAGES
+}
+
 export function clampPages(n: number, size?: BookSize): number {
   const min = size ? sizeMinPages(size) : MIN_PAGES
-  return Math.max(min, Math.min(MAX_PAGES, n))
+  return Math.max(min, Math.min(maxPagesForSize(size), n))
 }
 
 /**

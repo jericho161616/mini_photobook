@@ -35,24 +35,69 @@ export const NOVELTY_SIZES: BookSize[] = [
 ]
 
 /**
- * Digital-only, vertical formats sized for a phone screen rather than print.
- * Instagram Story is the standard 1080×1920 canvas (9:16) — chosen here as
- * 3.6×6.4in so a 300 DPI export lands on exactly 1080×1920 pixels. The
- * template library isn't shape-restricted (templatesForSize only filters by
- * photo count), so most layouts up to this size's density already apply here
- * same as any other size — see templates.ts for the few tagged 'tall' (or
- * added outright) specifically for the common story grid layouts.
+ * Digital-only formats sized for a phone screen rather than print. Every one
+ * of them is 3.6in wide, so a 300 DPI export lands on exactly 1080 pixels
+ * across — the width both Instagram and Facebook work in — and the whole
+ * family shares one export path.
+ *
+ * All of them start at a single page: a post is one slide until you add
+ * another, unlike a book that has to be bound at some minimum thickness.
+ *
+ * The template library isn't shape-restricted (templatesForSize only filters
+ * by photo count), so most layouts already apply here the same as anywhere
+ * else — see templates.ts for the ones added specifically for these formats.
  */
 export const SOCIAL_SIZES: BookSize[] = [
   {
+    // 4:5 — the long-standing feed maximum, and what most existing content is
+    // authored at. The safe default.
+    id: 'ig-portrait',
+    name: 'Portrait',
+    widthIn: 3.6,
+    heightIn: 4.5,
+    maxPhotosPerPage: 6,
+    minPages: 1,
+    social: { w: 1080, h: 1350 },
+  },
+  {
+    // 3:4 — matches the shape of a profile-grid tile, so the post isn't
+    // cropped when someone looks at your grid rather than their feed.
+    id: 'ig-portrait-tall',
+    name: 'Tall Portrait',
+    widthIn: 3.6,
+    heightIn: 4.8,
+    maxPhotosPerPage: 6,
+    minPages: 1,
+    social: { w: 1080, h: 1440 },
+  },
+  {
+    id: 'ig-square',
+    name: 'Square',
+    widthIn: 3.6,
+    heightIn: 3.6,
+    maxPhotosPerPage: 6,
+    minPages: 1,
+    social: { w: 1080, h: 1080 },
+  },
+  {
     id: 'ig-story',
-    name: 'Instagram Story',
+    name: 'Story',
     widthIn: 3.6,
     heightIn: 6.4,
     maxPhotosPerPage: 6,
-    // A story is normally one slide at a time, not a bound book — start at a
-    // single page and let the filmstrip's insert control add more on demand.
     minPages: 1,
+    social: { w: 1080, h: 1920 },
+  },
+  {
+    // 1.91:1, the widest a feed post can be. Last in the list on purpose —
+    // it loses the most room on a phone screen of any format here.
+    id: 'ig-landscape',
+    name: 'Landscape',
+    widthIn: 3.6,
+    heightIn: 1.8867,
+    maxPhotosPerPage: 4,
+    minPages: 1,
+    social: { w: 1080, h: 566 },
   },
 ]
 
@@ -88,6 +133,14 @@ export const SIZE_GROUPS: { label: string; sizes: BookSize[] }[] = [
   { label: 'Novelty', sizes: NOVELTY_SIZES },
 ]
 
+/**
+ * The size groups shown on each side of the "photobook or social post?"
+ * choice. Every group is reachable from one of the two, so nothing is hidden
+ * — the split only decides which set you're offered first.
+ */
+export const BOOK_SIZE_GROUPS = SIZE_GROUPS.filter((g) => !g.sizes.some((s) => s.social))
+export const POST_SIZE_GROUPS = SIZE_GROUPS.filter((g) => g.sizes.some((s) => s.social))
+
 const ALL_SIZES = [...SIZES, ...PAPER_SIZES, ...PRINT_SIZES, ...BOOKLET_SIZES, ...SOCIAL_SIZES, ...NOVELTY_SIZES]
 
 /**
@@ -118,6 +171,12 @@ export function a4FamilyOptions(sizeId: string): { id: string; label: string }[]
 /** Size ids for the two A4 Folded sizes — used to restrict fold-only templates. */
 export const FOLD_SIZE_IDS = new Set(BOOKLET_SIZES.map((s) => s.id))
 
+/**
+ * The feed formats — every social size except Story, which is a taller canvas
+ * with its own set of layouts already. Used to scope the feed-only templates.
+ */
+export const FEED_SIZE_IDS = SOCIAL_SIZES.filter((s) => s.id !== 'ig-story').map((s) => s.id)
+
 const FOLD_ORIENTATION_BY_SIZE_ID: Record<string, 'vertical' | 'horizontal'> = {
   'a4-folded-portrait': 'vertical',
   'a4-folded-landscape': 'horizontal',
@@ -133,9 +192,24 @@ export function foldOrientationForSize(sizeId: string): 'vertical' | 'horizontal
 }
 
 export const DEFAULT_SIZE_ID = 'sq-m'
+export const DEFAULT_POST_SIZE_ID = 'ig-portrait'
 
 export function getSize(id: string): BookSize {
   return ALL_SIZES.find((s) => s.id === id) ?? SIZES[1]
+}
+
+/**
+ * True for the digital-only formats — the single switch that turns a project
+ * from a photobook into a social post. Pages become slides, the export writes
+ * PNGs instead of a PDF, and the slide count caps at 20 instead of 30.
+ */
+export function isSocialSize(sizeId: string): boolean {
+  return !!getSize(sizeId).social
+}
+
+/** "1080 × 1350 px" — the dimension that actually matters for a post. */
+export function formatPixels(size: BookSize): string {
+  return size.social ? `${size.social.w} × ${size.social.h} px` : formatDims(size)
 }
 
 export function sizeRatio(size: BookSize): number {

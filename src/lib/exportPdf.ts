@@ -37,7 +37,7 @@ import type {
 } from '../types'
 
 export const PAGE_MARGIN_RATIO = 0.09
-const DPI = 300
+export const DPI = 300
 const JPEG_QUALITY = 0.92
 
 const FILTER_CANVAS: Record<string, string> = {
@@ -195,9 +195,15 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
  * screenshotting the editor, so the output is genuinely 300 DPI instead of an
  * upscaled screen capture. Exported so the book-overview grid can reuse the
  * exact same drawing code at a much lower resolution, since a thumbnail
- * needs to look like the page, not print from it.
+ * needs to look like the page, not print from it — and so the PNG export can
+ * take the canvas before it's been flattened to a lossy JPEG.
+ *
+ * `pixelSize` pins the canvas to exact dimensions instead of deriving them
+ * from inches × DPI. The social formats all work out to the same numbers
+ * either way, but "1080 × 1350" is a promise a platform holds you to, so the
+ * export states it rather than trusting a rounding to land.
  */
-export async function renderPage(
+export async function renderPageCanvas(
   page: Page,
   size: BookSize,
   photoMap: Map<string, ImageBitmap>,
@@ -205,9 +211,10 @@ export async function renderPage(
   background: string,
   title: string,
   dpi: number = DPI,
-): Promise<string> {
-  const pageW = Math.round(size.widthIn * dpi)
-  const pageH = Math.round(size.heightIn * dpi)
+  pixelSize?: { w: number; h: number },
+): Promise<HTMLCanvasElement> {
+  const pageW = pixelSize ? pixelSize.w : Math.round(size.widthIn * dpi)
+  const pageH = pixelSize ? pixelSize.h : Math.round(size.heightIn * dpi)
 
   const canvas = document.createElement('canvas')
   canvas.width = pageW
@@ -755,6 +762,20 @@ export async function renderPage(
     drawDecorations(page, pageW, pageH, 0, 0)
   }
 
+  return canvas
+}
+
+/** The same render, flattened to a JPEG data URL — what the PDF and the overview grid want. */
+export async function renderPage(
+  page: Page,
+  size: BookSize,
+  photoMap: Map<string, ImageBitmap>,
+  customStickerMap: Map<string, ImageBitmap>,
+  background: string,
+  title: string,
+  dpi: number = DPI,
+): Promise<string> {
+  const canvas = await renderPageCanvas(page, size, photoMap, customStickerMap, background, title, dpi)
   return canvas.toDataURL('image/jpeg', JPEG_QUALITY)
 }
 
@@ -769,7 +790,7 @@ function allStickers(page: Page): Sticker[] {
  * once each — shared by the PDF export and the book-overview grid so neither
  * duplicates the other's decoding work.
  */
-async function buildBitmapMaps(
+export async function buildBitmapMaps(
   pages: Page[],
   photos: Photo[],
   customStickers: CustomSticker[],

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { getSize } from '../data/sizes'
+import { formatPixels, getSize } from '../data/sizes'
+import { exportSlidesAsPng } from '../lib/exportImages'
 import { exportBookOverview, exportToPdf } from '../lib/exportPdf'
 import type { ThemeChoice } from '../lib/theme'
 import { useStore } from '../state/useStore'
@@ -90,41 +91,51 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
     return () => window.removeEventListener('keydown', onKey)
   }, [activePageIndex, setActivePage])
 
+  const size = getSize(sizeId)
+  const isPost = !!size.social
+
   const handleExport = useCallback(
     async (fromIndex: number, toIndex: number) => {
       const pagesToExport = pages.slice(fromIndex, toIndex + 1)
       setExporting(true)
       setError(null)
       setProgress({ done: 0, total: pagesToExport.length })
+      const common = {
+        pages: pagesToExport,
+        photos,
+        customStickers,
+        size,
+        title,
+        onProgress: (done: number, total: number) => setProgress({ done, total }),
+      }
       try {
-        await exportToPdf({
-          pages: pagesToExport,
-          photos,
-          customStickers,
-          size: getSize(sizeId),
-          title,
-          onProgress: (done, total) => setProgress({ done, total }),
-        })
+        if (size.social) {
+          // Numbered from where the range started, so slide 3 of the carousel
+          // is still -03 in the file name even when it's the first one exported.
+          await exportSlidesAsPng({ ...common, startNumber: fromIndex + 1 })
+        } else {
+          await exportToPdf(common)
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Export failed')
       } finally {
         setExporting(false)
       }
     },
-    [pages, photos, customStickers, sizeId, title],
+    [pages, photos, customStickers, size, title],
   )
 
   const handlePreview = useCallback(async () => {
     setPreviewing(true)
     setError(null)
     try {
-      await exportBookOverview({ pages, photos, customStickers, size: getSize(sizeId), title })
+      await exportBookOverview({ pages, photos, customStickers, size, title })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Preview failed')
     } finally {
       setPreviewing(false)
     }
-  }, [pages, photos, customStickers, sizeId, title])
+  }, [pages, photos, customStickers, size, title])
 
   if (!ready) {
     return (
@@ -180,6 +191,7 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
       {exportRangeOpen && (
         <ExportRangeModal
           pageCount={pages.length}
+          unit={isPost ? 'slide' : 'page'}
           onClose={() => setExportRangeOpen(false)}
           onExport={(fromIndex, toIndex) => {
             setExportRangeOpen(false)
@@ -192,7 +204,7 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
         <Slideshow
           pages={pages}
           photos={photoMap}
-          size={getSize(sizeId)}
+          size={size}
           title={title}
           startIndex={activePageIndex}
           onClose={() => setSlideshowOpen(false)}
@@ -203,8 +215,9 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
         <div className="overlay" role="status" aria-live="polite">
           <div className="overlay-card">
             <p>
-              Rendering page <span className="mono">{progress.done}</span> of{' '}
-              <span className="mono">{progress.total}</span> at 300 DPI
+              Rendering {isPost ? 'slide' : 'page'} <span className="mono">{progress.done}</span> of{' '}
+              <span className="mono">{progress.total}</span> at{' '}
+              <span className="mono">{isPost ? formatPixels(size) : '300 DPI'}</span>
             </p>
             <div className="progress-track">
               <div

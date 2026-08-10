@@ -1,8 +1,8 @@
 # Moments — Mini Photobook
 
-A local-first photobook layout generator. Point it at a folder of photos, pick a
-trim size, and it lays out a book you can then rearrange by hand and export as a
-print-ready PDF.
+A local-first layout generator for photos. Point it at a folder, pick a size,
+and it lays out something you can rearrange by hand and export — a photobook as
+a print-ready PDF, or a social post as PNGs at exact Instagram dimensions.
 
 Nothing is uploaded. There is no account, no server, and no paid service — the
 photos never leave your machine.
@@ -56,6 +56,27 @@ keystroke by accident. An auto-layout engine exists (the "Re-flow" button)
 for when you want a starting point or want to fill in the rest quickly: it
 picks a template per page by comparing each photo's aspect ratio to the
 shape of the slots available, and it skips any page you've locked.
+
+**Photobook or social post.** Starting a new project asks which of the two
+you're making before it asks anything else, because the answer changes what
+the rest of the app offers. It isn't stored as a setting — the size decides
+everything downstream — so switching a project to an Instagram format later
+turns it into a post, and switching it back to a trim turns it into a book
+again, with the same photos and layouts either way.
+
+**Social posts export as PNGs.** Five formats, each pinned to the exact canvas
+the platform expects: Portrait 1080×1350 (4:5, the safe default), Tall Portrait
+1080×1440 (3:4, the shape of a profile-grid tile, so the post isn't cropped
+when someone browses your grid), Square 1080×1080, Story 1080×1920, and
+Landscape 1080×566. A post starts at one slide and grows to at most 20, which
+is where Instagram and Facebook stop accepting them. Export writes one PNG per
+slide — a single slide downloads on its own, several arrive as one zip named
+after the post, numbered in posting order. PNG rather than JPEG because a slide
+is often flat colour and type, which is exactly what JPEG smears.
+
+Throughout a post the editor says "slides" where a book says "pages", and shows
+pixels where a book shows inches. Everything else — the templates, the filters,
+frames, tape, stickers, drawing pad, text boxes — is the same editor.
 
 **Sizes across five groups.** Nine standard photobook trims (6×6 up to 14×11),
 the ISO paper sizes a home printer actually takes (A6–A3, including A4
@@ -335,10 +356,16 @@ font choice for your own page text, and feature works exactly as before.
 | UI | React 18 + TypeScript + Vite | Fast local dev, no build server |
 | State | Zustand | Small store, no boilerplate |
 | Storage | Dexie (IndexedDB) | Photo blobs and project state, offline |
-| Export | jsPDF | Loaded on demand, only when you export |
+| PDF export | jsPDF | Loaded on demand, only when you export |
+| PNG export | Canvas `toBlob` + a 60-line zip writer | Nothing to add; see `lib/zip.ts` |
 | Editor surface | Plain DOM + CSS | No canvas library needed; crisper text and simpler hit-testing |
 
 All dependencies are MIT or Apache-2.0. `npm audit` reports no vulnerabilities.
+
+Zipping a carousel would normally mean another dependency. `lib/zip.ts` writes
+the format's stored (uncompressed) mode instead, which is about sixty lines —
+PNGs are already DEFLATE-compressed internally, so compressing them a second
+time saves a percent or two and isn't worth a library for.
 
 ### Layout of the source
 
@@ -349,6 +376,8 @@ src/
     autoLayout  page/template assignment and aspect-ratio fitting
     imageUtils  import, measurement, and the shared cover-fit geometry
     exportPdf   300 DPI page rendering and PDF assembly
+    exportImages one PNG per slide at exact pixel size, zipped past the first
+    zip         a minimal stored-only ZIP writer, so no dependency is needed
     db          Dexie schema (photos + projects, scoped by projectId)
   state/
     useStore         the active book's editor state
@@ -360,6 +389,11 @@ src/
 on-screen editor and the PDF exporter — it is the single definition of how a
 photo sits inside its slot, which is what keeps the preview and the print
 identical.
+
+`renderPageCanvas` in `lib/exportPdf.ts` plays the same role one level up: the
+PDF export, the PNG export, and the whole-book overview grid all draw through
+it, so a slide and a page are the same picture at different resolutions rather
+than three drawing paths that can drift apart.
 
 ## Ideas not yet built
 

@@ -3235,6 +3235,80 @@ kbd {
   margin-top: 4px;
 }
 
+/* ---- "What are you making?" — the first step of a new project ---- */
+.kind-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.kind-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 14px 14px 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  text-align: left;
+  color: var(--ink);
+}
+
+.kind-card:hover {
+  border-color: var(--navy-soft);
+}
+
+.kind-card strong {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.kind-card > span:last-child {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+/* A stack of books and a stack of slides, drawn rather than illustrated —
+   the two shapes are the whole difference between the choices. */
+.kind-art {
+  height: 56px;
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.kind-book,
+.kind-slide {
+  display: block;
+  background: var(--page-stock);
+  box-shadow: var(--shadow);
+}
+
+.kind-book {
+  width: 34px;
+  height: 44px;
+  border-left: 3px solid var(--brass);
+}
+
+.kind-book.behind {
+  height: 36px;
+  opacity: 0.5;
+}
+
+.kind-slide {
+  width: 26px;
+  height: 34px;
+}
+
+.kind-slide.second {
+  opacity: 0.6;
+}
+
+.kind-slide.third {
+  opacity: 0.3;
+}
+
 /* ---- Decorate panel ---- */
 .sticker-tray {
   display: grid;

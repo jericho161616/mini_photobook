@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import { formatDims, getSize } from '../data/sizes'
-import { capacityRange, minPageCount, sizeMinPages, suggestPageCount } from '../lib/autoLayout'
+import { formatDims, formatPixels, getSize } from '../data/sizes'
+import {
+  capacityRange,
+  maxPagesForSize,
+  minPageCount,
+  sizeMinPages,
+  suggestPageCount,
+} from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
-import { MAX_PAGES } from '../types'
 import { ResetConfirm } from './ResetConfirm'
 
 interface TopBarProps {
@@ -60,6 +65,10 @@ export function TopBar({
   }, [moreOpen])
 
   const size = getSize(sizeId)
+  // A social format turns the whole bar into a post's vocabulary: slides
+  // rather than pages, pixels rather than inches, PNGs rather than a PDF.
+  const isPost = !!size.social
+  const unit = isPost ? 'slide' : 'page'
   const [, maxCapacity] = capacityRange(pages.length, size)
   const overflowing = photos.length > maxCapacity
   const suggestion = suggestPageCount(photos.length, size)
@@ -69,7 +78,8 @@ export function TopBar({
   // locked page is holding it there.
   const blockedByLock = pages.length <= minCount && minCount > sizeMinPages(size)
   const canDecrease = pages.length > minCount
-  const canIncrease = pages.length < MAX_PAGES
+  const maxCount = maxPagesForSize(size)
+  const canIncrease = pages.length < maxCount
 
   return (
     <header className="topbar">
@@ -107,24 +117,24 @@ export function TopBar({
       </div>
 
       <div className="topbar-group">
-        <span className="meta-label">Size</span>
-        <span className="meta-dims mono">{formatDims(size)}</span>
+        <span className="meta-label">{isPost ? 'Format' : 'Size'}</span>
+        <span className="meta-dims mono">{isPost ? formatPixels(size) : formatDims(size)}</span>
       </div>
 
       <div className="topbar-right">
         <div className="topbar-group page-control">
-          <span className="meta-label">Pages</span>
+          <span className="meta-label">{isPost ? 'Slides' : 'Pages'}</span>
           <button
             className="btn page-step"
             onClick={() => setPageCount(pages.length - 1)}
             disabled={!canDecrease}
-            aria-label="Remove a page"
+            aria-label={`Remove a ${unit}`}
             title={
               blockedByLock
-                ? `Page ${minCount} is locked — unlock it to remove more pages`
+                ? `${isPost ? 'Slide' : 'Page'} ${minCount} is locked — unlock it to remove more`
                 : !canDecrease
-                  ? `Minimum is ${minCount} pages`
-                  : 'Remove a page'
+                  ? `Minimum is ${minCount} ${unit}${minCount === 1 ? '' : 's'}`
+                  : `Remove a ${unit}`
             }
           >
             −
@@ -134,8 +144,14 @@ export function TopBar({
             className="btn page-step"
             onClick={() => setPageCount(pages.length + 1)}
             disabled={!canIncrease}
-            aria-label="Add a page"
-            title={canIncrease ? 'Add a page' : `Maximum is ${MAX_PAGES} pages`}
+            aria-label={`Add a ${unit}`}
+            title={
+              canIncrease
+                ? `Add a ${unit}`
+                : isPost
+                  ? `Instagram and Facebook stop a carousel at ${maxCount} slides`
+                  : `Maximum is ${maxCount} pages`
+            }
           >
             +
           </button>
@@ -147,24 +163,28 @@ export function TopBar({
           disabled={photos.length === 0}
           title={
             overflowing
-              ? `${photos.length} photos need about ${suggestion} pages at this size`
-              : 'Lay the book out again from scratch'
+              ? `${photos.length} photos need about ${suggestion} ${unit}s at this size`
+              : `Lay the ${isPost ? 'post' : 'book'} out again from scratch`
           }
         >
-          {overflowing ? `Re-flow (try ${suggestion} pages)` : 'Re-flow'}
+          {overflowing ? `Re-flow (try ${suggestion} ${unit}s)` : 'Re-flow'}
         </button>
 
         <button
           className="btn"
           onClick={onPlay}
           disabled={pages.length === 0}
-          title="Play through the book as a slideshow"
+          title={isPost ? 'Swipe through the post full screen' : 'Play through the book as a slideshow'}
         >
-          ▶ Play
+          ▶ {isPost ? 'Preview' : 'Play'}
         </button>
 
         <button className="btn-primary" onClick={onExport} disabled={exporting}>
-          {exporting ? 'Exporting…' : 'Export PDF'}
+          {exporting
+            ? 'Exporting…'
+            : isPost
+              ? `Export ${pages.length} PNG${pages.length === 1 ? '' : 's'}`
+              : 'Export PDF'}
         </button>
 
         <div className="topbar-more" ref={moreRef}>
@@ -187,9 +207,13 @@ export function TopBar({
                   onPreview()
                 }}
                 disabled={previewing || pages.length === 0}
-                title="Download an image showing every page's spot in the book, in order"
+                title={
+                  isPost
+                    ? "Download one image showing every slide's spot in the carousel, in order"
+                    : "Download an image showing every page's spot in the book, in order"
+                }
               >
-                {previewing ? 'Rendering…' : '⊞ Preview whole book'}
+                {previewing ? 'Rendering…' : isPost ? '⊞ Preview whole post' : '⊞ Preview whole book'}
               </button>
               <button
                 role="menuitem"

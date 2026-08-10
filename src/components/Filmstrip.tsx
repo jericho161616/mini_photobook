@@ -1,10 +1,10 @@
 import { Fragment, useState } from 'react'
 import { getSize, sizeRatio } from '../data/sizes'
 import { getTemplate } from '../data/templates'
-import { resolvePageSize, sizeMinPages } from '../lib/autoLayout'
+import { maxPagesForSize, resolvePageSize, sizeMinPages } from '../lib/autoLayout'
 import { photoThumbUrl } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
-import { MAX_PAGES, type Photo } from '../types'
+import type { Photo } from '../types'
 
 const THUMB_WIDTH = 72
 
@@ -18,7 +18,10 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
   const insertPageAt = useStore((s) => s.insertPageAt)
   const removePageAt = useStore((s) => s.removePageAt)
   const size = getSize(sizeId)
-  const canInsert = pages.length < MAX_PAGES
+  const isPost = !!size.social
+  const unit = isPost ? 'slide' : 'page'
+  const maxPages = maxPagesForSize(size)
+  const canInsert = pages.length < maxPages
   const canRemove = pages.length > sizeMinPages(size)
 
   const [dragFrom, setDragFrom] = useState<number | null>(null)
@@ -29,8 +32,14 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
       className="fs-insert"
       onClick={() => insertPageAt(position)}
       disabled={!canInsert}
-      aria-label={`Insert a new page here (position ${position + 1})`}
-      title={canInsert ? 'Insert a new page here' : `Maximum is ${MAX_PAGES} pages`}
+      aria-label={`Insert a new ${unit} here (position ${position + 1})`}
+      title={
+        canInsert
+          ? `Insert a new ${unit} here`
+          : isPost
+            ? `Instagram and Facebook stop a carousel at ${maxPages} slides`
+            : `Maximum is ${maxPages} pages`
+      }
     >
       +
     </button>
@@ -73,7 +82,7 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
                   setDragFrom(null)
                   setDragOver(null)
                 }}
-                aria-label={`Page ${index + 1}`}
+                aria-label={`${isPost ? 'Slide' : 'Page'} ${index + 1}`}
                 aria-current={index === activePageIndex}
               >
                 <span className="fs-slots">
@@ -130,8 +139,8 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
                   e.stopPropagation()
                   togglePageLock(index)
                 }}
-                aria-label={page.locked ? `Unlock page ${index + 1}` : `Lock page ${index + 1}`}
-                title={page.locked ? 'Unlock this page' : 'Lock this page'}
+                aria-label={`${page.locked ? 'Unlock' : 'Lock'} ${unit} ${index + 1}`}
+                title={page.locked ? `Unlock this ${unit}` : `Lock this ${unit}`}
               >
                 {page.locked ? '🔒' : '🔓'}
               </button>
@@ -142,8 +151,8 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
                     e.stopPropagation()
                     removePageAt(index)
                   }}
-                  aria-label={`Delete page ${index + 1}`}
-                  title="Delete this page (Ctrl+Z to undo)"
+                  aria-label={`Delete ${unit} ${index + 1}`}
+                  title={`Delete this ${unit} (Ctrl+Z to undo)`}
                 >
                   ×
                 </button>

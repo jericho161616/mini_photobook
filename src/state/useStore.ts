@@ -6,6 +6,7 @@ import {
   autoLayout,
   fitPageToSize,
   insertPage,
+  maxPagesForSize,
   normalizePages,
   placementFor,
   reconcileTemplates,
@@ -16,7 +17,6 @@ import {
 } from '../lib/autoLayout'
 import * as storage from '../lib/db'
 import { clampOffset, clampZoom, importFiles, releasePhotoUrl } from '../lib/imageUtils'
-import { MAX_PAGES } from '../types'
 import type {
   CustomSticker,
   HalfLayout,
@@ -96,7 +96,7 @@ interface StoreState {
   setTitle: (title: string) => void
   setSize: (sizeId: string) => void
   setPageCount: (count: number) => void
-  /** Inserts one new blank page at `position` (shifting later pages back), instead of only ever appending at the end. No-op at MAX_PAGES. */
+  /** Inserts one new blank page at `position` (shifting later pages back), instead of only ever appending at the end. No-op once the size's own ceiling is reached. */
   insertPageAt: (position: number) => void
   /** Removes the single page at `index`, shifting later pages forward. No-op on a locked page or at the book's page-count floor. */
   removePageAt: (index: number) => void
@@ -394,9 +394,9 @@ export const useStore = create<StoreState>((set, get) => {
 
     insertPageAt(position) {
       const { pages, sizeId } = get()
-      if (pages.length >= MAX_PAGES) return
-      recordHistory()
       const size = getSize(sizeId)
+      if (pages.length >= maxPagesForSize(size)) return
+      recordHistory()
       set({
         pages: insertPage(pages, position, size),
         activePageIndex: position,

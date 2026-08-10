@@ -1,4 +1,4 @@
-import { FOLD_SIZE_IDS } from './sizes'
+import { FEED_SIZE_IDS, FOLD_SIZE_IDS } from './sizes'
 import type { BookSize, Shape, Template } from '../types'
 
 /**
@@ -705,6 +705,83 @@ export const TEMPLATES: Template[] = [
       { x: 44, y: 56, w: 22, h: 14 },
     ],
   },
+
+  // ---- Feed formats only — see data/sizes.ts's FEED_SIZE_IDS ----
+  // A carousel slide carries more text than a book page does: the picture
+  // stops the scroll, the words are why anyone swipes. So most of these give
+  // real room to a note rather than treating it as a caption afterthought.
+  {
+    id: 'feedHook',
+    label: '1 · Hook',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    // The opening slide: one photo doing the work, the line underneath saying
+    // what the rest of the carousel is about.
+    slots: [{ x: 0, y: 0, w: 100, h: 66 }],
+    textSlot: { x: 4, y: 72, w: 92, h: 24 },
+    captionStyle: 'centered',
+  },
+  {
+    id: 'feedSplit',
+    label: '1 · Split Note',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    // The workhorse body slide — photo over paragraph, in even halves.
+    slots: [{ x: 0, y: 0, w: 100, h: 50 }],
+    textSlot: { x: 4, y: 56, w: 92, h: 40 },
+  },
+  {
+    id: 'feedQuote',
+    label: '1 · Quote',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    slots: [{ x: 14, y: 4, w: 72, h: 52 }],
+    textSlot: { x: 10, y: 62, w: 80, h: 32 },
+    captionStyle: 'quote',
+  },
+  {
+    id: 'feedDuo',
+    label: '2 · Stacked',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    slots: [
+      { x: 0, y: 0, w: 100, h: 48 },
+      { x: 0, y: 52, w: 100, h: 48 },
+    ],
+  },
+  {
+    id: 'feedTrio',
+    label: '3 · Feature + Pair',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    slots: [
+      { x: 0, y: 0, w: 100, h: 56 },
+      { x: 0, y: 60, w: 48, h: 40 },
+      { x: 52, y: 60, w: 48, h: 40 },
+    ],
+  },
+  {
+    id: 'feedContact',
+    label: '6 · Contact Sheet',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    // The dump slide near the end of a carousel — six frames, even gutters.
+    // Excluded from Landscape on its own, which caps at four photos.
+    slots: [
+      { x: 0, y: 0, w: 48, h: 31 },
+      { x: 52, y: 0, w: 48, h: 31 },
+      { x: 0, y: 34.5, w: 48, h: 31 },
+      { x: 52, y: 34.5, w: 48, h: 31 },
+      { x: 0, y: 69, w: 48, h: 31 },
+      { x: 52, y: 69, w: 48, h: 31 },
+    ],
+  },
 ]
 
 export const SHAPE_FILTERS: { id: Shape | 'all'; label: string }[] = [
@@ -734,6 +811,8 @@ const GRID_IDS = new Set([
   'igStripFeature',
   'igMixedRows',
   'igStaggered',
+  'feedContact',
+  'feedTrio',
 ])
 const NOVELTY_IDS = new Set(['polaroid', 'polaroidNote', 'polaroidStrip', 'confettiScatter', 'igContactStrip'])
 const TEXT_FORWARD_CAPTION_STYLES = new Set<Template['captionStyle']>(['quote', 'divider', 'stamp', 'ruled'])

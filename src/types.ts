@@ -171,6 +171,17 @@ export interface BookSize {
   maxPhotosPerPage: number
   /** Floor for this size's own page count — undefined means the book-wide MIN_PAGES applies. Lets a digital-only size like Instagram Story start (and shrink back down to) a single page. */
   minPages?: number
+  /**
+   * The exact pixel canvas the platform expects, set only on the social
+   * formats. Its presence is also what marks a project as a post rather than
+   * a book: there is deliberately no separate `kind` field, so changing a
+   * project's size is all it takes to move a carousel into a photobook or
+   * back again, and nothing can fall out of sync in between.
+   *
+   * Every social size is 3.6in wide, so a 300 DPI render already lands on
+   * 1080px — these numbers are what the export pins the canvas to regardless.
+   */
+  social?: { w: number; h: number }
 }
 
 export interface Photo {
@@ -287,3 +298,9 @@ export const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000
 
 export const MIN_PAGES = 10
 export const MAX_PAGES = 30
+
+/**
+ * Instagram and Facebook both stop a carousel at 20 images, so a post's
+ * slides are capped lower than a book's pages — see maxPagesForSize.
+ */
+export const MAX_SLIDES = 20

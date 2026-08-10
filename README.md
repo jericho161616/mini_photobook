@@ -88,6 +88,25 @@ cuts as dashed guides so you can see what a photo is about to be split by while
 you're still placing it, and one page counts as all of its slides towards the
 20 — a three-slide artboard is labelled 3–5 in the strip.
 
+There are three ways to use one, and they read very differently:
+
+- **Panorama** puts a single picture behind every cut, in 2, 3, 4 or 5 slides
+  wide. Best with something genuinely wide.
+- **Across the Cuts** puts a separate photo *on* each cut, so the carousel is
+  a set of distinct pictures that happen to be stitched together — each one
+  half on one slide and half on the next. Alternating mixes those with photos
+  sitting whole inside a slide, so every swipe changes what you're looking at.
+- **Mosaic** tiles the whole strip edge to edge with no gutters, in columns of
+  mixed width whose boundaries deliberately don't line up with the cuts. Every
+  slide then opens on a partial photo and closes on another. Mosaic Band floats
+  the same wall with ground above and below, which is where a page background
+  colour from the Decorate panel does most of the work.
+
+Every one of these is placed by arithmetic rather than by eye — a box centred
+on the cut at 33⅓% starts at `33.333 − w/2` — and they all bleed, because a
+page margin would shift the percentages inward and every box would drift off
+its cut.
+
 **Photo layers.** A photo can also be placed on top of a page rather than into
 a slot: drag it anywhere, resize it from the corner, overlap it with others,
 let it hang off the edge, and restack it with bring-to-front and send-to-back.

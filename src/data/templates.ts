@@ -854,21 +854,277 @@ export const TEMPLATES: Template[] = [
   },
   {
     id: 'seamFilm3',
-    label: '6 · Film Strip — 3 slides',
+    label: '5 · Film Strip — 3 slides',
     family: 'Seamless',
     fits: ['instagram'],
     onlyFor: FEED_SIZE_IDS,
     span: 3,
     bleed: true,
-    // An even run of frames at one height, like a contact strip unrolled
-    // across the whole carousel. Every seam falls mid-frame.
+    // An even run of frames, like a contact strip unrolled across the whole
+    // carousel. Five rather than six so the pitch lands a frame *centred* on
+    // each cut — with six, the cuts fall in the gaps between frames and the
+    // whole point is lost.
     slots: [
-      { x: 1, y: 26, w: 15, h: 48 },
-      { x: 17.5, y: 26, w: 15, h: 48 },
-      { x: 34, y: 26, w: 15, h: 48 },
-      { x: 50.5, y: 26, w: 15, h: 48 },
-      { x: 67, y: 26, w: 15, h: 48 },
-      { x: 83.5, y: 26, w: 15, h: 48 },
+      { x: 9.17, y: 26, w: 15, h: 48 },
+      { x: 25.83, y: 26, w: 15, h: 48 }, // centred on the cut at 33⅓%
+      { x: 42.5, y: 26, w: 15, h: 48 },
+      { x: 59.17, y: 26, w: 15, h: 48 }, // centred on the cut at 66⅔%
+      { x: 75.83, y: 26, w: 15, h: 48 },
+    ],
+  },
+  // ---- Across the Cuts ----
+  //
+  // The other way to use a spanning artboard. A panorama puts one picture
+  // behind every cut; these put a *photo* on each cut instead, so a portrait
+  // arrives as its left half on one slide and its right half on the next, and
+  // the swipe completes it. The carousel reads as a set of separate pictures
+  // that happen to be stitched together, rather than one wide one.
+  //
+  // Every rect below is placed by arithmetic, not by eye: a box centred on the
+  // cut at 33⅓% starts at 33.333 − w/2. That only holds because these bleed —
+  // with a page margin, slot percentages are measured inside it and every box
+  // would drift off its cut.
+  {
+    id: 'seamAcross2',
+    label: '1 · Across the Cut — 2 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 2,
+    bleed: true,
+    // The simplest version, and the clearest demonstration: one portrait
+    // sitting squarely over the single cut of a two-slide post.
+    slots: [{ x: 35, y: 19, w: 30, h: 62 }], // centred on the cut at 50%
+  },
+  {
+    id: 'seamAcross3',
+    label: '2 · Across the Cuts — 3 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 3,
+    bleed: true,
+    slots: [
+      { x: 23.83, y: 21, w: 19, h: 58 }, // centred on the cut at 33⅓%
+      { x: 57.17, y: 21, w: 19, h: 58 }, // centred on the cut at 66⅔%
+    ],
+  },
+  {
+    id: 'seamAcross4',
+    label: '3 · Across the Cuts — 4 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 4,
+    bleed: true,
+    slots: [
+      { x: 18, y: 21, w: 14, h: 58 }, // centred on the cut at 25%
+      { x: 43, y: 21, w: 14, h: 58 }, // centred on the cut at 50%
+      { x: 68, y: 21, w: 14, h: 58 }, // centred on the cut at 75%
+    ],
+  },
+  {
+    id: 'seamAcrossStagger3',
+    label: '2 · Across the Cuts, Staggered — 3 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 3,
+    bleed: true,
+    // Same two cuts, but the boxes sit at different heights, so the carousel
+    // rises and falls as you swipe instead of repeating one position.
+    slots: [
+      { x: 22.33, y: 8, w: 22, h: 48 },
+      { x: 55.67, y: 44, w: 22, h: 48 },
+    ],
+  },
+  {
+    id: 'seamAcrossWide3',
+    label: '2 · Wide Across the Cuts — 3 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 3,
+    bleed: true,
+    // Landscape boxes rather than portrait — for photos that are already wide,
+    // where a portrait crop would throw most of the frame away.
+    slots: [
+      { x: 19.83, y: 10, w: 27, h: 40 },
+      { x: 53.17, y: 50, w: 27, h: 40 },
+    ],
+  },
+  {
+    id: 'seamAnchorAcross3',
+    label: '3 · Anchor + Cuts — 3 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 3,
+    bleed: true,
+    // Both ideas at once: one photo running behind the whole carousel, with
+    // two more laid over the cuts. Slots paint in order, so the first is the
+    // ground and the other two sit on it.
+    slots: [
+      { x: 0, y: 0, w: 100, h: 100 },
+      { x: 24.33, y: 25, w: 18, h: 50 },
+      { x: 57.67, y: 25, w: 18, h: 50 },
+    ],
+  },
+  {
+    id: 'seamAltAcross3',
+    label: '4 · Alternating — 3 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 3,
+    bleed: true,
+    // Alternates between photos split across a cut and photos sitting whole
+    // inside one slide, so every swipe changes what you're looking at rather
+    // than showing the same trick four times.
+    slots: [
+      { x: 6, y: 26, w: 17, h: 48 }, // whole, inside slide 1
+      { x: 24.33, y: 10, w: 18, h: 52 }, // across the cut at 33⅓%
+      { x: 57.67, y: 38, w: 18, h: 52 }, // across the cut at 66⅔%
+      { x: 77, y: 26, w: 17, h: 48 }, // whole, inside slide 3
+    ],
+  },
+  {
+    id: 'seamFilm4',
+    label: '7 · Film Strip — 4 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 4,
+    bleed: true,
+    // The longer contact strip. Seven frames at a pitch of 12.5% puts frames
+    // 2, 4 and 6 exactly on the three cuts.
+    slots: [
+      { x: 7, y: 26, w: 11, h: 48 },
+      { x: 19.5, y: 26, w: 11, h: 48 }, // centred on the cut at 25%
+      { x: 32, y: 26, w: 11, h: 48 },
+      { x: 44.5, y: 26, w: 11, h: 48 }, // centred on the cut at 50%
+      { x: 57, y: 26, w: 11, h: 48 },
+      { x: 69.5, y: 26, w: 11, h: 48 }, // centred on the cut at 75%
+      { x: 82, y: 26, w: 11, h: 48 },
+    ],
+  },
+  {
+    id: 'seamPano4',
+    label: '1 · Panorama — 4 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 4,
+    bleed: true,
+    slots: [{ x: 0, y: 0, w: 100, h: 100 }],
+  },
+  {
+    id: 'seamPano5',
+    label: '1 · Panorama — 5 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 5,
+    bleed: true,
+    // As wide as this gets before a phone-sized slide shows almost nothing of
+    // the picture at a time.
+    slots: [{ x: 0, y: 0, w: 100, h: 100 }],
+  },
+  // ---- Mosaics ----
+  //
+  // A third way to use the artboard, and the one furthest from a panorama.
+  // Photos tile the strip edge to edge with no gutters at all, in columns of
+  // mixed width — some running the full height, others split into two. The
+  // tile boundaries deliberately don't line up with the cuts, so every slide
+  // opens on a partial photo and closes on another, and the carousel reads as
+  // one continuous wall of images rather than a set of slides.
+  //
+  // The columns are laid out so each x picks up exactly where the last left
+  // off: that's what makes them touch. Any gap here would show as a seam of
+  // page colour running down the middle of a photo wall.
+  {
+    id: 'seamMosaic3',
+    label: '7 · Mosaic — 3 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 3,
+    bleed: true,
+    slots: [
+      { x: 0, y: 0, w: 28, h: 100 },
+      { x: 28, y: 0, w: 22, h: 58 }, // this column straddles the cut at 33⅓%
+      { x: 28, y: 58, w: 22, h: 42 },
+      { x: 50, y: 0, w: 18, h: 58 }, // and this one the cut at 66⅔%
+      { x: 50, y: 58, w: 18, h: 42 },
+      { x: 68, y: 0, w: 32, h: 52 },
+      { x: 68, y: 52, w: 32, h: 48 },
+    ],
+  },
+  {
+    id: 'seamMosaic5',
+    label: '11 · Mosaic — 5 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 5,
+    bleed: true,
+    // The full wall. Eleven photos over five slides — a whole shoot in one
+    // post, with a full-height portrait anchoring each end and the middle
+    // broken into stacked pairs so the eye has somewhere to rest.
+    slots: [
+      { x: 0, y: 0, w: 17, h: 100 },
+      { x: 17, y: 0, w: 13, h: 55 }, // across the cut at 20%
+      { x: 30, y: 0, w: 11, h: 55 },
+      { x: 17, y: 55, w: 24, h: 45 }, // across the cut at 40%
+      { x: 41, y: 0, w: 12, h: 55 },
+      { x: 41, y: 55, w: 12, h: 45 },
+      { x: 53, y: 0, w: 16, h: 100 }, // across the cut at 60%
+      { x: 69, y: 0, w: 12, h: 62 }, // across the cut at 80%
+      { x: 69, y: 62, w: 12, h: 38 },
+      { x: 81, y: 0, w: 19, h: 52 },
+      { x: 81, y: 52, w: 19, h: 48 },
+    ],
+  },
+  {
+    id: 'seamMosaicBand5',
+    label: '11 · Mosaic Band — 5 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 5,
+    bleed: true,
+    // The same wall, floated as a band with ground above and below instead of
+    // filling the slide. Much quieter, and it gives the post somewhere to
+    // breathe — set a page background colour in the Decorate panel and the
+    // ground becomes part of the design rather than leftover white.
+    slots: [
+      { x: 0, y: 22, w: 17, h: 56 },
+      { x: 17, y: 22, w: 13, h: 31 },
+      { x: 30, y: 22, w: 11, h: 31 },
+      { x: 17, y: 53, w: 24, h: 25 },
+      { x: 41, y: 22, w: 12, h: 31 },
+      { x: 41, y: 53, w: 12, h: 25 },
+      { x: 53, y: 22, w: 16, h: 56 },
+      { x: 69, y: 22, w: 12, h: 35 },
+      { x: 69, y: 57, w: 12, h: 21 },
+      { x: 81, y: 22, w: 19, h: 29 },
+      { x: 81, y: 51, w: 19, h: 27 },
+    ],
+  },
+  {
+    id: 'seamQuietAcross3',
+    label: '2 · Quiet Cuts — 3 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 3,
+    bleed: true,
+    // The minimalist reading of the same idea: small photos on the cuts with
+    // most of the frame left as ground. Set a page background colour in the
+    // Decorate panel and this is the whole look.
+    slots: [
+      { x: 27.33, y: 34, w: 12, h: 32 },
+      { x: 60.67, y: 34, w: 12, h: 32 },
     ],
   },
   {

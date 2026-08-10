@@ -581,6 +581,111 @@ input:focus-visible,
 }
 
 /* compact "current size" summary, shown instead of the full grid */
+/* ---- Reset confirmation ---- */
+/* Doubled up on .overlay-card, which centers its text and is defined later —
+   a paragraph of consequences reads better ranged left. */
+.overlay-card.reset-card {
+  width: min(400px, 92vw);
+  text-align: left;
+}
+
+.reset-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+
+.reset-body {
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+  margin: 0 0 16px;
+}
+
+.reset-body b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.reset-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.reset-field > span {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.reset-field code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: #a8483f;
+  background: rgba(168, 72, 63, 0.1);
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+}
+
+.reset-input {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
+.reset-input:focus {
+  outline: none;
+  border-color: #a8483f;
+  box-shadow: 0 0 0 2px rgba(168, 72, 63, 0.18);
+}
+
+.reset-card .slot-controls {
+  justify-content: flex-end;
+}
+
+/* ---- Top bar icon buttons ---- */
+.btn-icon {
+  width: 30px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.btn-icon svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+/*
+ * Re-flow's overflow warning. It used to live in the label ("Re-flow (try 30
+ * pages)"), which changed the button's width whenever the count crossed the
+ * threshold and shoved the rest of the bar sideways.
+ */
+.btn-icon.has-badge::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #c98a2f;
+  box-shadow: 0 0 0 1.5px var(--linen);
+}
+
 /* ---- Top bar overflow menu ---- */
 .topbar-more {
   position: relative;
@@ -1744,6 +1849,14 @@ input:focus-visible,
 
 .inspector-fold-body {
   padding: 2px 10px 10px;
+}
+
+/* A folded sheet's two layouts, shown side by side rather than behind a picker. */
+.sheet-choice {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 /* ---- Layout panel: current layout summary ---- */

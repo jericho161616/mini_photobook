@@ -21,6 +21,48 @@ function TemplateThumb({ template }: { template: Template }) {
   )
 }
 
+/**
+ * Both sheet layouts side by side.
+ *
+ * A folded sheet only ever has two — split at the fold, or one photo across
+ * the whole thing — so putting them behind a modal hid a binary choice behind
+ * an extra click and a picker built for 55 options.
+ */
+function SheetChoice({
+  templates,
+  activeId,
+  onPick,
+}: {
+  templates: Template[]
+  activeId: string | undefined
+  onPick: (templateId: string) => void
+}) {
+  return (
+    <div className="sheet-choice">
+      {templates.map((t) => (
+        <button
+          key={t.id}
+          className={`tmpl${activeId === t.id ? ' active' : ''}`}
+          onClick={() => onPick(t.id)}
+          aria-pressed={activeId === t.id}
+          title={t.label}
+        >
+          <span className="icon">
+            {t.slots.map((slot, i) => (
+              <span
+                key={i}
+                className="s"
+                style={{ left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.w}%`, height: `${slot.h}%` }}
+              />
+            ))}
+          </span>
+          <span className="label">{t.label}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
 /** The current layout plus a button that opens the full library — the same "show state, hide options" shape the Book Size panel uses. */
 function CurrentLayoutRow({
   label,
@@ -97,11 +139,22 @@ export function TemplatePanel() {
         )}
       </p>
 
-      <CurrentLayoutRow
-        label={isFolded ? 'The sheet' : 'Current layout'}
-        template={containerTemplate}
-        onOpen={() => setPicking('page')}
-      />
+      {isFolded ? (
+        <>
+          <p className="layout-section-title">The sheet</p>
+          <SheetChoice
+            templates={templatesForSize(size)}
+            activeId={currentPage?.templateId}
+            onPick={applyTemplate}
+          />
+        </>
+      ) : (
+        <CurrentLayoutRow
+          label="Current layout"
+          template={containerTemplate}
+          onOpen={() => setPicking('page')}
+        />
+      )}
 
       {/* One half at a time — showing both at once made for a very long panel
           and easy mis-clicks into the wrong half. */}
@@ -133,11 +186,8 @@ export function TemplatePanel() {
           templates={templatesForSize(size)}
           activeId={currentPage?.templateId}
           maxSlots={size.maxPhotosPerPage}
-          // The two sheet templates decide how a folded page is divided, so
-          // they're never filtered — filtering them away would strand the page
-          // in whichever mode it's already in.
-          showFilters={!isFolded}
-          title={isFolded ? 'Choose a sheet layout' : 'Choose a layout'}
+          showFilters
+          title="Choose a layout"
           onPick={applyTemplate}
           onClose={() => setPicking(null)}
         />

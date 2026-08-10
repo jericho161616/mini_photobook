@@ -1,9 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
-import { formatDims, getSize } from '../data/sizes'
+import { getSize } from '../data/sizes'
 import { capacityRange, minPageCount, sizeMinPages, suggestPageCount } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
 import { MAX_PAGES } from '../types'
 import { ResetConfirm } from './ResetConfirm'
+
+/** Shared line-icon geometry — keeps every icon in the bar visually the same weight. */
+const iconStroke = {
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 1.9,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+}
 
 interface TopBarProps {
   onExport: () => void
@@ -86,30 +95,22 @@ export function TopBar({
       />
 
       <div className="topbar-group">
-        <button
-          className="btn"
-          onClick={undo}
-          disabled={!canUndo}
-          aria-label="Undo"
-          title="Undo (Ctrl+Z)"
-        >
-          ↺
+        <button className="btn btn-icon" onClick={undo} disabled={!canUndo} aria-label="Undo" title="Undo (Ctrl+Z)">
+          <svg viewBox="0 0 24 24" {...iconStroke}>
+            <path d="M3 12a9 9 0 1 0 3-6.7" />
+            <path d="M3 4v5h5" />
+          </svg>
         </button>
-        <button
-          className="btn"
-          onClick={redo}
-          disabled={!canRedo}
-          aria-label="Redo"
-          title="Redo (Ctrl+Shift+Z)"
-        >
-          ↻
+        <button className="btn btn-icon" onClick={redo} disabled={!canRedo} aria-label="Redo" title="Redo (Ctrl+Shift+Z)">
+          <svg viewBox="0 0 24 24" {...iconStroke}>
+            <path d="M21 12a9 9 0 1 1-3-6.7" />
+            <path d="M21 4v5h-5" />
+          </svg>
         </button>
       </div>
 
-      <div className="topbar-group">
-        <span className="meta-label">Size</span>
-        <span className="meta-dims mono">{formatDims(size)}</span>
-      </div>
+      {/* The book's size used to be spelled out here; it has its own rail
+          section now, so the readout was saying the same thing twice. */}
 
       <div className="topbar-right">
         <div className="topbar-group page-control">
@@ -141,26 +142,39 @@ export function TopBar({
           </button>
         </div>
 
+        {/*
+          Icon-only, with the wording moved into the tooltip. The overflow case
+          used to stretch this button's label to "Re-flow (try 30 pages)" —
+          that warning is now a dot, so the bar keeps a steady shape.
+        */}
         <button
-          className="btn"
+          className={`btn btn-icon${overflowing ? ' has-badge' : ''}`}
           onClick={regenerate}
           disabled={photos.length === 0}
+          aria-label="Re-flow the book"
           title={
             overflowing
-              ? `${photos.length} photos need about ${suggestion} pages at this size`
-              : 'Lay the book out again from scratch'
+              ? `Re-flow — ${photos.length} photos need about ${suggestion} pages at this size`
+              : 'Re-flow — lay the book out again from scratch'
           }
         >
-          {overflowing ? `Re-flow (try ${suggestion} pages)` : 'Re-flow'}
+          <svg viewBox="0 0 24 24" {...iconStroke}>
+            <path d="M3 7h13a4 4 0 0 1 0 8H8" />
+            <path d="M6 4L3 7l3 3" />
+            <path d="M18 12l3 3-3 3" />
+          </svg>
         </button>
 
         <button
-          className="btn"
+          className="btn btn-icon"
           onClick={onPlay}
           disabled={pages.length === 0}
+          aria-label="Play as a slideshow"
           title="Play through the book as a slideshow"
         >
-          ▶ Play
+          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <path d="M8 5.5v13l11-6.5z" />
+          </svg>
         </button>
 
         <button className="btn-primary" onClick={onExport} disabled={exporting}>

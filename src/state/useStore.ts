@@ -3,11 +3,13 @@ import { DEFAULT_SIZE_ID, getSize } from '../data/sizes'
 import { getTemplate } from '../data/templates'
 import {
   applyTemplateToPage,
+  artboardSize,
   autoLayout,
   fitPageToSize,
   insertPage,
   maxPagesForSize,
   normalizePages,
+  pagePhotoBoxes,
   placementFor,
   reconcileTemplates,
   regenerateUnlocked,
@@ -23,6 +25,7 @@ import type {
   HalfLayout,
   Page,
   Photo,
+  PhotoBox,
   PhotoFilter,
   Placement,
   Project,
@@ -43,7 +46,7 @@ export interface SlotRef {
 export interface DecorationRef {
   pageIndex: number
   halfIndex?: 0 | 1
-  kind: 'sticker' | 'textBox'
+  kind: 'sticker' | 'textBox' | 'photoBox'
   id: string
 }
 
@@ -152,6 +155,14 @@ interface StoreState {
   /** customId is required (and only meaningful) when type is 'custom'. */
   addSticker: (pageIndex: number, halfIndex: 0 | 1 | undefined, type: StickerType, customId?: string) => void
   addTextBox: (pageIndex: number, halfIndex: 0 | 1 | undefined) => void
+  /** Drops a photo onto the page as a freely placed layer rather than into a template slot. */
+  addPhotoBox: (pageIndex: number, halfIndex: 0 | 1 | undefined, photoId: string) => void
+  /** Moves or resizes a photo box — the rect only; see updatePhotoBoxPlacement for what's inside it. */
+  updatePhotoBox: (ref: DecorationRef, patch: Partial<Omit<PhotoBox, 'id' | 'placement'>>) => void
+  /** Adjusts the photo inside a box: crop, zoom, filter, frame, tilt. */
+  updatePhotoBoxPlacement: (ref: DecorationRef, patch: Partial<Placement>) => void
+  /** Restacks a photo box against the others on its page. */
+  movePhotoBox: (ref: DecorationRef, to: 'front' | 'back') => void
   /** Saves a drawing to this book's sticker library; returns its new id. */
   addCustomSticker: (dataUrl: string) => string
   /** Removes a drawing from the library and strips any already-placed copies of it. */
@@ -343,14 +354,27 @@ export const useStore = create<StoreState>((set, get) => {
       }))
       const strip = (placements: (Placement | null)[]) =>
         placements.map((slot) => (slot && idSet.has(slot.photoId) ? null : slot))
+      // A photo box whose photo is gone would linger as an invisible but still
+      // draggable rectangle, so it's removed outright rather than emptied.
+      const stripBoxes = (boxes: PhotoBox[] | undefined) =>
+        boxes?.filter((b) => !idSet.has(b.placement.photoId))
       mutatePages((pages) =>
         pages.map((page) => ({
           ...page,
           placements: strip(page.placements),
+          photoBoxes: stripBoxes(page.photoBoxes),
           ...(page.halves && {
             halves: [
-              { ...page.halves[0], placements: strip(page.halves[0].placements) },
-              { ...page.halves[1], placements: strip(page.halves[1].placements) },
+              {
+                ...page.halves[0],
+                placements: strip(page.halves[0].placements),
+                photoBoxes: stripBoxes(page.halves[0].photoBoxes),
+              },
+              {
+                ...page.halves[1],
+                placements: strip(page.halves[1].placements),
+                photoBoxes: stripBoxes(page.halves[1].photoBoxes),
+              },
             ] as [HalfLayout, HalfLayout],
           }),
         })),
@@ -800,6 +824,116 @@ export const useStore = create<StoreState>((set, get) => {
       set({ selectedDecoration: { pageIndex, halfIndex, kind: 'textBox', id }, selected: null })
     },
 
+    addPhotoBox(pageIndex, halfIndex, photoId) {
+      const { pages, photos, sizeId } = get()
+      const page = pages[pageIndex]
+      if (!page || page.locked) return
+      recordHistory()
+      const id = nextDecorationId()
+
+      // Sized so the photo arrives uncropped: a box's rect is a percentage of
+      // each axis, so the page's own proportions have to be folded back in to
+      // land on the photo's true shape. Starting from a crop nobody asked for
+      // would mean every new layer needs adjusting before it's usable.
+      const photo = photos.find((p) => p.id === photoId)
+      const board = artboardSize(page, getSize(sizeId))
+      const pageRatio = board.widthIn / board.heightIn
+      const photoAspect = photo && photo.height > 0 ? photo.width / photo.height : 1
+      const w = 42
+      const h = Math.min(80, (w * pageRatio) / photoAspect)
+
+      const box: PhotoBox = {
+        id,
+        // Offset a little each time so a run of photos fans out instead of
+        // stacking into one pile you have to drag apart.
+        x: 12 + ((pagePhotoBoxes(page).length * 7) % 30),
+        y: Math.max(4, 50 - h / 2) + ((pagePhotoBoxes(page).length * 5) % 20),
+        w,
+        h,
+        placement: placementFor(photoId),
+      }
+
+      mutatePages((all) =>
+        all.map((p, i) => {
+          if (i !== pageIndex) return p
+          if (halfIndex !== undefined && p.halves) {
+            const halves = [...p.halves] as [HalfLayout, HalfLayout]
+            const host = halves[halfIndex]
+            halves[halfIndex] = { ...host, photoBoxes: [...(host.photoBoxes ?? []), box] }
+            return { ...p, halves }
+          }
+          return { ...p, photoBoxes: [...(p.photoBoxes ?? []), box] }
+        }),
+      )
+      set({ selectedDecoration: { pageIndex, halfIndex, kind: 'photoBox', id }, selected: null })
+    },
+
+    updatePhotoBox(ref, patch) {
+      if (get().pages[ref.pageIndex]?.locked) return
+      recordHistory()
+      mutatePages((pages) =>
+        pages.map((page, i) => {
+          if (i !== ref.pageIndex) return page
+          const edit = (boxes: PhotoBox[] | undefined) =>
+            (boxes ?? []).map((b) => (b.id === ref.id ? { ...b, ...patch } : b))
+          if (ref.halfIndex !== undefined && page.halves) {
+            const halves = [...page.halves] as [HalfLayout, HalfLayout]
+            const host = halves[ref.halfIndex]
+            halves[ref.halfIndex] = { ...host, photoBoxes: edit(host.photoBoxes) }
+            return { ...page, halves }
+          }
+          return { ...page, photoBoxes: edit(page.photoBoxes) }
+        }),
+      )
+    },
+
+    updatePhotoBoxPlacement(ref, patch) {
+      if (get().pages[ref.pageIndex]?.locked) return
+      recordHistory()
+      mutatePages((pages) =>
+        pages.map((page, i) => {
+          if (i !== ref.pageIndex) return page
+          const edit = (boxes: PhotoBox[] | undefined) =>
+            (boxes ?? []).map((b) =>
+              b.id === ref.id ? { ...b, placement: { ...b.placement, ...patch } } : b,
+            )
+          if (ref.halfIndex !== undefined && page.halves) {
+            const halves = [...page.halves] as [HalfLayout, HalfLayout]
+            const host = halves[ref.halfIndex]
+            halves[ref.halfIndex] = { ...host, photoBoxes: edit(host.photoBoxes) }
+            return { ...page, halves }
+          }
+          return { ...page, photoBoxes: edit(page.photoBoxes) }
+        }),
+      )
+    },
+
+    movePhotoBox(ref, to) {
+      if (get().pages[ref.pageIndex]?.locked) return
+      recordHistory()
+      // Paint order is array order, so restacking is just moving one entry to
+      // the end (front) or the start (back).
+      const restack = (boxes: PhotoBox[] | undefined) => {
+        const list = boxes ?? []
+        const box = list.find((b) => b.id === ref.id)
+        if (!box) return list
+        const rest = list.filter((b) => b.id !== ref.id)
+        return to === 'front' ? [...rest, box] : [box, ...rest]
+      }
+      mutatePages((pages) =>
+        pages.map((page, i) => {
+          if (i !== ref.pageIndex) return page
+          if (ref.halfIndex !== undefined && page.halves) {
+            const halves = [...page.halves] as [HalfLayout, HalfLayout]
+            const host = halves[ref.halfIndex]
+            halves[ref.halfIndex] = { ...host, photoBoxes: restack(host.photoBoxes) }
+            return { ...page, halves }
+          }
+          return { ...page, photoBoxes: restack(page.photoBoxes) }
+        }),
+      )
+    },
+
     addCustomSticker(dataUrl) {
       recordHistory()
       const id = nextCustomStickerId()
@@ -879,12 +1013,18 @@ export const useStore = create<StoreState>((set, get) => {
             halves[ref.halfIndex] =
               ref.kind === 'sticker'
                 ? { ...host, stickers: (host.stickers ?? []).filter((s) => s.id !== ref.id) }
-                : { ...host, textBoxes: (host.textBoxes ?? []).filter((t) => t.id !== ref.id) }
+                : ref.kind === 'photoBox'
+                  ? { ...host, photoBoxes: (host.photoBoxes ?? []).filter((b) => b.id !== ref.id) }
+                  : { ...host, textBoxes: (host.textBoxes ?? []).filter((t) => t.id !== ref.id) }
             return { ...page, halves }
           }
-          return ref.kind === 'sticker'
-            ? { ...page, stickers: (page.stickers ?? []).filter((s) => s.id !== ref.id) }
-            : { ...page, textBoxes: (page.textBoxes ?? []).filter((t) => t.id !== ref.id) }
+          if (ref.kind === 'sticker') {
+            return { ...page, stickers: (page.stickers ?? []).filter((s) => s.id !== ref.id) }
+          }
+          if (ref.kind === 'photoBox') {
+            return { ...page, photoBoxes: (page.photoBoxes ?? []).filter((b) => b.id !== ref.id) }
+          }
+          return { ...page, textBoxes: (page.textBoxes ?? []).filter((t) => t.id !== ref.id) }
         }),
       )
       set({ selectedDecoration: null })

@@ -78,6 +78,7 @@ export function DecoratePanel() {
   const activeHalfIndex = useStore((s) => s.activeHalfIndex)
   const addSticker = useStore((s) => s.addSticker)
   const addTextBox = useStore((s) => s.addTextBox)
+  const addPhotoBox = useStore((s) => s.addPhotoBox)
   const addCustomSticker = useStore((s) => s.addCustomSticker)
   const photos = useStore((s) => s.photos)
   const setPageBackground = useStore((s) => s.setPageBackground)
@@ -299,6 +300,31 @@ export function DecoratePanel() {
       >
         + Add Text
       </button>
+
+      <PanelSection title="Photo layers" defaultOpen={false}>
+        <p className="hint">
+          A photo placed on top of the page rather than into a slot — drag it anywhere, overlap it
+          with others, and let it hang off the edge. This is what the scattered collage looks are
+          built from.
+        </p>
+        {photos.length === 0 ? (
+          <p className="hint">Import some photos first and they'll show up here.</p>
+        ) : (
+          <div className="photolayer-tray">
+            {photos.map((photo) => (
+              <button
+                key={photo.id}
+                className="photolayer-thumb"
+                onClick={() => addPhotoBox(activePageIndex, targetHalf, photo.id)}
+                disabled={page.locked}
+                title={`Add ${photo.name} as a photo layer`}
+              >
+                <img src={photoThumbUrl(photo)} alt={photo.name} loading="lazy" decoding="async" />
+              </button>
+            ))}
+          </div>
+        )}
+      </PanelSection>
 
     </section>
   )

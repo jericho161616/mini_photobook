@@ -1,7 +1,7 @@
 import { DEFAULT_TEXT_STYLE, fontSizeScale, fontStack } from '../data/fonts'
 import { getTemplate } from '../data/templates'
 import { DEFAULT_TAPE_COLOR } from '../components/AttachmentGraphic'
-import { decorationHost, pagePlacements, resolvePageSize, spanOf } from './autoLayout'
+import { decorationHost, pagePhotoBoxes, pagePlacements, resolvePageSize, spanOf } from './autoLayout'
 import {
   CIRCLE_BORDER_RATIO,
   CLIP_ASPECT,
@@ -28,6 +28,7 @@ import type {
   CustomSticker,
   Page,
   Photo,
+  PhotoBox,
   PhotoFilter,
   Placement,
   Sticker,
@@ -631,7 +632,33 @@ export async function renderPageCanvas(
     lines.forEach((line, i) => ctx.fillText(line, x, startY + i * lineHeight, innerW))
   }
 
-  const drawDecorations = (host: { stickers?: Sticker[]; textBoxes?: TextBox[] }, containerW: number, containerH: number, offsetX: number, offsetY: number) => {
+  const drawDecorations = (
+    host: { stickers?: Sticker[]; textBoxes?: TextBox[]; photoBoxes?: PhotoBox[] },
+    containerW: number,
+    containerH: number,
+    offsetX: number,
+    offsetY: number,
+  ) => {
+    // Photos first: a freely placed photo sits above the template's slots but
+    // below the stickers and text, matching how DecorationLayer stacks them on
+    // screen. Within the list, array order is the stacking order.
+    for (const box of host.photoBoxes ?? []) {
+      drawSlot(
+        {
+          x: offsetX + (box.x / 100) * containerW,
+          y: offsetY + (box.y / 100) * containerH,
+          w: (box.w / 100) * containerW,
+          h: (box.h / 100) * containerH,
+        },
+        box.placement,
+        {
+          framed: box.placement.frame === 'polaroid',
+          hairline: box.placement.frame === 'hairline',
+          stamp: box.placement.frame === 'stamp',
+          rotationDeg: box.placement.rotation,
+        },
+      )
+    }
     for (const sticker of host.stickers ?? []) {
       drawSticker(
         {
@@ -803,6 +830,8 @@ export async function buildBitmapMaps(
     for (const placement of pagePlacements(page)) {
       if (placement) needed.add(placement.photoId)
     }
+    // Freely placed photos need decoding too, or they'd silently export blank.
+    for (const box of pagePhotoBoxes(page)) needed.add(box.placement.photoId)
     if (page.backgroundPhotoId) needed.add(page.backgroundPhotoId)
   }
 

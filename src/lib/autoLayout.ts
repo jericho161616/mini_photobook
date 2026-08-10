@@ -1,7 +1,7 @@
 import { bookShape, getSize } from '../data/sizes'
 import { getTemplate, templatesForSize } from '../data/templates'
 import { MAX_PAGES, MAX_SLIDES, MIN_PAGES } from '../types'
-import type { BookSize, HalfLayout, Page, Photo, Placement, Template } from '../types'
+import type { BookSize, HalfLayout, Page, Photo, PhotoBox, Placement, Template } from '../types'
 
 /** A size's own page-count floor — MIN_PAGES unless it declares a lower one (every social format: 1). */
 export function sizeMinPages(size: BookSize): number {
@@ -101,7 +101,13 @@ export function pagePlacements(page: Page): (Placement | null)[] {
   return page.halves ? [...page.halves[0].placements, ...page.halves[1].placements] : page.placements
 }
 
-/** Where a page's (or one half's) stickers/text boxes actually live. */
+/** Every freely placed photo on a page, whichever half (if any) it belongs to. */
+export function pagePhotoBoxes(page: Page): PhotoBox[] {
+  if (page.halves) return page.halves.flatMap((half) => half.photoBoxes ?? [])
+  return page.photoBoxes ?? []
+}
+
+/** Where a page's (or one half's) stickers, text boxes and photo boxes actually live. */
 export function decorationHost(page: Page, halfIndex?: 0 | 1): Page | HalfLayout {
   return halfIndex !== undefined && page.halves ? page.halves[halfIndex] : page
 }
@@ -445,6 +451,7 @@ export function usedPhotoIds(pages: Page[]): Set<string> {
     for (const placement of pagePlacements(page)) {
       if (placement) used.add(placement.photoId)
     }
+    for (const box of pagePhotoBoxes(page)) used.add(box.placement.photoId)
   }
   return used
 }

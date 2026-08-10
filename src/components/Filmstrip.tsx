@@ -5,6 +5,7 @@ import {
   artboardSize,
   firstSlideNumber,
   maxPagesForSize,
+  pagePhotoBoxes,
   sizeMinPages,
   spanOf,
   totalSlides,
@@ -148,6 +149,29 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
                         )
                       })}
                 </span>
+                {/* Freely placed photos sit above the slots here too, so the
+                    thumbnail matches what the page actually looks like. */}
+                {pagePhotoBoxes(page).map((box) => {
+                  const photo = photos.get(box.placement.photoId)
+                  if (!photo) return null
+                  return (
+                    <span
+                      key={box.id}
+                      className="fs-photobox"
+                      style={{
+                        left: `${box.x}%`,
+                        top: `${box.y}%`,
+                        width: `${box.w}%`,
+                        height: `${box.h}%`,
+                        transform: box.placement.rotation
+                          ? `rotate(${box.placement.rotation}deg)`
+                          : undefined,
+                      }}
+                    >
+                      <img src={photoThumbUrl(photo)} alt="" loading="lazy" decoding="async" />
+                    </span>
+                  )
+                })}
                 {span > 1 &&
                   Array.from({ length: span - 1 }, (_, i) => (
                     <span

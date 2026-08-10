@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { fontSizeScale, fontStack } from '../data/fonts'
 import { StickerGlyph } from './StickerGlyph'
-import type { CustomSticker, Sticker, TextBox } from '../types'
+import { coverGeometry, PHOTO_FILTER_CSS, photoUrl } from '../lib/imageUtils'
+import type { CustomSticker, Photo, PhotoBox, Sticker, TextBox } from '../types'
 
 interface Box {
   id: string
@@ -142,18 +143,63 @@ function DecorationBox({ box, containerSize, selected, locked, onSelect, onChang
   )
 }
 
+/**
+ * The picture inside a freely placed photo box, cropped to fill it exactly
+ * the way a slotted photo fills its slot — coverGeometry is the one shared
+ * definition of that, so a photo looks the same however it got onto the page.
+ */
+function PhotoBoxContent({
+  box,
+  photo,
+  containerSize,
+}: {
+  box: PhotoBox
+  photo: Photo | undefined
+  containerSize: { w: number; h: number }
+}) {
+  if (!photo) return null
+  const boxW = containerSize.w * (box.w / 100)
+  const boxH = containerSize.h * (box.h / 100)
+  const geo = coverGeometry(photo.width / photo.height, boxW, boxH, box.placement)
+  const rotation = box.placement.rotation ?? 0
+  return (
+    <div
+      className={`photobox-art${box.placement.frame ? ` frame-${box.placement.frame}` : ''}`}
+      style={{ transform: rotation ? `rotate(${rotation}deg)` : undefined }}
+    >
+      <img
+        src={photoUrl(photo)}
+        alt={photo.name}
+        draggable={false}
+        style={{
+          left: geo.x,
+          top: geo.y,
+          width: geo.drawWidth,
+          height: geo.drawHeight,
+          filter: box.placement.filter ? PHOTO_FILTER_CSS[box.placement.filter] : undefined,
+        }}
+      />
+    </div>
+  )
+}
+
 interface DecorationLayerProps {
   stickers: Sticker[]
   textBoxes: TextBox[]
+  /** Freely placed photos, painted under the stickers and text above them. */
+  photoBoxes: PhotoBox[]
+  /** Looked up by a photo box's own photoId. */
+  photos: Map<string, Photo>
   /** The book's own drawn-sticker library — looked up by a sticker's customId. */
   customStickers: CustomSticker[]
   containerSize: { w: number; h: number }
   locked: boolean
-  isSelected: (kind: 'sticker' | 'textBox', id: string) => boolean
-  onSelect: (kind: 'sticker' | 'textBox', id: string) => void
+  isSelected: (kind: 'sticker' | 'textBox' | 'photoBox', id: string) => boolean
+  onSelect: (kind: 'sticker' | 'textBox' | 'photoBox', id: string) => void
   onChangeSticker: (id: string, patch: Partial<Sticker>) => void
   onChangeTextBox: (id: string, patch: Partial<TextBox>) => void
-  onDelete: (kind: 'sticker' | 'textBox', id: string) => void
+  onChangePhotoBox: (id: string, patch: Partial<PhotoBox>) => void
+  onDelete: (kind: 'sticker' | 'textBox' | 'photoBox', id: string) => void
   onEditText: (id: string, text: string) => void
 }
 
@@ -222,6 +268,8 @@ function FreeTextContent({ box, containerSize, editing, locked, onStartEditing, 
 export function DecorationLayer({
   stickers,
   textBoxes,
+  photoBoxes,
+  photos,
   customStickers,
   containerSize,
   locked,
@@ -229,6 +277,7 @@ export function DecorationLayer({
   onSelect,
   onChangeSticker,
   onChangeTextBox,
+  onChangePhotoBox,
   onDelete,
   onEditText,
 }: DecorationLayerProps) {
@@ -250,6 +299,26 @@ export function DecorationLayer({
 
   return (
     <>
+      {/* First, so stickers and text stay on top of a photo layer — array
+          order within this list is the photos' own stacking. */}
+      {photoBoxes.map((box) => (
+        <DecorationBox
+          key={box.id}
+          box={box}
+          containerSize={containerSize}
+          selected={isSelected('photoBox', box.id)}
+          locked={locked}
+          onSelect={() => onSelect('photoBox', box.id)}
+          onChange={(patch) => onChangePhotoBox(box.id, patch)}
+          onDelete={() => onDelete('photoBox', box.id)}
+        >
+          <PhotoBoxContent
+            box={box}
+            photo={photos.get(box.placement.photoId)}
+            containerSize={containerSize}
+          />
+        </DecorationBox>
+      ))}
       {stickers.map((sticker) => (
         <DecorationBox
           key={sticker.id}

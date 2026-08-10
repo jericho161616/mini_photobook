@@ -50,6 +50,7 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
   const selectDecoration = useStore((s) => s.selectDecoration)
   const updateSticker = useStore((s) => s.updateSticker)
   const updateTextBox = useStore((s) => s.updateTextBox)
+  const updatePhotoBox = useStore((s) => s.updatePhotoBox)
   const removeDecoration = useStore((s) => s.removeDecoration)
 
   const size = getSize(sizeId)
@@ -228,6 +229,7 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
       onSelect: selectDecoration,
       onChangeSticker: updateSticker,
       onChangeTextBox: updateTextBox,
+      onChangePhotoBox: updatePhotoBox,
       onDelete: removeDecoration,
     },
   })

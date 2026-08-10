@@ -15,7 +15,7 @@ import {
   stampClipPathCss,
 } from '../lib/imageUtils'
 import type { DecorationRef } from '../state/useStore'
-import type { CustomSticker, Page, Photo, Sticker, TextBox } from '../types'
+import type { CustomSticker, Page, Photo, PhotoBox, Sticker, TextBox } from '../types'
 import { DecorationLayer } from './DecorationLayer'
 import { SlotView } from './SlotView'
 
@@ -86,6 +86,7 @@ interface PageViewProps {
     onSelect: (ref: DecorationRef) => void
     onChangeSticker: (ref: DecorationRef, patch: Partial<Sticker>) => void
     onChangeTextBox: (ref: DecorationRef, patch: Partial<TextBox>) => void
+    onChangePhotoBox: (ref: DecorationRef, patch: Partial<PhotoBox>) => void
     onDelete: (ref: DecorationRef) => void
   }
   /** The book's own drawn-sticker library, for resolving a placed 'custom' sticker's artwork. */
@@ -364,6 +365,8 @@ export function PageView({
                     <DecorationLayer
                       stickers={host.stickers ?? []}
                       textBoxes={host.textBoxes ?? []}
+                      photoBoxes={host.photoBoxes ?? []}
+                      photos={photos}
                       customStickers={customStickers}
                       containerSize={{ w: outer.w, h: outer.h }}
                       locked={page.locked}
@@ -379,6 +382,9 @@ export function PageView({
                       }
                       onChangeTextBox={(id, patch) =>
                         decorations.onChangeTextBox({ pageIndex, halfIndex: h, kind: 'textBox', id }, patch)
+                      }
+                      onChangePhotoBox={(id, patch) =>
+                        decorations.onChangePhotoBox({ pageIndex, halfIndex: h, kind: 'photoBox', id }, patch)
                       }
                       onDelete={(kind, id) => decorations.onDelete({ pageIndex, halfIndex: h, kind, id })}
                       onEditText={(id, text) =>
@@ -441,6 +447,8 @@ export function PageView({
           <DecorationLayer
             stickers={page.stickers ?? []}
             textBoxes={page.textBoxes ?? []}
+            photoBoxes={page.photoBoxes ?? []}
+            photos={photos}
             customStickers={customStickers}
             containerSize={{ w: width, h: height }}
             locked={page.locked}
@@ -453,6 +461,9 @@ export function PageView({
             onSelect={(kind, id) => decorations.onSelect({ pageIndex, kind, id })}
             onChangeSticker={(id, patch) => decorations.onChangeSticker({ pageIndex, kind: 'sticker', id }, patch)}
             onChangeTextBox={(id, patch) => decorations.onChangeTextBox({ pageIndex, kind: 'textBox', id }, patch)}
+            onChangePhotoBox={(id, patch) =>
+              decorations.onChangePhotoBox({ pageIndex, kind: 'photoBox', id }, patch)
+            }
             onDelete={(kind, id) => decorations.onDelete({ pageIndex, kind, id })}
             onEditText={(id, text) =>
               decorations.onChangeTextBox({ pageIndex, kind: 'textBox', id }, { text })

@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { FONT_OPTIONS, FONT_SIZE_OPTIONS } from '../data/fonts'
 import { decorationHost } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
-import type { Sticker, TextBox, TextStyle } from '../types'
+import type { PhotoBox, PhotoFilter, Sticker, TextBox, TextStyle } from '../types'
 import { isTapeSticker } from './DecorationLayer'
 
 /** Gap between the selection's own edge and the bar, in px. */
@@ -28,6 +28,22 @@ const ALIGNS: { id: TextBox['align']; label: string; title: string }[] = [
 const ROTATE_STEP_DEG = 15
 
 const SIZE_TITLES: Record<string, string> = { sm: 'Small', md: 'Medium', lg: 'Large', xl: 'Extra large' }
+
+/** The same treatments a slotted photo offers, for a freely placed one. */
+const PHOTO_FILTERS: { id: PhotoFilter | undefined; label: string }[] = [
+  { id: undefined, label: 'Colour' },
+  { id: 'bw', label: 'B&W' },
+  { id: 'sepia', label: 'Sepia' },
+  { id: 'film', label: 'Film' },
+  { id: 'paper', label: 'Paper' },
+]
+
+const PHOTO_FRAMES: { id: 'hairline' | 'polaroid' | 'stamp' | undefined; label: string }[] = [
+  { id: undefined, label: 'None' },
+  { id: 'hairline', label: 'Hairline' },
+  { id: 'polaroid', label: 'Polaroid' },
+  { id: 'stamp', label: 'Stamp' },
+]
 
 /**
  * Measures the currently selected decoration in viewport coordinates.
@@ -88,6 +104,8 @@ export function ContextualToolbar() {
   const pages = useStore((s) => s.pages)
   const updateSticker = useStore((s) => s.updateSticker)
   const updateTextBox = useStore((s) => s.updateTextBox)
+  const updatePhotoBoxPlacement = useStore((s) => s.updatePhotoBoxPlacement)
+  const movePhotoBox = useStore((s) => s.movePhotoBox)
   const removeDecoration = useStore((s) => s.removeDecoration)
 
   const page = selectedDecoration ? pages[selectedDecoration.pageIndex] : undefined
@@ -98,7 +116,12 @@ export function ContextualToolbar() {
   const textBox: TextBox | undefined =
     selectedDecoration?.kind === 'textBox' ? host?.textBoxes?.find((t) => t.id === selectedDecoration.id) : undefined
 
-  const item = sticker ?? textBox
+  const photoBox: PhotoBox | undefined =
+    selectedDecoration?.kind === 'photoBox'
+      ? host?.photoBoxes?.find((b) => b.id === selectedDecoration.id)
+      : undefined
+
+  const item = sticker ?? textBox ?? photoBox
   const anchor = useAnchorRect(item?.x, item?.y, item?.w, item?.h, item?.id)
 
   // The bar's own size decides whether it still fits above the selection, so
@@ -137,6 +160,8 @@ export function ContextualToolbar() {
 
   const patchSticker = (patch: Partial<Sticker>) => updateSticker(selectedDecoration, patch)
   const patchText = (patch: Partial<TextBox>) => updateTextBox(selectedDecoration, patch)
+  const patchPhoto = (patch: Parameters<typeof updatePhotoBoxPlacement>[1]) =>
+    updatePhotoBoxPlacement(selectedDecoration, patch)
 
   return (
     <div
@@ -153,6 +178,80 @@ export function ContextualToolbar() {
       // sits over the canvas, so its own clicks must not count as that.
       onMouseDown={(e) => e.stopPropagation()}
     >
+      {photoBox && (
+        <>
+          <button
+            className="ctx-btn"
+            onClick={() => movePhotoBox(selectedDecoration, 'back')}
+            title="Send behind the other photo layers"
+            aria-label="Send to back"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="12" height="12" rx="1" />
+              <path d="M9 21h12V9" />
+            </svg>
+          </button>
+          <button
+            className="ctx-btn"
+            onClick={() => movePhotoBox(selectedDecoration, 'front')}
+            title="Bring in front of the other photo layers"
+            aria-label="Bring to front"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 15V3h12" />
+              <rect x="9" y="9" width="12" height="12" rx="1" />
+            </svg>
+          </button>
+          <span className="ctx-sep" />
+          <button
+            className="ctx-btn"
+            onClick={() => patchPhoto({ rotation: (photoBox.placement.rotation ?? 0) - ROTATE_STEP_DEG })}
+            title={`Rotate left ${ROTATE_STEP_DEG}°`}
+            aria-label={`Rotate left ${ROTATE_STEP_DEG} degrees`}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 12a9 9 0 1 0 3-6.7" />
+              <path d="M3 4v5h5" />
+            </svg>
+          </button>
+          <button
+            className="ctx-btn"
+            onClick={() => patchPhoto({ rotation: (photoBox.placement.rotation ?? 0) + ROTATE_STEP_DEG })}
+            title={`Rotate right ${ROTATE_STEP_DEG}°`}
+            aria-label={`Rotate right ${ROTATE_STEP_DEG} degrees`}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12a9 9 0 1 1-3-6.7" />
+              <path d="M21 4v5h-5" />
+            </svg>
+          </button>
+          <span className="ctx-sep" />
+          {PHOTO_FILTERS.map((f) => (
+            <button
+              key={f.label}
+              className={`ctx-chip${(photoBox.placement.filter ?? undefined) === f.id ? ' active' : ''}`}
+              onClick={() => patchPhoto({ filter: f.id })}
+              aria-pressed={(photoBox.placement.filter ?? undefined) === f.id}
+              title={`${f.label} treatment`}
+            >
+              {f.label}
+            </button>
+          ))}
+          <span className="ctx-sep" />
+          {PHOTO_FRAMES.map((f) => (
+            <button
+              key={f.label}
+              className={`ctx-chip${(photoBox.placement.frame ?? undefined) === f.id ? ' active' : ''}`}
+              onClick={() => patchPhoto({ frame: f.id })}
+              aria-pressed={(photoBox.placement.frame ?? undefined) === f.id}
+              title={`${f.label} frame`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </>
+      )}
+
       {sticker && (
         <>
           <button

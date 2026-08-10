@@ -89,6 +89,29 @@ export interface TextBox {
   size?: FontSize
 }
 
+/**
+ * A photo placed freely on a page rather than dropped into a template slot —
+ * the same idea as a TextBox, carrying a picture instead of words.
+ *
+ * Slots are a cage: the template decides where they are and photos fall into
+ * them. A photo box is the opposite — you decide where it goes, how big it
+ * is, and what it sits on top of. That's what the scattered, overlapping
+ * collage layouts need, and it's the one thing slots structurally can't do,
+ * since two slots never share the same ground.
+ *
+ * Rect is a percentage of the page (or, on a spanning artboard, of the whole
+ * strip) and ignores the page margin, so a box can bleed off any edge.
+ */
+export interface PhotoBox {
+  id: string
+  x: number
+  y: number
+  w: number
+  h: number
+  /** How the photo sits inside the box — the same crop, filter, frame and tilt a slotted photo gets. */
+  placement: Placement
+}
+
 /** A slot rect in page-relative percentages, measured inside the page margin. */
 export interface SlotRect {
   x: number
@@ -255,6 +278,8 @@ export interface HalfLayout {
   /** Freely placed decorations, confined to this half so nothing crosses the fold. */
   stickers?: Sticker[]
   textBoxes?: TextBox[]
+  /** Freely placed photos, painted over this half's slots and under its stickers. */
+  photoBoxes?: PhotoBox[]
 }
 
 export interface Page {
@@ -288,6 +313,12 @@ export interface Page {
   /** Freely placed decorations — unused while `halves` is set; see HalfLayout. */
   stickers?: Sticker[]
   textBoxes?: TextBox[]
+  /**
+   * Freely placed photos, in paint order — later entries sit on top. They are
+   * drawn above the template's slots and below the stickers and text, so a
+   * scattered collage layers over whatever grid the page already has.
+   */
+  photoBoxes?: PhotoBox[]
   /** A tinted "cardstock" page background. Undefined means the default paper color. Mutually exclusive with backgroundPhotoId. */
   backgroundColor?: string
   /** A full-bleed photo behind this page's slots. Any photo can be reused here even if it's also placed in a slot. Unavailable on Full Bleed / Full Sheet templates, which are already entirely one photo. */

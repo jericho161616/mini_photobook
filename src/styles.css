@@ -1083,6 +1083,68 @@ input:focus-visible,
   cursor: default;
 }
 
+/* A freely placed photo. The art is a separate element from the
+   DecorationBox around it so a tilt applies to the picture while the
+   selection ring and its resize handle stay axis-aligned — same reasoning as
+   a sticker's glyph. */
+.photobox-art {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--linen-deep);
+}
+
+.photobox-art img {
+  position: absolute;
+  max-width: none;
+  user-select: none;
+}
+
+.photobox-art.frame-hairline {
+  outline: 1px solid rgba(0, 0, 0, 0.35);
+  outline-offset: -1px;
+}
+
+.photobox-art.frame-polaroid {
+  background: #fdfcf8;
+  border: 6px solid #fdfcf8;
+  border-bottom-width: 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
+}
+
+.photobox-art.frame-stamp {
+  background: #fdfcf8;
+  border: 5px solid #fdfcf8;
+}
+
+/* The tray of photos that can be dropped onto a page as a layer. */
+.photolayer-tray {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.photolayer-thumb {
+  aspect-ratio: 1;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--linen-deep);
+}
+
+.photolayer-thumb:hover:not(:disabled) {
+  border-color: var(--brass);
+}
+
+.photolayer-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .decoration-delete {
   position: absolute;
   top: -10px;
@@ -1190,6 +1252,30 @@ input:focus-visible,
 
 .ctx-btn.active {
   background: var(--navy);
+  color: var(--paper);
+}
+
+/* A small labelled option in the floating toolbar — used where an icon
+   wouldn't say enough, e.g. picking a filter or a frame by name. */
+.ctx-chip {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink-soft);
+  white-space: nowrap;
+  flex: none;
+}
+
+.ctx-chip:hover {
+  border-color: var(--navy-soft);
+  color: var(--ink);
+}
+
+.ctx-chip.active {
+  background: var(--navy);
+  border-color: var(--navy);
   color: var(--paper);
 }
 
@@ -2423,6 +2509,21 @@ kbd {
   padding: 0;
   border: none;
   overflow: hidden;
+}
+
+/* A freely placed photo in the filmstrip thumbnail — above the slots, below
+   the seam lines, matching the page's own stacking. */
+.fs-photobox {
+  position: absolute;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.fs-photobox img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 /* One cut line per seam on a spanning page's thumbnail, so the strip shows

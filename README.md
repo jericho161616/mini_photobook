@@ -98,9 +98,13 @@ There are three ways to use one, and they read very differently:
   sitting whole inside a slide, so every swipe changes what you're looking at.
 - **Mosaic** tiles the whole strip edge to edge with no gutters, in columns of
   mixed width whose boundaries deliberately don't line up with the cuts. Every
-  slide then opens on a partial photo and closes on another. Mosaic Band floats
-  the same wall with ground above and below, which is where a page background
-  colour from the Decorate panel does most of the work.
+  slide then opens on a partial photo and closes on another. In 2, 3, 4 or 5
+  slides — five to eleven photos, since the tile count can't just scale with
+  the width: a two-slide artboard is only 1.6× as wide as it is tall, so a
+  full-height column there is nearly half the strip where on a five-slide one
+  it's a sixth. **Mosaic Band** floats the same wall between 22% and 78% of the
+  height with ground above and below, which is where a page background colour
+  from the Decorate panel does most of the work.
 
 Every one of these is placed by arithmetic rather than by eye — a box centred
 on the cut at 33⅓% starts at `33.333 − w/2` — and they all bleed, because a

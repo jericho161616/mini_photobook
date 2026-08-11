@@ -1042,6 +1042,27 @@ export const TEMPLATES: Template[] = [
   // The columns are laid out so each x picks up exactly where the last left
   // off: that's what makes them touch. Any gap here would show as a seam of
   // page colour running down the middle of a photo wall.
+  //
+  // The tile count can't just scale with the span: a two-slide artboard is
+  // only 1.6× as wide as it is tall, so a full-height column there is nearly
+  // half the strip, where on a five-slide artboard it's a sixth. Each width
+  // gets its own arrangement rather than a stretched copy of one.
+  {
+    id: 'seamMosaic2',
+    label: '5 · Mosaic — 2 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 2,
+    bleed: true,
+    slots: [
+      { x: 0, y: 0, w: 42, h: 100 },
+      { x: 42, y: 0, w: 30, h: 54 }, // this column straddles the cut at 50%
+      { x: 42, y: 54, w: 30, h: 46 },
+      { x: 72, y: 0, w: 28, h: 46 },
+      { x: 72, y: 46, w: 28, h: 54 },
+    ],
+  },
   {
     id: 'seamMosaic3',
     label: '7 · Mosaic — 3 slides',
@@ -1058,6 +1079,26 @@ export const TEMPLATES: Template[] = [
       { x: 50, y: 58, w: 18, h: 42 },
       { x: 68, y: 0, w: 32, h: 52 },
       { x: 68, y: 52, w: 32, h: 48 },
+    ],
+  },
+  {
+    id: 'seamMosaic4',
+    label: '9 · Mosaic — 4 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 4,
+    bleed: true,
+    slots: [
+      { x: 0, y: 0, w: 21, h: 100 },
+      { x: 21, y: 0, w: 16, h: 56 }, // across the cut at 25%
+      { x: 37, y: 0, w: 14, h: 56 }, // across the cut at 50%
+      { x: 21, y: 56, w: 30, h: 44 }, // one wide tile under both of those
+      { x: 51, y: 0, w: 15, h: 100 },
+      { x: 66, y: 0, w: 15, h: 60 }, // across the cut at 75%
+      { x: 66, y: 60, w: 15, h: 40 },
+      { x: 81, y: 0, w: 19, h: 48 },
+      { x: 81, y: 48, w: 19, h: 52 },
     ],
   },
   {
@@ -1083,6 +1124,64 @@ export const TEMPLATES: Template[] = [
       { x: 69, y: 62, w: 12, h: 38 },
       { x: 81, y: 0, w: 19, h: 52 },
       { x: 81, y: 52, w: 19, h: 48 },
+    ],
+  },
+  // The banded set: the same walls floated between 22% and 78% of the height,
+  // with ground above and below. Much quieter, and the tiles come out wider
+  // than their full-height counterparts because the band is shorter than the
+  // slide — which is why each one is written out rather than derived.
+  {
+    id: 'seamMosaicBand2',
+    label: '5 · Mosaic Band — 2 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 2,
+    bleed: true,
+    slots: [
+      { x: 0, y: 22, w: 42, h: 56 },
+      { x: 42, y: 22, w: 30, h: 30 },
+      { x: 42, y: 52, w: 30, h: 26 },
+      { x: 72, y: 22, w: 28, h: 26 },
+      { x: 72, y: 48, w: 28, h: 30 },
+    ],
+  },
+  {
+    id: 'seamMosaicBand3',
+    label: '7 · Mosaic Band — 3 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 3,
+    bleed: true,
+    slots: [
+      { x: 0, y: 22, w: 28, h: 56 },
+      { x: 28, y: 22, w: 22, h: 32 },
+      { x: 28, y: 54, w: 22, h: 24 },
+      { x: 50, y: 22, w: 18, h: 32 },
+      { x: 50, y: 54, w: 18, h: 24 },
+      { x: 68, y: 22, w: 32, h: 29 },
+      { x: 68, y: 51, w: 32, h: 27 },
+    ],
+  },
+  {
+    id: 'seamMosaicBand4',
+    label: '9 · Mosaic Band — 4 slides',
+    family: 'Seamless',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    span: 4,
+    bleed: true,
+    slots: [
+      { x: 0, y: 22, w: 21, h: 56 },
+      { x: 21, y: 22, w: 16, h: 31 },
+      { x: 37, y: 22, w: 14, h: 31 },
+      { x: 21, y: 53, w: 30, h: 25 },
+      { x: 51, y: 22, w: 15, h: 56 },
+      { x: 66, y: 22, w: 15, h: 34 },
+      { x: 66, y: 56, w: 15, h: 22 },
+      { x: 81, y: 22, w: 19, h: 27 },
+      { x: 81, y: 49, w: 19, h: 29 },
     ],
   },
   {

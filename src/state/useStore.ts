@@ -141,6 +141,10 @@ interface StoreState {
   setPageBackgroundPhoto: (pageIndex: number, photoId: string | undefined) => void
   /** How much to darken the background photo, 0–100. */
   setPageBackgroundDim: (pageIndex: number, dim: number) => void
+  /** How solid the background photo is, 0–100 — 100 restores the default. */
+  setPageBackgroundOpacity: (pageIndex: number, opacity: number) => void
+  /** Film-grain speckle over the background photo, 0–100 — 0 removes it. */
+  setPageBackgroundGrain: (pageIndex: number, grain: number) => void
   /** How much of the page the background photo covers — undefined means edge to edge. */
   setPageBackgroundCoverage: (pageIndex: number, coverage: Page['backgroundPhotoCoverage']) => void
   /** Same B&W/sepia/negative treatment as a slotted photo — undefined restores full color. */
@@ -682,6 +686,22 @@ export const useStore = create<StoreState>((set, get) => {
       recordHistory()
       mutatePages((pages) =>
         pages.map((page, i) => (i === pageIndex ? { ...page, backgroundDim: dim } : page)),
+      )
+    },
+
+    setPageBackgroundOpacity(pageIndex, opacity) {
+      if (get().pages[pageIndex]?.locked) return
+      recordHistory()
+      mutatePages((pages) =>
+        pages.map((page, i) => (i === pageIndex ? { ...page, backgroundPhotoOpacity: opacity } : page)),
+      )
+    },
+
+    setPageBackgroundGrain(pageIndex, grain) {
+      if (get().pages[pageIndex]?.locked) return
+      recordHistory()
+      mutatePages((pages) =>
+        pages.map((page, i) => (i === pageIndex ? { ...page, backgroundGrain: grain } : page)),
       )
     },
 

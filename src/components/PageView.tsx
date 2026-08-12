@@ -3,6 +3,9 @@ import { getTemplate } from '../data/templates'
 import { decorationHost } from '../lib/autoLayout'
 import { PAGE_MARGIN_RATIO } from '../lib/exportPdf'
 import {
+  GRAIN_MAX_CSS,
+  GRAIN_OVERLAY_IMAGE,
+  GRAIN_TILE_PX,
   isDarkColor,
   isOverlaySlot,
   PHOTO_FILTER_CSS,
@@ -133,6 +136,8 @@ export function PageView({
   // a dark tint) needs light text instead of the usual dark ink.
   const onDark = Boolean(backgroundPhoto) || (page.backgroundColor ? isDarkColor(page.backgroundColor) : false)
   const bgTextureOverlay = page.backgroundPhotoFilter ? PHOTO_FILTER_OVERLAY[page.backgroundPhotoFilter] : undefined
+  const bgOpacity = (page.backgroundPhotoOpacity ?? 100) / 100
+  const bgGrain = page.backgroundGrain ?? 0
 
   return (
     <div
@@ -148,6 +153,7 @@ export function PageView({
               inset: backgroundPhotoInset(page.backgroundPhotoCoverage),
               backgroundImage: `url(${photoUrl(backgroundPhoto)})`,
               filter: page.backgroundPhotoFilter ? PHOTO_FILTER_CSS[page.backgroundPhotoFilter] : undefined,
+              opacity: bgOpacity,
             }}
             aria-hidden="true"
           />
@@ -158,9 +164,27 @@ export function PageView({
                 inset: backgroundPhotoInset(page.backgroundPhotoCoverage),
                 backgroundImage: bgTextureOverlay.image,
                 backgroundRepeat: bgTextureOverlay.tile ? 'repeat' : 'no-repeat',
-                backgroundSize: bgTextureOverlay.tile ? '140px 140px' : 'cover',
+                backgroundSize: bgTextureOverlay.tile ? `${GRAIN_TILE_PX}px ${GRAIN_TILE_PX}px` : 'cover',
                 mixBlendMode: bgTextureOverlay.blend,
-                opacity: bgTextureOverlay.opacity,
+                // The filter's texture is part of the photo's treatment, so it
+                // fades out with it rather than sitting over the bare paper.
+                opacity: bgTextureOverlay.opacity * bgOpacity,
+              }}
+              aria-hidden="true"
+            />
+          )}
+          {/* Grain is the print itself, not the photo — it stays put at full
+              strength however far the photo is faded back. */}
+          {bgGrain > 0 && (
+            <div
+              className="photo-texture-overlay"
+              style={{
+                inset: backgroundPhotoInset(page.backgroundPhotoCoverage),
+                backgroundImage: GRAIN_OVERLAY_IMAGE,
+                backgroundRepeat: 'repeat',
+                backgroundSize: `${GRAIN_TILE_PX}px ${GRAIN_TILE_PX}px`,
+                mixBlendMode: 'overlay',
+                opacity: (bgGrain / 100) * GRAIN_MAX_CSS,
               }}
               aria-hidden="true"
             />

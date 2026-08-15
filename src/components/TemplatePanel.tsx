@@ -99,6 +99,7 @@ export function TemplatePanel() {
   const activePageIndex = useStore((s) => s.activePageIndex)
   const applyTemplate = useStore((s) => s.applyTemplate)
   const applyHalfTemplate = useStore((s) => s.applyHalfTemplate)
+  const setDrawTool = useStore((s) => s.setDrawTool)
   const activeHalfIndex = useStore((s) => s.activeHalfIndex)
   const setActiveHalf = useStore((s) => s.setActiveHalf)
 
@@ -131,6 +132,12 @@ export function TemplatePanel() {
     otherSlides,
     maxPagesForSize(bookSize),
   )
+
+  // The blank canvas is only offered where it exists (the feed formats), and
+  // there is nothing to draw on a folded sheet — its two halves each carry
+  // their own layout.
+  const canDrawOwn = !isFolded && pageTemplates.some((t) => t.id === 'blank')
+  const drawingOwn = currentPage?.templateId === 'blank'
 
   return (
     <section className="panel">
@@ -171,6 +178,33 @@ export function TemplatePanel() {
           template={containerTemplate}
           onOpen={() => setPicking('page')}
         />
+      )}
+
+      {canDrawOwn && (
+        <button
+          className={`draw-your-own${drawingOwn ? ' active' : ''}`}
+          onClick={() => {
+            // Clears the slide and hands you the rectangle in one go — the
+            // two steps drawing a layout always starts with.
+            applyTemplate('blank')
+            setDrawTool('rect')
+          }}
+          title="Empty this slide and start drawing boxes on it"
+        >
+          <span className="icon" aria-hidden="true">
+            <span className="s" style={{ left: '6%', top: '10%', width: '44%', height: '52%' }} />
+            <span className="s" style={{ left: '54%', top: '30%', width: '40%', height: '60%' }} />
+            <span className="s round" style={{ left: '14%', top: '68%', width: '30%', height: '24%' }} />
+          </span>
+          <span className="draw-your-own-text">
+            <strong>{drawingOwn ? 'Drawing your own' : 'Draw your own'}</strong>
+            <span>
+              {drawingOwn
+                ? 'Use the shape tools beside the page'
+                : 'Empty the slide and place every box by hand'}
+            </span>
+          </span>
+        </button>
       )}
 
       {/* One half at a time — showing both at once made for a very long panel

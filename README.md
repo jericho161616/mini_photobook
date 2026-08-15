@@ -133,8 +133,11 @@ collage looks. Add them from the Decorate panel's "Photo layers" section. A
 layer arrives sized to the photo's own shape, so it isn't cropped until you
 crop it, and it carries the same filters, frames and tilt a slotted photo does.
 
-**Draw your own layout.** You don't have to start from a template at all. Pick
-the **Blank Canvas** layout for a slide with nothing on it, then use the tools
+**Draw your own layout.** You don't have to start from a template at all. The
+Layout panel offers **Draw your own** beside the templates: one click empties
+the slide and hands you the rectangle, which are the two steps drawing a layout
+always begins with. (The same blank slide is in the picker as **Blank Canvas**
+if you'd rather get there that way.) From then on you work with the tools
 floating beside the page: rectangle, rounded box, ellipse, text. Drag anywhere
 on the page to draw one, hold **Shift** to constrain a shape to a perfect
 square or circle, and press **V**, **R**, **O** or **T** to switch tools

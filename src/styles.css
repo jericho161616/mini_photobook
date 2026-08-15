@@ -1274,6 +1274,75 @@ input:focus-visible,
   white-space: nowrap;
 }
 
+/* The way into drawing, sitting with the layouts because that's where someone
+   deciding how a slide should look is already looking. The tools themselves
+   live on the canvas; this is only the door. */
+.draw-your-own {
+  width: 100%;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px dashed var(--line-firm);
+  border-radius: 8px;
+  background: var(--paper);
+  text-align: left;
+}
+
+.draw-your-own:hover {
+  border-color: var(--brass);
+  border-style: solid;
+}
+
+.draw-your-own.active {
+  border-color: var(--navy);
+  border-style: solid;
+  background: var(--linen);
+}
+
+.draw-your-own .icon {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  flex: none;
+}
+
+.draw-your-own .icon .s {
+  position: absolute;
+  border: 1px dashed var(--ink-soft);
+  border-radius: 1px;
+  opacity: 0.6;
+}
+
+.draw-your-own .icon .s.round {
+  border-radius: 4px;
+}
+
+.draw-your-own.active .icon .s {
+  border-color: var(--navy);
+  opacity: 0.85;
+}
+
+.draw-your-own-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.draw-your-own-text strong {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.draw-your-own-text span {
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  line-height: 1.35;
+}
+
 /* ---- The drawing tools, floating against the canvas ---- */
 .tool-cluster {
   position: absolute;

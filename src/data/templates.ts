@@ -783,6 +783,21 @@ export const TEMPLATES: Template[] = [
     ],
   },
 
+  {
+    id: 'blank',
+    label: '0 · Blank Canvas',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    bleed: true,
+    // No slots at all — the starting point for drawing your own layout with
+    // the Draw a box tool. Marked manual so auto-layout never picks it: with
+    // nothing to fit a photo into it would otherwise score as a flawless fit
+    // for every page.
+    manual: true,
+    slots: [],
+  },
+
   // ---- Feed contact sheets and editorial grids ----
   // These carry more frames than any print trim allows, which is why the feed
   // sizes raise maxPhotosPerPage — a dozen photos on paper reads as crowded,

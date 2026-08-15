@@ -152,20 +152,59 @@ function PhotoBoxContent({
   box,
   photo,
   containerSize,
+  onDropPhoto,
+  onPick,
 }: {
   box: PhotoBox
   photo: Photo | undefined
   containerSize: { w: number; h: number }
+  onDropPhoto: (photoId: string) => void
+  onPick: () => void
 }) {
-  if (!photo) return null
+  const [dragOver, setDragOver] = useState(false)
+
+  // An empty box is a hole in the layout you drew, waiting to be filled — so
+  // it behaves like a template slot: drop a photo on it, or click it.
+  if (!box.placement || !photo) {
+    return (
+      <div
+        className={`photobox-empty${dragOver ? ' drop-target' : ''}`}
+        onDragOver={(e) => {
+          e.preventDefault()
+          setDragOver(true)
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault()
+          setDragOver(false)
+          const photoId = e.dataTransfer.getData('text/photo-id')
+          if (photoId) onDropPhoto(photoId)
+        }}
+        onDoubleClick={(e) => {
+          e.stopPropagation()
+          onPick()
+        }}
+      >
+        <span>Drop a photo</span>
+      </div>
+    )
+  }
+
   const boxW = containerSize.w * (box.w / 100)
   const boxH = containerSize.h * (box.h / 100)
   const geo = coverGeometry(photo.width / photo.height, boxW, boxH, box.placement)
   const rotation = box.placement.rotation ?? 0
+  const filter = box.placement.filter
   return (
     <div
       className={`photobox-art${box.placement.frame ? ` frame-${box.placement.frame}` : ''}`}
       style={{ transform: rotation ? `rotate(${rotation}deg)` : undefined }}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault()
+        const photoId = e.dataTransfer.getData('text/photo-id')
+        if (photoId) onDropPhoto(photoId)
+      }}
     >
       <img
         src={photoUrl(photo)}
@@ -176,7 +215,7 @@ function PhotoBoxContent({
           top: geo.y,
           width: geo.drawWidth,
           height: geo.drawHeight,
-          filter: box.placement.filter ? PHOTO_FILTER_CSS[box.placement.filter] : undefined,
+          filter: filter ? PHOTO_FILTER_CSS[filter] : undefined,
         }}
       />
     </div>
@@ -199,6 +238,10 @@ interface DecorationLayerProps {
   onChangeSticker: (id: string, patch: Partial<Sticker>) => void
   onChangeTextBox: (id: string, patch: Partial<TextBox>) => void
   onChangePhotoBox: (id: string, patch: Partial<PhotoBox>) => void
+  /** Puts a photo into a drawn box — from a drag, or from the picker a double-click opens. */
+  onFillPhotoBox: (id: string, photoId: string) => void
+  /** Opens the quick picker for an empty drawn box. */
+  onPickForPhotoBox: (id: string) => void
   onDelete: (kind: 'sticker' | 'textBox' | 'photoBox', id: string) => void
   onEditText: (id: string, text: string) => void
 }
@@ -278,6 +321,8 @@ export function DecorationLayer({
   onChangeSticker,
   onChangeTextBox,
   onChangePhotoBox,
+  onFillPhotoBox,
+  onPickForPhotoBox,
   onDelete,
   onEditText,
 }: DecorationLayerProps) {
@@ -314,8 +359,10 @@ export function DecorationLayer({
         >
           <PhotoBoxContent
             box={box}
-            photo={photos.get(box.placement.photoId)}
+            photo={box.placement ? photos.get(box.placement.photoId) : undefined}
             containerSize={containerSize}
+            onDropPhoto={(photoId) => onFillPhotoBox(box.id, photoId)}
+            onPick={() => onPickForPhotoBox(box.id)}
           />
         </DecorationBox>
       ))}

@@ -681,6 +681,9 @@ export async function renderPageCanvas(
     // below the stickers and text, matching how DecorationLayer stacks them on
     // screen. Within the list, array order is the stacking order.
     for (const box of host.photoBoxes ?? []) {
+      // A drawn box with nothing in it yet is a hole in the layout, not a
+      // shape — the export has nothing to draw for it.
+      if (!box.placement) continue
       drawSlot(
         {
           x: offsetX + (box.x / 100) * containerW,
@@ -869,7 +872,9 @@ export async function buildBitmapMaps(
       if (placement) needed.add(placement.photoId)
     }
     // Freely placed photos need decoding too, or they'd silently export blank.
-    for (const box of pagePhotoBoxes(page)) needed.add(box.placement.photoId)
+    for (const box of pagePhotoBoxes(page)) {
+      if (box.placement) needed.add(box.placement.photoId)
+    }
     if (page.backgroundPhotoId) needed.add(page.backgroundPhotoId)
   }
 

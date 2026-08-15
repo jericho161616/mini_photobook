@@ -152,7 +152,7 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
                 {/* Freely placed photos sit above the slots here too, so the
                     thumbnail matches what the page actually looks like. */}
                 {pagePhotoBoxes(page).map((box) => {
-                  const photo = photos.get(box.placement.photoId)
+                  const photo = box.placement ? photos.get(box.placement.photoId) : undefined
                   if (!photo) return null
                   return (
                     <span
@@ -163,7 +163,7 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
                         top: `${box.y}%`,
                         width: `${box.w}%`,
                         height: `${box.h}%`,
-                        transform: box.placement.rotation
+                        transform: box.placement?.rotation
                           ? `rotate(${box.placement.rotation}deg)`
                           : undefined,
                       }}

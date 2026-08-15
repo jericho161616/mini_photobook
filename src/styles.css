@@ -1222,6 +1222,67 @@ input:focus-visible,
   border: 5px solid #fdfcf8;
 }
 
+/* An empty drawn box: a hole in your own layout, waiting for a photo. Styled
+   like a template's empty slot, because that is what it is — one you made. */
+.photobox-empty {
+  position: absolute;
+  inset: 0;
+  border: 1.5px dashed var(--line-firm, #cfcec9);
+  border-radius: 2px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.photobox-empty span {
+  font-size: 11px;
+  color: var(--ink-faint, #9a9c9e);
+  pointer-events: none;
+}
+
+.photobox-empty.drop-target {
+  border-color: var(--brass);
+  border-style: solid;
+  background: rgba(169, 130, 47, 0.12);
+}
+
+/* The surface that turns a drag on the page into a new box. Sits above
+   everything so a drag can start over a photo without panning it. */
+.draw-surface {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  cursor: crosshair;
+}
+
+.draw-marquee {
+  position: absolute;
+  border: 1.5px solid var(--brass);
+  background: rgba(169, 130, 47, 0.14);
+  pointer-events: none;
+}
+
+.draw-marquee span {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  margin-top: 3px;
+  font-size: 10px;
+  color: var(--brass);
+  white-space: nowrap;
+}
+
+.draw-box-btn {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.draw-box-btn.active {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: var(--paper);
+}
+
 /* The tray of photos that can be dropped onto a page as a layer. */
 .photolayer-tray {
   display: grid;

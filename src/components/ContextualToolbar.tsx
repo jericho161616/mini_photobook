@@ -178,7 +178,7 @@ export function ContextualToolbar() {
       // sits over the canvas, so its own clicks must not count as that.
       onMouseDown={(e) => e.stopPropagation()}
     >
-      {photoBox && (
+      {photoBox?.placement && (
         <>
           <button
             className="ctx-btn"
@@ -205,7 +205,7 @@ export function ContextualToolbar() {
           <span className="ctx-sep" />
           <button
             className="ctx-btn"
-            onClick={() => patchPhoto({ rotation: (photoBox.placement.rotation ?? 0) - ROTATE_STEP_DEG })}
+            onClick={() => patchPhoto({ rotation: (photoBox.placement!.rotation ?? 0) - ROTATE_STEP_DEG })}
             title={`Rotate left ${ROTATE_STEP_DEG}°`}
             aria-label={`Rotate left ${ROTATE_STEP_DEG} degrees`}
           >
@@ -216,7 +216,7 @@ export function ContextualToolbar() {
           </button>
           <button
             className="ctx-btn"
-            onClick={() => patchPhoto({ rotation: (photoBox.placement.rotation ?? 0) + ROTATE_STEP_DEG })}
+            onClick={() => patchPhoto({ rotation: (photoBox.placement!.rotation ?? 0) + ROTATE_STEP_DEG })}
             title={`Rotate right ${ROTATE_STEP_DEG}°`}
             aria-label={`Rotate right ${ROTATE_STEP_DEG} degrees`}
           >
@@ -229,9 +229,9 @@ export function ContextualToolbar() {
           {PHOTO_FILTERS.map((f) => (
             <button
               key={f.label}
-              className={`ctx-chip${(photoBox.placement.filter ?? undefined) === f.id ? ' active' : ''}`}
+              className={`ctx-chip${(photoBox.placement!.filter ?? undefined) === f.id ? ' active' : ''}`}
               onClick={() => patchPhoto({ filter: f.id })}
-              aria-pressed={(photoBox.placement.filter ?? undefined) === f.id}
+              aria-pressed={(photoBox.placement!.filter ?? undefined) === f.id}
               title={`${f.label} treatment`}
             >
               {f.label}
@@ -241,9 +241,9 @@ export function ContextualToolbar() {
           {PHOTO_FRAMES.map((f) => (
             <button
               key={f.label}
-              className={`ctx-chip${(photoBox.placement.frame ?? undefined) === f.id ? ' active' : ''}`}
+              className={`ctx-chip${(photoBox.placement!.frame ?? undefined) === f.id ? ' active' : ''}`}
               onClick={() => patchPhoto({ frame: f.id })}
-              aria-pressed={(photoBox.placement.frame ?? undefined) === f.id}
+              aria-pressed={(photoBox.placement!.frame ?? undefined) === f.id}
               title={`${f.label} frame`}
             >
               {f.label}

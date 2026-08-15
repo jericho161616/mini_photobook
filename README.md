@@ -133,6 +133,19 @@ collage looks. Add them from the Decorate panel's "Photo layers" section. A
 layer arrives sized to the photo's own shape, so it isn't cropped until you
 crop it, and it carries the same filters, frames and tilt a slotted photo does.
 
+**Draw your own layout.** You don't have to start from a template at all. Pick
+the **Blank Canvas** layout for a slide with nothing on it, then **Draw a box**
+in the Decorate panel and drag out a rectangle wherever you want one. Drawn
+boxes start empty, showing "Drop a photo" — fill one by dragging a photo onto
+it, by clicking a photo in the tray and then the box, or by double-clicking it
+to open the library. Draw as many as you like, in any arrangement; they move,
+resize, overlap and restack exactly like any other photo layer.
+
+Boxes land on a half-percent grid, which is fine enough not to fight you and
+coarse enough that two boxes drawn to look aligned actually are. A drag that
+turns out to be a click makes nothing rather than leaving a sliver behind, and
+the tool disarms itself after each box so it can't be left on by accident.
+
 **Sizes across five groups.** Nine standard photobook trims (6×6 up to 14×11),
 the ISO paper sizes a home printer actually takes (A6–A3, including A4
 Landscape), the standard 4R photo-lab print in both orientations, a Polaroid-style

@@ -108,8 +108,12 @@ export interface PhotoBox {
   y: number
   w: number
   h: number
-  /** How the photo sits inside the box — the same crop, filter, frame and tilt a slotted photo gets. */
-  placement: Placement
+  /**
+   * How the photo sits inside the box — the same crop, filter, frame and tilt
+   * a slotted photo gets. Null while the box is still empty, which is what
+   * lets you draw the layout first and decide what goes in it afterwards.
+   */
+  placement: Placement | null
 }
 
 /** A slot rect in page-relative percentages, measured inside the page margin. */
@@ -181,6 +185,13 @@ export interface Template {
    * angle per slot instead of only the second one.
    */
   slotRotations?: number[]
+  /**
+   * Never offered to the auto-layout engine. Set on the blank canvas, which
+   * has no slots at all: it's a perfectly good starting point when you're
+   * placing everything by hand, and a useless one for a machine trying to fit
+   * photos into slots that don't exist.
+   */
+  manual?: boolean
   /**
    * How many slides wide this layout is. Undefined (or 1) is the ordinary
    * case: one page, one output file.

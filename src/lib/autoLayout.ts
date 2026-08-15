@@ -70,11 +70,17 @@ function templateCost(template: Template, photos: Photo[], pageRatio: number): n
   return total / template.slots.length
 }
 
-/** Templates suited to this trim, falling back to everything if none match. */
+/**
+ * Templates suited to this trim, falling back to everything if none match.
+ * Manual-only layouts are dropped first: the blank canvas has no slots, so
+ * auto-layout has nowhere to put a photo and would score it as a perfect fit
+ * for every page (0 slots, 0 cost) if it were left in.
+ */
 function shapeFitting(candidates: Template[], size: BookSize): Template[] {
+  const usable = candidates.filter((t) => !t.manual && t.slots.length > 0)
   const shape = bookShape(size)
-  const fitting = candidates.filter((t) => t.fits.includes(shape))
-  return fitting.length > 0 ? fitting : candidates
+  const fitting = usable.filter((t) => t.fits.includes(shape))
+  return fitting.length > 0 ? fitting : usable
 }
 
 let pageSeq = 0
@@ -451,7 +457,9 @@ export function usedPhotoIds(pages: Page[]): Set<string> {
     for (const placement of pagePlacements(page)) {
       if (placement) used.add(placement.photoId)
     }
-    for (const box of pagePhotoBoxes(page)) used.add(box.placement.photoId)
+    for (const box of pagePhotoBoxes(page)) {
+      if (box.placement) used.add(box.placement.photoId)
+    }
   }
   return used
 }

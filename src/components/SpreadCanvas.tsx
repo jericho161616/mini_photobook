@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { a4FamilyOptions, foldOrientationForSize, getSize, sizeRatio } from '../data/sizes'
 import { artboardSize, resolvePageSize, usedPhotoIds } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
+import type { DecorationRef } from '../state/useStore'
 import type { Page, Photo } from '../types'
 import { PageView } from './PageView'
 
@@ -51,6 +52,10 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
   const updateSticker = useStore((s) => s.updateSticker)
   const updateTextBox = useStore((s) => s.updateTextBox)
   const updatePhotoBox = useStore((s) => s.updatePhotoBox)
+  const fillPhotoBox = useStore((s) => s.fillPhotoBox)
+  const drawPhotoBox = useStore((s) => s.drawPhotoBox)
+  const drawingBox = useStore((s) => s.drawingBox)
+  const setDrawingBox = useStore((s) => s.setDrawingBox)
   const removeDecoration = useStore((s) => s.removeDecoration)
 
   const size = getSize(sizeId)
@@ -90,6 +95,17 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [armedPhotoIds.length, armPhoto])
+
+  // Escape backs out of the drawing tool, same as it backs out of everything
+  // else that's momentarily armed.
+  useEffect(() => {
+    if (!drawingBox) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setDrawingBox(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [drawingBox, setDrawingBox])
 
   useEffect(() => {
     if (!quickPickKey) return
@@ -224,12 +240,36 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
         onOpenLibrary()
       },
     },
+    draw: {
+      active: drawingBox,
+      onDraw: (rect: { x: number; y: number; w: number; h: number }) => {
+        drawPhotoBox(activePageIndex, undefined, rect)
+      },
+    },
     decorations: {
       selected: selectedDecoration,
-      onSelect: selectDecoration,
+      // Clicking an empty drawn box while a photo is picked up drops it in,
+      // exactly as clicking an empty slot would — the box is a slot you made
+      // yourself, so it should behave like one.
+      onSelect: (ref: DecorationRef) => {
+        if (ref.kind === 'photoBox' && armedPhotoIds.length > 0) {
+          const box = pages[ref.pageIndex]?.photoBoxes?.find((b) => b.id === ref.id)
+          if (box && !box.placement) {
+            fillPhotoBox(ref, armedPhotoIds[0])
+            armPhoto(armedPhotoIds[0])
+            return
+          }
+        }
+        selectDecoration(ref)
+      },
       onChangeSticker: updateSticker,
       onChangeTextBox: updateTextBox,
       onChangePhotoBox: updatePhotoBox,
+      onFillPhotoBox: fillPhotoBox,
+      // Double-clicking an empty box goes straight to the full library — the
+      // quick picker belongs to slots, which have a known place on the page;
+      // a box you just drew is usually waiting on a specific photo.
+      onPickForPhotoBox: () => onOpenLibrary(),
       onDelete: removeDecoration,
     },
   })

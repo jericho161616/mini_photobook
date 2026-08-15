@@ -89,6 +89,13 @@ interface StoreState {
   armedPhotoIds: string[]
   /** A brief, self-clearing message about the last import — e.g. how many duplicate photos were skipped. */
   importNotice: string | null
+  /**
+   * True while the Draw-a-box tool is armed. Dragging on the page then marks
+   * out a photo box instead of panning whatever is under the cursor — the one
+   * mode the editor has, and it turns itself off after each box so it can't be
+   * left on by accident.
+   */
+  drawingBox: boolean
   /** Snapshots of {pages, title, sizeId, customStickers} to step back/forward through — photo library changes aren't included, since a deleted photo's file is truly gone. */
   undoStack: HistorySnapshot[]
   redoStack: HistorySnapshot[]
@@ -161,6 +168,19 @@ interface StoreState {
   addTextBox: (pageIndex: number, halfIndex: 0 | 1 | undefined) => void
   /** Drops a photo onto the page as a freely placed layer rather than into a template slot. */
   addPhotoBox: (pageIndex: number, halfIndex: 0 | 1 | undefined, photoId: string) => void
+  /**
+   * Adds an empty box at a rect you drew on the canvas — the freehand way to
+   * build a layout: draw the shapes first, decide what goes in them after.
+   * Returns the new box's id so the caller can select it.
+   */
+  drawPhotoBox: (
+    pageIndex: number,
+    halfIndex: 0 | 1 | undefined,
+    rect: { x: number; y: number; w: number; h: number },
+  ) => string | undefined
+  /** Puts a photo into an already-drawn box. */
+  fillPhotoBox: (ref: DecorationRef, photoId: string) => void
+  setDrawingBox: (drawing: boolean) => void
   /** Moves or resizes a photo box — the rect only; see updatePhotoBoxPlacement for what's inside it. */
   updatePhotoBox: (ref: DecorationRef, patch: Partial<Omit<PhotoBox, 'id' | 'placement'>>) => void
   /** Adjusts the photo inside a box: crop, zoom, filter, frame, tilt. */
@@ -265,6 +285,7 @@ export const useStore = create<StoreState>((set, get) => {
     importing: false,
     armedPhotoIds: [],
     importNotice: null,
+    drawingBox: false,
     undoStack: [],
     redoStack: [],
 
@@ -361,7 +382,7 @@ export const useStore = create<StoreState>((set, get) => {
       // A photo box whose photo is gone would linger as an invisible but still
       // draggable rectangle, so it's removed outright rather than emptied.
       const stripBoxes = (boxes: PhotoBox[] | undefined) =>
-        boxes?.filter((b) => !idSet.has(b.placement.photoId))
+        boxes?.filter((b) => !b.placement || !idSet.has(b.placement.photoId))
       mutatePages((pages) =>
         pages.map((page) => ({
           ...page,
@@ -888,6 +909,63 @@ export const useStore = create<StoreState>((set, get) => {
       set({ selectedDecoration: { pageIndex, halfIndex, kind: 'photoBox', id }, selected: null })
     },
 
+    setDrawingBox(drawing) {
+      set({ drawingBox: drawing })
+    },
+
+    drawPhotoBox(pageIndex, halfIndex, rect) {
+      const page = get().pages[pageIndex]
+      if (!page || page.locked) return undefined
+      recordHistory()
+      const id = nextDecorationId()
+      const box: PhotoBox = { id, ...rect, placement: null }
+      mutatePages((all) =>
+        all.map((p, i) => {
+          if (i !== pageIndex) return p
+          if (halfIndex !== undefined && p.halves) {
+            const halves = [...p.halves] as [HalfLayout, HalfLayout]
+            const host = halves[halfIndex]
+            halves[halfIndex] = { ...host, photoBoxes: [...(host.photoBoxes ?? []), box] }
+            return { ...p, halves }
+          }
+          return { ...p, photoBoxes: [...(p.photoBoxes ?? []), box] }
+        }),
+      )
+      // One box per arming: drawing several in a row is a deliberate choice
+      // each time rather than a mode you can forget you left on.
+      set({
+        selectedDecoration: { pageIndex, halfIndex, kind: 'photoBox', id },
+        selected: null,
+        drawingBox: false,
+      })
+      return id
+    },
+
+    fillPhotoBox(ref, photoId) {
+      if (get().pages[ref.pageIndex]?.locked) return
+      recordHistory()
+      mutatePages((pages) =>
+        pages.map((page, i) => {
+          if (i !== ref.pageIndex) return page
+          // Keeps whatever crop, filter and frame the box already had, so
+          // swapping the photo in a styled box doesn't reset how it's styled.
+          const edit = (boxes: PhotoBox[] | undefined): PhotoBox[] =>
+            (boxes ?? []).map((b) => {
+              if (b.id !== ref.id) return b
+              const placement: Placement = { ...(b.placement ?? placementFor(photoId)), photoId }
+              return { ...b, placement }
+            })
+          if (ref.halfIndex !== undefined && page.halves) {
+            const halves = [...page.halves] as [HalfLayout, HalfLayout]
+            const host = halves[ref.halfIndex]
+            halves[ref.halfIndex] = { ...host, photoBoxes: edit(host.photoBoxes) }
+            return { ...page, halves }
+          }
+          return { ...page, photoBoxes: edit(page.photoBoxes) }
+        }),
+      )
+    },
+
     updatePhotoBox(ref, patch) {
       if (get().pages[ref.pageIndex]?.locked) return
       recordHistory()
@@ -913,9 +991,12 @@ export const useStore = create<StoreState>((set, get) => {
       mutatePages((pages) =>
         pages.map((page, i) => {
           if (i !== ref.pageIndex) return page
-          const edit = (boxes: PhotoBox[] | undefined) =>
+          // An empty box has no crop, filter or frame to adjust — the toolbar
+          // hides these controls for one, and this is the backstop that stops
+          // a patch from inventing a placement with no photo in it.
+          const edit = (boxes: PhotoBox[] | undefined): PhotoBox[] =>
             (boxes ?? []).map((b) =>
-              b.id === ref.id ? { ...b, placement: { ...b.placement, ...patch } } : b,
+              b.id === ref.id && b.placement ? { ...b, placement: { ...b.placement, ...patch } } : b,
             )
           if (ref.halfIndex !== undefined && page.halves) {
             const halves = [...page.halves] as [HalfLayout, HalfLayout]

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { DEFAULT_TEXT_STYLE, fontSizeScale, fontStack } from '../data/fonts'
 import { getTemplate } from '../data/templates'
 import { decorationHost, spanOf } from '../lib/autoLayout'
@@ -21,6 +22,19 @@ import type { DecorationRef } from '../state/useStore'
 import type { CustomSticker, Page, Photo, PhotoBox, Sticker, TextBox } from '../types'
 import { DecorationLayer } from './DecorationLayer'
 import { SlotView } from './SlotView'
+
+/**
+ * Hand-drawn boxes land on a half-percent grid. Fine enough that nothing feels
+ * like it's fighting you, coarse enough that two boxes drawn to look aligned
+ * actually end up aligned.
+ */
+const DRAW_SNAP_PCT = 0.5
+/** Below this, a drag was really a click and no box is made. */
+const MIN_DRAW_PCT = 3
+
+function snap(value: number): number {
+  return Math.round(value / DRAW_SNAP_PCT) * DRAW_SNAP_PCT
+}
 
 const CAPTION_CLASS: Record<string, string> = {
   centered: ' centered',
@@ -90,10 +104,18 @@ interface PageViewProps {
     onChangeSticker: (ref: DecorationRef, patch: Partial<Sticker>) => void
     onChangeTextBox: (ref: DecorationRef, patch: Partial<TextBox>) => void
     onChangePhotoBox: (ref: DecorationRef, patch: Partial<PhotoBox>) => void
+    onFillPhotoBox: (ref: DecorationRef, photoId: string) => void
+    onPickForPhotoBox: (ref: DecorationRef) => void
     onDelete: (ref: DecorationRef) => void
   }
   /** The book's own drawn-sticker library, for resolving a placed 'custom' sticker's artwork. */
   customStickers: CustomSticker[]
+  /**
+   * Set while the Draw-a-box tool is armed: dragging anywhere on the page
+   * marks out a rect instead of panning or selecting, and hands it back in
+   * page percentages.
+   */
+  draw?: { active: boolean; onDraw: (rect: { x: number; y: number; w: number; h: number }) => void }
 }
 
 export function PageView({
@@ -117,7 +139,11 @@ export function PageView({
   foldOrientation,
   decorations,
   customStickers,
+  draw,
 }: PageViewProps) {
+  // The rect being dragged out right now, in page percentages. Local state:
+  // it only matters until the mouse comes up, at which point it becomes a box.
+  const [drawing, setDrawing] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
   if (!page) {
     // Odd page counts leave the final verso empty rather than inventing a page.
     return <div className={`page ${side} blank`} style={{ width, height }} />
@@ -149,6 +175,67 @@ export function PageView({
       style={{ width, height, backgroundColor: page.backgroundColor }}
       data-page-index={pageIndex}
     >
+      {draw?.active && !page.locked && (
+        <div
+          className="draw-surface"
+          onMouseDown={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            const rect = e.currentTarget.getBoundingClientRect()
+            const start = {
+              x: ((e.clientX - rect.left) / rect.width) * 100,
+              y: ((e.clientY - rect.top) / rect.height) * 100,
+            }
+
+            // The live rect is tracked here as well as in state. A state
+            // updater has to be pure — React calls it more than once in
+            // development — so creating the box from inside one made every
+            // drag produce two boxes. State drives the preview; this drives
+            // the result.
+            let latest: { x: number; y: number; w: number; h: number } | null = null
+
+            const onMove = (ev: MouseEvent) => {
+              const x = ((ev.clientX - rect.left) / rect.width) * 100
+              const y = ((ev.clientY - rect.top) / rect.height) * 100
+              latest = {
+                x: snap(Math.min(start.x, x)),
+                y: snap(Math.min(start.y, y)),
+                w: snap(Math.abs(x - start.x)),
+                h: snap(Math.abs(y - start.y)),
+              }
+              setDrawing(latest)
+            }
+            const onUp = () => {
+              window.removeEventListener('mousemove', onMove)
+              window.removeEventListener('mouseup', onUp)
+              setDrawing(null)
+              // A click rather than a drag would otherwise leave a sliver of a
+              // box behind, so anything below a usable size is discarded.
+              if (latest && latest.w >= MIN_DRAW_PCT && latest.h >= MIN_DRAW_PCT) {
+                draw.onDraw(latest)
+              }
+            }
+            window.addEventListener('mousemove', onMove)
+            window.addEventListener('mouseup', onUp)
+          }}
+        >
+          {drawing && (
+            <div
+              className="draw-marquee"
+              style={{
+                left: `${drawing.x}%`,
+                top: `${drawing.y}%`,
+                width: `${drawing.w}%`,
+                height: `${drawing.h}%`,
+              }}
+            >
+              <span className="mono">
+                {Math.round(drawing.w)}% × {Math.round(drawing.h)}%
+              </span>
+            </div>
+          )}
+        </div>
+      )}
       {backgroundPhoto && (
         <>
           <div
@@ -410,6 +497,12 @@ export function PageView({
                       onChangePhotoBox={(id, patch) =>
                         decorations.onChangePhotoBox({ pageIndex, halfIndex: h, kind: 'photoBox', id }, patch)
                       }
+                      onFillPhotoBox={(id, photoId) =>
+                        decorations.onFillPhotoBox({ pageIndex, halfIndex: h, kind: 'photoBox', id }, photoId)
+                      }
+                      onPickForPhotoBox={(id) =>
+                        decorations.onPickForPhotoBox({ pageIndex, halfIndex: h, kind: 'photoBox', id })
+                      }
                       onDelete={(kind, id) => decorations.onDelete({ pageIndex, halfIndex: h, kind, id })}
                       onEditText={(id, text) =>
                         decorations.onChangeTextBox({ pageIndex, halfIndex: h, kind: 'textBox', id }, { text })
@@ -488,6 +581,10 @@ export function PageView({
             onChangePhotoBox={(id, patch) =>
               decorations.onChangePhotoBox({ pageIndex, kind: 'photoBox', id }, patch)
             }
+            onFillPhotoBox={(id, photoId) =>
+              decorations.onFillPhotoBox({ pageIndex, kind: 'photoBox', id }, photoId)
+            }
+            onPickForPhotoBox={(id) => decorations.onPickForPhotoBox({ pageIndex, kind: 'photoBox', id })}
             onDelete={(kind, id) => decorations.onDelete({ pageIndex, kind, id })}
             onEditText={(id, text) =>
               decorations.onChangeTextBox({ pageIndex, kind: 'textBox', id }, { text })

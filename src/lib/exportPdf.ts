@@ -8,6 +8,8 @@ import {
   CLIP_WIDTH_RATIO,
   coverGeometry,
   FRAME_INSET_RATIO,
+  GRAIN_MAX_CANVAS,
+  GRAIN_TILE_PX,
   isDarkColor,
   isOverlaySlot,
   PAPERCLIP_ASPECT,
@@ -89,10 +91,19 @@ function getPaperTexture(): HTMLCanvasElement {
   return canvas
 }
 
-/** Multiplies the paper-crease texture over `rect` — call with the same clip already active as the photo it's shading. */
-function drawPaperCrease(ctx: CanvasRenderingContext2D, rect: { x: number; y: number; w: number; h: number }) {
+/**
+ * Multiplies the paper-crease texture over `rect` — call with the same clip
+ * already active as the photo it's shading. `strength` scales it down for a
+ * faded background photo, since it sets globalAlpha outright and would
+ * otherwise ignore whatever the caller had set.
+ */
+function drawPaperCrease(
+  ctx: CanvasRenderingContext2D,
+  rect: { x: number; y: number; w: number; h: number },
+  strength = 1,
+) {
   ctx.save()
-  ctx.globalAlpha = 0.28
+  ctx.globalAlpha = 0.28 * strength
   ctx.globalCompositeOperation = 'multiply'
   ctx.drawImage(getPaperTexture(), rect.x, rect.y, rect.w, rect.h)
   ctx.restore()
@@ -102,7 +113,7 @@ function drawPaperCrease(ctx: CanvasRenderingContext2D, rect: { x: number; y: nu
 let grainPattern: CanvasPattern | null = null
 function getGrainPattern(ctx: CanvasRenderingContext2D): CanvasPattern {
   if (grainPattern) return grainPattern
-  const size = 140
+  const size = GRAIN_TILE_PX
   const canvas = document.createElement('canvas')
   canvas.width = size
   canvas.height = size
@@ -125,12 +136,32 @@ function getGrainPattern(ctx: CanvasRenderingContext2D): CanvasPattern {
   return grainPattern
 }
 
-/** Overlays fine grain speckle over `rect` — call with the same clip already active as the photo it's shading. */
-function drawFilmGrain(ctx: CanvasRenderingContext2D, rect: { x: number; y: number; w: number; h: number }) {
+/**
+ * The speckle is one pixel per grain, so drawn 1:1 it gets finer the higher the
+ * export resolution — a 300 DPI page came out about four times tighter than the
+ * screen preview, which for a slider you dial in by eye is just wrong. Scaling
+ * the pattern by the resolution instead pins each speck to a fixed physical
+ * size, near enough to what a CSS pixel covers on screen at the editor's zoom.
+ */
+const GRAIN_DESIGN_DPI = 96
+
+/**
+ * Overlays fine grain speckle over `rect` — call with the same clip already
+ * active as the photo it's shading. `alpha` defaults to the Film filter's own
+ * amount; the standalone Grain slider passes its own.
+ */
+function drawFilmGrain(
+  ctx: CanvasRenderingContext2D,
+  rect: { x: number; y: number; w: number; h: number },
+  alpha = 0.16,
+  dpi = GRAIN_DESIGN_DPI,
+) {
   ctx.save()
-  ctx.globalAlpha = 0.16
+  ctx.globalAlpha = alpha
   ctx.globalCompositeOperation = 'overlay'
-  ctx.fillStyle = getGrainPattern(ctx)
+  const pattern = getGrainPattern(ctx)
+  pattern.setTransform(new DOMMatrix().scaleSelf(dpi / GRAIN_DESIGN_DPI))
+  ctx.fillStyle = pattern
   ctx.fillRect(rect.x, rect.y, rect.w, rect.h)
   ctx.restore()
 }
@@ -239,11 +270,18 @@ export async function renderPageCanvas(
     ctx.beginPath()
     ctx.rect(bgRect.x, bgRect.y, bgRect.w, bgRect.h)
     ctx.clip()
+    const bgOpacity = (page.backgroundPhotoOpacity ?? 100) / 100
+    ctx.globalAlpha = bgOpacity
     ctx.filter = page.backgroundPhotoFilter ? (FILTER_CANVAS[page.backgroundPhotoFilter] ?? 'none') : 'none'
     ctx.drawImage(backgroundBitmap, bgRect.x + geo.x, bgRect.y + geo.y, geo.drawWidth, geo.drawHeight)
     ctx.filter = 'none'
-    if (page.backgroundPhotoFilter === 'paper') drawPaperCrease(ctx, bgRect)
-    if (page.backgroundPhotoFilter === 'film') drawFilmGrain(ctx, bgRect)
+    ctx.globalAlpha = 1
+    // The filter's own texture fades with the photo; the Grain slider's
+    // doesn't — same split PageView draws on screen.
+    if (page.backgroundPhotoFilter === 'paper') drawPaperCrease(ctx, bgRect, bgOpacity)
+    if (page.backgroundPhotoFilter === 'film') drawFilmGrain(ctx, bgRect, 0.16 * bgOpacity, dpi)
+    const bgGrain = page.backgroundGrain ?? 0
+    if (bgGrain > 0) drawFilmGrain(ctx, bgRect, (bgGrain / 100) * GRAIN_MAX_CANVAS, dpi)
     ctx.fillStyle = `rgba(10, 8, 5, ${(page.backgroundDim ?? 35) / 100})`
     ctx.fillRect(bgRect.x, bgRect.y, bgRect.w, bgRect.h)
     ctx.restore()
@@ -279,7 +317,7 @@ export async function renderPageCanvas(
     ctx.drawImage(bitmap, rect.x + geo.x, rect.y + geo.y, geo.drawWidth, geo.drawHeight)
     ctx.filter = 'none'
     if (filterKey === 'paper') drawPaperCrease(ctx, rect)
-    if (filterKey === 'film') drawFilmGrain(ctx, rect)
+    if (filterKey === 'film') drawFilmGrain(ctx, rect, 0.16, dpi)
     ctx.restore()
   }
 

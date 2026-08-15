@@ -84,6 +84,8 @@ export function DecoratePanel() {
   const setPageBackground = useStore((s) => s.setPageBackground)
   const setPageBackgroundPhoto = useStore((s) => s.setPageBackgroundPhoto)
   const setPageBackgroundDim = useStore((s) => s.setPageBackgroundDim)
+  const setPageBackgroundOpacity = useStore((s) => s.setPageBackgroundOpacity)
+  const setPageBackgroundGrain = useStore((s) => s.setPageBackgroundGrain)
   const setPageBackgroundCoverage = useStore((s) => s.setPageBackgroundCoverage)
   const setPageBackgroundFilter = useStore((s) => s.setPageBackgroundFilter)
   const setPageMarginScale = useStore((s) => s.setPageMarginScale)
@@ -219,6 +221,40 @@ export function DecoratePanel() {
                 </button>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Opacity fades the photo towards the paper; Darken lays a scrim over
+            it. Both quiet a busy background, but only one keeps its color. */}
+        {page.backgroundPhotoId !== undefined && (
+          <div className="inspector-row">
+            <label htmlFor="bg-opacity">Opacity</label>
+            <input
+              id="bg-opacity"
+              type="range"
+              min={10}
+              max={100}
+              step={5}
+              value={page.backgroundPhotoOpacity ?? 100}
+              onChange={(e) => setPageBackgroundOpacity(activePageIndex, Number(e.target.value))}
+            />
+            <span className="value mono">{page.backgroundPhotoOpacity ?? 100}%</span>
+          </div>
+        )}
+
+        {page.backgroundPhotoId !== undefined && (
+          <div className="inspector-row">
+            <label htmlFor="bg-grain">Grain</label>
+            <input
+              id="bg-grain"
+              type="range"
+              min={0}
+              max={100}
+              step={5}
+              value={page.backgroundGrain ?? 0}
+              onChange={(e) => setPageBackgroundGrain(activePageIndex, Number(e.target.value))}
+            />
+            <span className="value mono">{page.backgroundGrain ?? 0}%</span>
           </div>
         )}
 

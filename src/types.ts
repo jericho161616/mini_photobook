@@ -325,6 +325,14 @@ export interface Page {
   backgroundPhotoId?: string
   /** How much to darken backgroundPhotoId for legibility, 0–100. Meaningless without one. */
   backgroundDim?: number
+  /**
+   * How solid backgroundPhotoId is, 0–100 — undefined means fully opaque.
+   * Distinct from backgroundDim: this fades the photo towards the paper
+   * underneath, where Darken lays a black scrim over it.
+   */
+  backgroundPhotoOpacity?: number
+  /** Standalone film-grain speckle over backgroundPhotoId, 0–100. Undefined means none — the Film filter brings its own regardless. */
+  backgroundGrain?: number
   /** How much of the page backgroundPhotoId covers — undefined (or 'full') means edge to edge. */
   backgroundPhotoCoverage?: 'full' | 'left' | 'right' | 'top' | 'bottom'
   /** Same B&W/sepia/negative treatment as a slotted photo's filter, applied to backgroundPhotoId. */

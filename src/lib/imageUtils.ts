@@ -34,6 +34,29 @@ function svgDataUrl(inner: string): string {
  * browser that can show an <img> can show this. exportPdf.ts's canvas
  * export draws the same idea with actual composite operations.
  */
+/** The tileable speckle the Film filter shades with, and the Grain slider dials up on its own. */
+export const GRAIN_OVERLAY_IMAGE = svgDataUrl(
+  "<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'>" +
+    "<filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter>" +
+    "<rect width='100%' height='100%' filter='url(#g)'/></svg>",
+)
+
+/** How wide the tile is laid out — matched by the canvas pattern in exportPdf. */
+export const GRAIN_TILE_PX = 140
+
+/**
+ * Ceilings for the standalone Grain slider's 0–100.
+ *
+ * The two render paths need different numbers: a CSS `mix-blend-mode:
+ * overlay` layer and a canvas `globalCompositeOperation = 'overlay'` fill
+ * don't land in the same place at equal alpha. The Film preset already
+ * carries that discrepancy (0.22 in CSS reads like 0.16 on canvas), so these
+ * keep the same ratio — a slider at 100% is heavy but still short of
+ * obliterating the photo.
+ */
+export const GRAIN_MAX_CSS = 0.45
+export const GRAIN_MAX_CANVAS = 0.33
+
 export const PHOTO_FILTER_OVERLAY: Partial<
   Record<PhotoFilter, { image: string; blend: 'multiply' | 'overlay'; opacity: number; tile?: boolean }>
 > = {
@@ -48,11 +71,7 @@ export const PHOTO_FILTER_OVERLAY: Partial<
     opacity: 0.65,
   },
   film: {
-    image: svgDataUrl(
-      "<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'>" +
-        "<filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter>" +
-        "<rect width='100%' height='100%' filter='url(#g)'/></svg>",
-    ),
+    image: GRAIN_OVERLAY_IMAGE,
     blend: 'overlay',
     opacity: 0.22,
     tile: true,

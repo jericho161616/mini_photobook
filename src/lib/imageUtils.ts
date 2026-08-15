@@ -455,6 +455,16 @@ export function stampClipPathCss(w: number, h: number): string {
 }
 
 /** Pixel rect of a slot inside a page of the given pixel size, honoring margin. */
+/**
+ * The pixel corner radius for a box, from its 0–50 percentage of the shorter
+ * side. Shared so the editor's CSS and the canvas export round by exactly the
+ * same amount rather than each doing its own arithmetic.
+ */
+export function cornerRadiusPx(width: number, height: number, cornerRadius: number | undefined): number {
+  if (!cornerRadius) return 0
+  return Math.min(width, height) * (Math.min(50, Math.max(0, cornerRadius)) / 100)
+}
+
 export function slotPixelRect(
   slot: SlotRect,
   pageWidth: number,

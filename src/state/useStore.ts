@@ -21,6 +21,7 @@ import {
 import * as storage from '../lib/db'
 import { clampOffset, clampZoom, importFiles, releasePhotoUrl } from '../lib/imageUtils'
 import type {
+  BoxShape,
   CustomSticker,
   HalfLayout,
   Page,
@@ -41,6 +42,17 @@ export interface SlotRef {
   /** Set only when the slot belongs to one side of a Split at Fold page. */
   halfIndex?: 0 | 1
 }
+
+/**
+ * Which tool the canvas is in. 'select' is the ordinary editor; the rest arm a
+ * drag on the page to draw something. 'rounded' isn't a third shape — it's the
+ * rectangle with a corner radius already dialled in, so the model stays at two
+ * shapes while the toolbar offers the three things people actually reach for.
+ */
+export type DrawTool = 'select' | 'rect' | 'rounded' | 'ellipse' | 'text'
+
+/** The radius the Rounded tool starts a box at — see PhotoBox.cornerRadius. */
+export const ROUNDED_TOOL_RADIUS = 12
 
 /** Identifies one freely placed sticker or text box, wherever it lives. */
 export interface DecorationRef {
@@ -90,12 +102,12 @@ interface StoreState {
   /** A brief, self-clearing message about the last import — e.g. how many duplicate photos were skipped. */
   importNotice: string | null
   /**
-   * True while the Draw-a-box tool is armed. Dragging on the page then marks
-   * out a photo box instead of panning whatever is under the cursor — the one
-   * mode the editor has, and it turns itself off after each box so it can't be
-   * left on by accident.
+   * The armed canvas tool. Anything but 'select' means a drag on the page
+   * marks out a new box rather than panning whatever is under the cursor. It
+   * returns to 'select' after each shape, so the mode can't be left on by
+   * accident.
    */
-  drawingBox: boolean
+  drawTool: DrawTool
   /** Snapshots of {pages, title, sizeId, customStickers} to step back/forward through — photo library changes aren't included, since a deleted photo's file is truly gone. */
   undoStack: HistorySnapshot[]
   redoStack: HistorySnapshot[]
@@ -177,10 +189,17 @@ interface StoreState {
     pageIndex: number,
     halfIndex: 0 | 1 | undefined,
     rect: { x: number; y: number; w: number; h: number },
+    style?: { shape?: BoxShape; cornerRadius?: number },
   ) => string | undefined
+  /** The text equivalent: drag out a rect and get a text box exactly that size. */
+  drawTextBox: (
+    pageIndex: number,
+    halfIndex: 0 | 1 | undefined,
+    rect: { x: number; y: number; w: number; h: number },
+  ) => void
   /** Puts a photo into an already-drawn box. */
   fillPhotoBox: (ref: DecorationRef, photoId: string) => void
-  setDrawingBox: (drawing: boolean) => void
+  setDrawTool: (tool: DrawTool) => void
   /** Moves or resizes a photo box — the rect only; see updatePhotoBoxPlacement for what's inside it. */
   updatePhotoBox: (ref: DecorationRef, patch: Partial<Omit<PhotoBox, 'id' | 'placement'>>) => void
   /** Adjusts the photo inside a box: crop, zoom, filter, frame, tilt. */
@@ -285,7 +304,7 @@ export const useStore = create<StoreState>((set, get) => {
     importing: false,
     armedPhotoIds: [],
     importNotice: null,
-    drawingBox: false,
+    drawTool: 'select',
     undoStack: [],
     redoStack: [],
 
@@ -909,16 +928,22 @@ export const useStore = create<StoreState>((set, get) => {
       set({ selectedDecoration: { pageIndex, halfIndex, kind: 'photoBox', id }, selected: null })
     },
 
-    setDrawingBox(drawing) {
-      set({ drawingBox: drawing })
+    setDrawTool(tool) {
+      set({ drawTool: tool })
     },
 
-    drawPhotoBox(pageIndex, halfIndex, rect) {
+    drawPhotoBox(pageIndex, halfIndex, rect, style) {
       const page = get().pages[pageIndex]
       if (!page || page.locked) return undefined
       recordHistory()
       const id = nextDecorationId()
-      const box: PhotoBox = { id, ...rect, placement: null }
+      const box: PhotoBox = {
+        id,
+        ...rect,
+        placement: null,
+        ...(style?.shape && style.shape !== 'rect' ? { shape: style.shape } : null),
+        ...(style?.cornerRadius ? { cornerRadius: style.cornerRadius } : null),
+      }
       mutatePages((all) =>
         all.map((p, i) => {
           if (i !== pageIndex) return p
@@ -936,9 +961,41 @@ export const useStore = create<StoreState>((set, get) => {
       set({
         selectedDecoration: { pageIndex, halfIndex, kind: 'photoBox', id },
         selected: null,
-        drawingBox: false,
+        drawTool: 'select',
       })
       return id
+    },
+
+    drawTextBox(pageIndex, halfIndex, rect) {
+      const page = get().pages[pageIndex]
+      if (!page || page.locked) return
+      recordHistory()
+      const id = nextDecorationId()
+      const textBox: TextBox = {
+        id,
+        ...rect,
+        text: 'Tap to edit',
+        font: 'hand1',
+        bold: false,
+        align: 'center',
+      }
+      mutatePages((all) =>
+        all.map((p, i) => {
+          if (i !== pageIndex) return p
+          if (halfIndex !== undefined && p.halves) {
+            const halves = [...p.halves] as [HalfLayout, HalfLayout]
+            const host = halves[halfIndex]
+            halves[halfIndex] = { ...host, textBoxes: [...(host.textBoxes ?? []), textBox] }
+            return { ...p, halves }
+          }
+          return { ...p, textBoxes: [...(p.textBoxes ?? []), textBox] }
+        }),
+      )
+      set({
+        selectedDecoration: { pageIndex, halfIndex, kind: 'textBox', id },
+        selected: null,
+        drawTool: 'select',
+      })
     },
 
     fillPhotoBox(ref, photoId) {

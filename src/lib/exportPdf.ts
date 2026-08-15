@@ -6,6 +6,7 @@ import {
   CIRCLE_BORDER_RATIO,
   CLIP_ASPECT,
   CLIP_WIDTH_RATIO,
+  cornerRadiusPx,
   coverGeometry,
   FRAME_INSET_RATIO,
   GRAIN_MAX_CANVAS,
@@ -27,6 +28,7 @@ import {
 } from './imageUtils'
 import type {
   BookSize,
+  BoxShape,
   CustomSticker,
   Page,
   Photo,
@@ -300,18 +302,39 @@ export async function renderPageCanvas(
   const captionColor = onDark ? '#f2ead2' : '#241f16'
   const noteColor = onDark ? '#c9bfa4' : '#6b5f4a'
 
+  /**
+   * Lays down the outline a photo is cut to. A drawn box can be rounded or an
+   * ellipse; everything else is a plain rectangle. The browser rounds with
+   * border-radius and this rounds with roundRect from the same 0-50 number, so
+   * screen and export cut the identical shape.
+   */
+  const clipToShape = (
+    rect: { x: number; y: number; w: number; h: number },
+    shape: BoxShape | undefined,
+    cornerRadius: number | undefined,
+  ) => {
+    ctx.beginPath()
+    if (shape === 'ellipse') {
+      ctx.ellipse(rect.x + rect.w / 2, rect.y + rect.h / 2, rect.w / 2, rect.h / 2, 0, 0, Math.PI * 2)
+      return
+    }
+    const radius = cornerRadiusPx(rect.w, rect.h, cornerRadius)
+    if (radius > 0) ctx.roundRect(rect.x, rect.y, rect.w, rect.h, radius)
+    else ctx.rect(rect.x, rect.y, rect.w, rect.h)
+  }
+
   const drawPhoto = (
     rect: { x: number; y: number; w: number; h: number },
     placement: Placement,
     forceFilter?: PhotoFilter,
+    shape?: { shape: BoxShape | undefined; cornerRadius: number | undefined },
   ) => {
     const bitmap = photoMap.get(placement.photoId)
     if (!bitmap) return
     const geo = coverGeometry(bitmap.width / bitmap.height, rect.w, rect.h, placement)
     const filterKey = forceFilter ?? placement.filter
     ctx.save()
-    ctx.beginPath()
-    ctx.rect(rect.x, rect.y, rect.w, rect.h)
+    clipToShape(rect, shape?.shape, shape?.cornerRadius)
     ctx.clip()
     ctx.filter = filterKey ? (FILTER_CANVAS[filterKey] ?? 'none') : 'none'
     ctx.drawImage(bitmap, rect.x + geo.x, rect.y + geo.y, geo.drawWidth, geo.drawHeight)
@@ -410,6 +433,8 @@ export async function renderPageCanvas(
       windowSlot?: boolean
       forceFilter?: PhotoFilter
       rotationDeg?: number
+      /** Set only for a drawn photo box — a template slot is always a plain rectangle. */
+      boxShape?: { shape: BoxShape | undefined; cornerRadius: number | undefined }
     } = {},
   ) => {
     if (!placement) return
@@ -494,7 +519,7 @@ export async function renderPageCanvas(
       if (placement.attachment) drawAttachment(rect, placement.attachment, placement.attachmentColor)
       return
     }
-    drawPhoto(rect, placement, opts.forceFilter)
+    drawPhoto(rect, placement, opts.forceFilter, opts.boxShape)
     if (opts.windowSlot) {
       ctx.save()
       ctx.strokeStyle = 'rgba(255,255,255,0.6)'
@@ -697,6 +722,7 @@ export async function renderPageCanvas(
           hairline: box.placement.frame === 'hairline',
           stamp: box.placement.frame === 'stamp',
           rotationDeg: box.placement.rotation,
+          boxShape: { shape: box.shape, cornerRadius: box.cornerRadius },
         },
       )
     }

@@ -905,6 +905,8 @@ input:focus-visible,
   gap: 10px;
   min-width: 0;
   min-height: 0;
+  /* The tool cluster is pinned to this, so it has to be the containing block. */
+  position: relative;
 }
 
 .page-row {
@@ -1272,15 +1274,95 @@ input:focus-visible,
   white-space: nowrap;
 }
 
-.draw-box-btn {
-  width: 100%;
-  margin-top: 8px;
+/* ---- The drawing tools, floating against the canvas ---- */
+.tool-cluster {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 6;
+  background: var(--linen);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  box-shadow: var(--shadow);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.draw-box-btn.active {
+.tool-cluster-item {
+  display: contents;
+}
+
+.tool-cluster .tool-sep {
+  height: 1px;
+  background: var(--line);
+  margin: 3px 3px 4px;
+}
+
+.tool-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  color: var(--ink-soft);
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+.tool-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.tool-btn:hover:not(:disabled) {
+  background: var(--linen-deep);
+  color: var(--ink);
+}
+
+.tool-btn.active {
   background: var(--navy);
-  border-color: var(--navy);
   color: var(--paper);
+}
+
+.tool-btn:disabled {
+  opacity: 0.35;
+}
+
+/* The armed-tool line under the canvas, in the same voice as the
+   photo-picked-up note it sits in for. */
+.canvas-note.draw-note {
+  color: var(--navy-soft);
+}
+
+/* A slider small enough to live in the floating selection toolbar. */
+.ctx-slider {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px;
+}
+
+.ctx-slider input[type='range'] {
+  width: 74px;
+  accent-color: var(--navy);
+}
+
+.ctx-slider span {
+  font-size: 10px;
+  color: var(--ink-soft);
+  min-width: 16px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A drawn box keeps its own outline, so the empty state has to stop
+   painting a square background over a rounded or elliptical one. */
+.photobox-empty {
+  background: rgba(255, 255, 255, 0.35);
 }
 
 /* The tray of photos that can be dropped onto a page as a layer. */

@@ -115,7 +115,12 @@ interface PageViewProps {
    * marks out a rect instead of panning or selecting, and hands it back in
    * page percentages.
    */
-  draw?: { active: boolean; onDraw: (rect: { x: number; y: number; w: number; h: number }) => void }
+  draw?: {
+    active: boolean
+    /** Whether holding Shift should force the drag square — true for the shape tools, false for text. */
+    constrainSquare: boolean
+    onDraw: (rect: { x: number; y: number; w: number; h: number }) => void
+  }
 }
 
 export function PageView({
@@ -197,11 +202,23 @@ export function PageView({
             const onMove = (ev: MouseEvent) => {
               const x = ((ev.clientX - rect.left) / rect.width) * 100
               const y = ((ev.clientY - rect.top) / rect.height) * 100
+              let w = Math.abs(x - start.x)
+              let h = Math.abs(y - start.y)
+
+              // Shift makes the drag square *on the page*, not in percentages
+              // — the two only agree on a square artboard. Squaring the pixels
+              // and converting back is what makes Shift actually give a circle.
+              if (ev.shiftKey && draw.constrainSquare) {
+                const side = Math.min((w / 100) * rect.width, (h / 100) * rect.height)
+                w = (side / rect.width) * 100
+                h = (side / rect.height) * 100
+              }
+
               latest = {
-                x: snap(Math.min(start.x, x)),
-                y: snap(Math.min(start.y, y)),
-                w: snap(Math.abs(x - start.x)),
-                h: snap(Math.abs(y - start.y)),
+                x: snap(x < start.x ? start.x - w : start.x),
+                y: snap(y < start.y ? start.y - h : start.y),
+                w: snap(w),
+                h: snap(h),
               }
               setDrawing(latest)
             }

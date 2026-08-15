@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { FONT_OPTIONS, FONT_SIZE_OPTIONS } from '../data/fonts'
 import { decorationHost } from '../lib/autoLayout'
-import { useStore } from '../state/useStore'
+import { ROUNDED_TOOL_RADIUS, useStore } from '../state/useStore'
 import type { PhotoBox, PhotoFilter, Sticker, TextBox, TextStyle } from '../types'
 import { isTapeSticker } from './DecorationLayer'
 
@@ -105,6 +105,7 @@ export function ContextualToolbar() {
   const updateSticker = useStore((s) => s.updateSticker)
   const updateTextBox = useStore((s) => s.updateTextBox)
   const updatePhotoBoxPlacement = useStore((s) => s.updatePhotoBoxPlacement)
+  const updatePhotoBox = useStore((s) => s.updatePhotoBox)
   const movePhotoBox = useStore((s) => s.movePhotoBox)
   const removeDecoration = useStore((s) => s.removeDecoration)
 
@@ -178,6 +179,60 @@ export function ContextualToolbar() {
       // sits over the canvas, so its own clicks must not count as that.
       onMouseDown={(e) => e.stopPropagation()}
     >
+      {photoBox && (
+        <>
+          <button
+            className={`ctx-btn${(photoBox.shape ?? 'rect') === 'rect' && !photoBox.cornerRadius ? ' active' : ''}`}
+            onClick={() => updatePhotoBox(selectedDecoration, { shape: 'rect', cornerRadius: 0 })}
+            title="Square corners"
+            aria-label="Square corners"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <rect x="4" y="6" width="16" height="12" rx="1" />
+            </svg>
+          </button>
+          <button
+            className={`ctx-btn${(photoBox.shape ?? 'rect') === 'rect' && !!photoBox.cornerRadius ? ' active' : ''}`}
+            onClick={() =>
+              updatePhotoBox(selectedDecoration, {
+                shape: 'rect',
+                cornerRadius: photoBox.cornerRadius || ROUNDED_TOOL_RADIUS,
+              })
+            }
+            title="Rounded corners"
+            aria-label="Rounded corners"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <rect x="4" y="6" width="16" height="12" rx="4.5" />
+            </svg>
+          </button>
+          <button
+            className={`ctx-btn${photoBox.shape === 'ellipse' ? ' active' : ''}`}
+            onClick={() => updatePhotoBox(selectedDecoration, { shape: 'ellipse' })}
+            title="Ellipse"
+            aria-label="Ellipse"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <ellipse cx="12" cy="12" rx="8" ry="6.5" />
+            </svg>
+          </button>
+          {(photoBox.shape ?? 'rect') === 'rect' && (
+            <label className="ctx-slider" title="Corner radius">
+              <input
+                type="range"
+                min={0}
+                max={50}
+                value={photoBox.cornerRadius ?? 0}
+                onChange={(e) => updatePhotoBox(selectedDecoration, { cornerRadius: Number(e.target.value) })}
+                aria-label="Corner radius"
+              />
+              <span className="mono">{photoBox.cornerRadius ?? 0}</span>
+            </label>
+          )}
+          <span className="ctx-sep" />
+        </>
+      )}
+
       {photoBox?.placement && (
         <>
           <button

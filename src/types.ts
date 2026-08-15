@@ -90,6 +90,14 @@ export interface TextBox {
 }
 
 /**
+ * The outline a drawn box is cut to. A rectangle can additionally be rounded;
+ * an ellipse is its own shape rather than "a rectangle at maximum radius",
+ * because the two resize differently — a rounded rectangle keeps its corner
+ * radius while the straight edges grow, an ellipse restretches entirely.
+ */
+export type BoxShape = 'rect' | 'ellipse'
+
+/**
  * A photo placed freely on a page rather than dropped into a template slot —
  * the same idea as a TextBox, carrying a picture instead of words.
  *
@@ -114,6 +122,16 @@ export interface PhotoBox {
    * lets you draw the layout first and decide what goes in it afterwards.
    */
   placement: Placement | null
+  /** Undefined means 'rect'. */
+  shape?: BoxShape
+  /**
+   * Corner rounding, 0–50, as a percentage of the box's *shorter* side.
+   * Measuring against the shorter side rather than each axis keeps a radius
+   * looking the same on a wide box and a tall one, and makes 50 mean fully
+   * rounded on every shape instead of something different on each. Ignored
+   * when `shape` is 'ellipse'.
+   */
+  cornerRadius?: number
 }
 
 /** A slot rect in page-relative percentages, measured inside the page margin. */

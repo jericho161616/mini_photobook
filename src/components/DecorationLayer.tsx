@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { fontSizeScale, fontStack } from '../data/fonts'
 import { StickerGlyph } from './StickerGlyph'
-import { coverGeometry, PHOTO_FILTER_CSS, photoUrl } from '../lib/imageUtils'
+import { cornerRadiusPx, coverGeometry, PHOTO_FILTER_CSS, photoUrl } from '../lib/imageUtils'
 import type { CustomSticker, Photo, PhotoBox, Sticker, TextBox } from '../types'
 
 interface Box {
@@ -162,6 +162,12 @@ function PhotoBoxContent({
   onPick: () => void
 }) {
   const [dragOver, setDragOver] = useState(false)
+  const boxW = containerSize.w * (box.w / 100)
+  const boxH = containerSize.h * (box.h / 100)
+  // The one outline both the empty box and the filled one are cut to, so a
+  // circle you drew still looks like a circle before there's a photo in it.
+  const outline =
+    box.shape === 'ellipse' ? '50%' : `${cornerRadiusPx(boxW, boxH, box.cornerRadius)}px`
 
   // An empty box is a hole in the layout you drew, waiting to be filled — so
   // it behaves like a template slot: drop a photo on it, or click it.
@@ -169,6 +175,7 @@ function PhotoBoxContent({
     return (
       <div
         className={`photobox-empty${dragOver ? ' drop-target' : ''}`}
+        style={{ borderRadius: outline }}
         onDragOver={(e) => {
           e.preventDefault()
           setDragOver(true)
@@ -190,15 +197,16 @@ function PhotoBoxContent({
     )
   }
 
-  const boxW = containerSize.w * (box.w / 100)
-  const boxH = containerSize.h * (box.h / 100)
   const geo = coverGeometry(photo.width / photo.height, boxW, boxH, box.placement)
   const rotation = box.placement.rotation ?? 0
   const filter = box.placement.filter
   return (
     <div
       className={`photobox-art${box.placement.frame ? ` frame-${box.placement.frame}` : ''}`}
-      style={{ transform: rotation ? `rotate(${rotation}deg)` : undefined }}
+      style={{
+        transform: rotation ? `rotate(${rotation}deg)` : undefined,
+        borderRadius: outline,
+      }}
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         e.preventDefault()

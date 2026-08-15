@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { a4FamilyOptions, foldOrientationForSize, getSize, sizeRatio } from '../data/sizes'
 import { artboardSize, resolvePageSize, usedPhotoIds } from '../lib/autoLayout'
-import { useStore } from '../state/useStore'
+import { ROUNDED_TOOL_RADIUS, useStore } from '../state/useStore'
 import type { DecorationRef } from '../state/useStore'
 import type { Page, Photo } from '../types'
 import { PageView } from './PageView'
+import { drawHint, ToolCluster } from './ToolCluster'
 
 /** How many unplaced photos the quick picker offers before pointing at the full library. */
 const QUICK_PICK_COUNT = 6
@@ -54,8 +55,8 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
   const updatePhotoBox = useStore((s) => s.updatePhotoBox)
   const fillPhotoBox = useStore((s) => s.fillPhotoBox)
   const drawPhotoBox = useStore((s) => s.drawPhotoBox)
-  const drawingBox = useStore((s) => s.drawingBox)
-  const setDrawingBox = useStore((s) => s.setDrawingBox)
+  const drawTextBox = useStore((s) => s.drawTextBox)
+  const drawTool = useStore((s) => s.drawTool)
   const removeDecoration = useStore((s) => s.removeDecoration)
 
   const size = getSize(sizeId)
@@ -96,16 +97,7 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
     return () => window.removeEventListener('keydown', onKey)
   }, [armedPhotoIds.length, armPhoto])
 
-  // Escape backs out of the drawing tool, same as it backs out of everything
-  // else that's momentarily armed.
-  useEffect(() => {
-    if (!drawingBox) return
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setDrawingBox(false)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [drawingBox, setDrawingBox])
+
 
   useEffect(() => {
     if (!quickPickKey) return
@@ -241,9 +233,17 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
       },
     },
     draw: {
-      active: drawingBox,
+      active: drawTool !== 'select',
+      constrainSquare: drawTool === 'ellipse' || drawTool === 'rect' || drawTool === 'rounded',
       onDraw: (rect: { x: number; y: number; w: number; h: number }) => {
-        drawPhotoBox(activePageIndex, undefined, rect)
+        if (drawTool === 'text') {
+          drawTextBox(activePageIndex, undefined, rect)
+          return
+        }
+        drawPhotoBox(activePageIndex, undefined, rect, {
+          shape: drawTool === 'ellipse' ? 'ellipse' : 'rect',
+          cornerRadius: drawTool === 'rounded' ? ROUNDED_TOOL_RADIUS : undefined,
+        })
       },
     },
     decorations: {
@@ -304,6 +304,8 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
       ref={areaRef}
       onMouseDown={clearSelectionOnBackdrop}
     >
+      <ToolCluster disabled={!page || page.locked} />
+
       <div className="page-row">
         <button
           className="page-nav prev"
@@ -328,7 +330,9 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
         </button>
       </div>
 
-      {armedPhotoIds.length > 0 ? (
+      {drawTool !== 'select' ? (
+        <p className="canvas-note draw-note">{drawHint(drawTool)} · Esc to stop</p>
+      ) : armedPhotoIds.length > 0 ? (
         <p className="canvas-note armed-note">
           {armedPhotoIds.length === 1
             ? 'Photo picked up — click a slot to drop it there.'

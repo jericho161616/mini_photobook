@@ -134,17 +134,37 @@ layer arrives sized to the photo's own shape, so it isn't cropped until you
 crop it, and it carries the same filters, frames and tilt a slotted photo does.
 
 **Draw your own layout.** You don't have to start from a template at all. Pick
-the **Blank Canvas** layout for a slide with nothing on it, then **Draw a box**
-in the Decorate panel and drag out a rectangle wherever you want one. Drawn
-boxes start empty, showing "Drop a photo" — fill one by dragging a photo onto
-it, by clicking a photo in the tray and then the box, or by double-clicking it
-to open the library. Draw as many as you like, in any arrangement; they move,
-resize, overlap and restack exactly like any other photo layer.
+the **Blank Canvas** layout for a slide with nothing on it, then use the tools
+floating beside the page: rectangle, rounded box, ellipse, text. Drag anywhere
+on the page to draw one, hold **Shift** to constrain a shape to a perfect
+square or circle, and press **V**, **R**, **O** or **T** to switch tools
+without reaching for them.
+
+The tools sit on the canvas rather than in a sidebar for two reasons. Arming
+one puts the editor in a mode — a drag draws instead of panning — and a mode
+needs something visibly lit next to the thing it changes. And with the tools on
+the canvas, drawing a layout needs no panel open at all, so the artboard stays
+as large as the window allows.
+
+Drawn boxes start empty, showing "Drop a photo" — fill one by dragging a photo
+onto it, by clicking a photo in the tray and then the box, or by double-clicking
+it to open the library. They move, resize, overlap and restack exactly like any
+other photo layer, and selecting one offers its shape and corner radius
+alongside the usual filters and frames.
+
+Corner radius is 0–50 measured against the box's *shorter* side, so a radius
+looks the same on a wide box as a tall one and 50 always means fully rounded
+rather than something different on each shape. An ellipse is its own shape
+rather than a rectangle at maximum radius, because the two resize differently:
+a rounded rectangle keeps its corner radius while the straight edges grow, an
+ellipse restretches entirely. Both clip identically on screen and in the
+exported PNG — `border-radius` one side, `roundRect`/`ellipse` the other, from
+the same number.
 
 Boxes land on a half-percent grid, which is fine enough not to fight you and
 coarse enough that two boxes drawn to look aligned actually are. A drag that
 turns out to be a click makes nothing rather than leaving a sliver behind, and
-the tool disarms itself after each box so it can't be left on by accident.
+the tool returns to Select after each shape so it can't be left on by accident.
 
 **Sizes across five groups.** Nine standard photobook trims (6×6 up to 14×11),
 the ISO paper sizes a home printer actually takes (A6–A3, including A4

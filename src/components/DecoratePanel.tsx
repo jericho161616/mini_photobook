@@ -79,8 +79,6 @@ export function DecoratePanel() {
   const addSticker = useStore((s) => s.addSticker)
   const addTextBox = useStore((s) => s.addTextBox)
   const addPhotoBox = useStore((s) => s.addPhotoBox)
-  const drawingBox = useStore((s) => s.drawingBox)
-  const setDrawingBox = useStore((s) => s.setDrawingBox)
   const addCustomSticker = useStore((s) => s.addCustomSticker)
   const photos = useStore((s) => s.photos)
   const setPageBackground = useStore((s) => s.setPageBackground)
@@ -346,18 +344,8 @@ export function DecoratePanel() {
           built from.
         </p>
 
-        <button
-          className={`btn draw-box-btn${drawingBox ? ' active' : ''}`}
-          onClick={() => setDrawingBox(!drawingBox)}
-          disabled={page.locked}
-          title="Drag out a rectangle on the page, then drop a photo into it"
-        >
-          {drawingBox ? '✕ Cancel drawing' : '▢ Draw a box'}
-        </button>
         <p className="hint">
-          {drawingBox
-            ? 'Drag anywhere on the page to mark out a box. Esc to cancel.'
-            : 'Draw the shapes first and fill them afterwards — start from the Blank Canvas layout for a page with nothing on it.'}
+          To draw your own boxes instead, use the shape tools beside the page.
         </p>
         {photos.length === 0 ? (
           <p className="hint">Import some photos first and they'll show up here.</p>

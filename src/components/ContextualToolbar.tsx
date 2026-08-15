@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { FONT_OPTIONS, FONT_SIZE_OPTIONS } from '../data/fonts'
 import { decorationHost } from '../lib/autoLayout'
 import { ROUNDED_TOOL_RADIUS, useStore } from '../state/useStore'
+import type { DecorationRef } from '../state/useStore'
 import type { PhotoBox, PhotoFilter, Sticker, TextBox, TextStyle } from '../types'
 import { isTapeSticker } from './DecorationLayer'
 
@@ -99,13 +100,19 @@ function useAnchorRect(x: number | undefined, y: number | undefined, w: number |
  * you're adjusting, and the controls disappear entirely when nothing is
  * selected.
  */
-export function ContextualToolbar() {
+export function ContextualToolbar({
+  onReplacePhoto,
+}: {
+  /** Opens the photo library so a different photo can be picked up for this box. */
+  onReplacePhoto: (ref: DecorationRef) => void
+}) {
   const selectedDecoration = useStore((s) => s.selectedDecoration)
   const pages = useStore((s) => s.pages)
   const updateSticker = useStore((s) => s.updateSticker)
   const updateTextBox = useStore((s) => s.updateTextBox)
   const updatePhotoBoxPlacement = useStore((s) => s.updatePhotoBoxPlacement)
   const updatePhotoBox = useStore((s) => s.updatePhotoBox)
+  const clearPhotoBox = useStore((s) => s.clearPhotoBox)
   const movePhotoBox = useStore((s) => s.movePhotoBox)
   const removeDecoration = useStore((s) => s.removeDecoration)
 
@@ -235,6 +242,29 @@ export function ContextualToolbar() {
 
       {photoBox?.placement && (
         <>
+          <button
+            className="ctx-btn"
+            onClick={() => onReplacePhoto(selectedDecoration)}
+            title="Swap the photo in this box"
+            aria-label="Replace photo"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 9h12l-3-3" />
+              <path d="M20 15H8l3 3" />
+            </svg>
+          </button>
+          <button
+            className="ctx-btn"
+            onClick={() => clearPhotoBox(selectedDecoration)}
+            title="Take the photo out, keeping the box"
+            aria-label="Remove photo"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="5" width="18" height="14" rx="2" />
+              <path d="M9 11l6 6M15 11l-6 6" />
+            </svg>
+          </button>
+          <span className="ctx-sep" />
           <button
             className="ctx-btn"
             onClick={() => movePhotoBox(selectedDecoration, 'back')}

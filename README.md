@@ -151,9 +151,15 @@ as large as the window allows.
 
 Drawn boxes start empty, showing "Drop a photo" — fill one by dragging a photo
 onto it, by clicking a photo in the tray and then the box, or by double-clicking
-it to open the library. They move, resize, overlap and restack exactly like any
-other photo layer, and selecting one offers its shape and corner radius
-alongside the usual filters and frames.
+it to open the library. All three work just the same on a box that already has
+a photo, so swapping one out never means redrawing the box, and the toolbar
+adds **Replace photo** and **Remove photo** for when you'd rather say so
+outright. Removing takes the picture out and leaves the box: the shape you drew
+is the work, the photo in it isn't.
+
+Boxes move, resize, overlap and restack exactly like any other photo layer, and
+selecting one offers its shape and corner radius alongside the usual filters
+and frames.
 
 Corner radius is 0–50 measured against the box's *shorter* side, so a radius
 looks the same on a wide box as a tall one and 50 always means fully rounded

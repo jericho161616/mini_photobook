@@ -197,8 +197,14 @@ interface StoreState {
     halfIndex: 0 | 1 | undefined,
     rect: { x: number; y: number; w: number; h: number },
   ) => void
-  /** Puts a photo into an already-drawn box. */
+  /** Puts a photo into an already-drawn box, or swaps the one already in it. */
   fillPhotoBox: (ref: DecorationRef, photoId: string) => void
+  /**
+   * Takes the photo back out of a box without deleting the box. The shape you
+   * drew is the work; the photo in it is not, so emptying one has to be
+   * possible without starting the layout again.
+   */
+  clearPhotoBox: (ref: DecorationRef) => void
   setDrawTool: (tool: DrawTool) => void
   /** Moves or resizes a photo box — the rect only; see updatePhotoBoxPlacement for what's inside it. */
   updatePhotoBox: (ref: DecorationRef, patch: Partial<Omit<PhotoBox, 'id' | 'placement'>>) => void
@@ -1012,6 +1018,25 @@ export const useStore = create<StoreState>((set, get) => {
               const placement: Placement = { ...(b.placement ?? placementFor(photoId)), photoId }
               return { ...b, placement }
             })
+          if (ref.halfIndex !== undefined && page.halves) {
+            const halves = [...page.halves] as [HalfLayout, HalfLayout]
+            const host = halves[ref.halfIndex]
+            halves[ref.halfIndex] = { ...host, photoBoxes: edit(host.photoBoxes) }
+            return { ...page, halves }
+          }
+          return { ...page, photoBoxes: edit(page.photoBoxes) }
+        }),
+      )
+    },
+
+    clearPhotoBox(ref) {
+      if (get().pages[ref.pageIndex]?.locked) return
+      recordHistory()
+      mutatePages((pages) =>
+        pages.map((page, i) => {
+          if (i !== ref.pageIndex) return page
+          const edit = (boxes: PhotoBox[] | undefined): PhotoBox[] =>
+            (boxes ?? []).map((b) => (b.id === ref.id ? { ...b, placement: null } : b))
           if (ref.halfIndex !== undefined && page.halves) {
             const halves = [...page.halves] as [HalfLayout, HalfLayout]
             const host = halves[ref.halfIndex]

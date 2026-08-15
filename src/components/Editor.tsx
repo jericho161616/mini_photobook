@@ -184,7 +184,7 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
       <Filmstrip photos={photoMap} />
 
       {/* Floats over the canvas next to whatever is selected — renders nothing at all otherwise. */}
-      <ContextualToolbar />
+      <ContextualToolbar onReplacePhoto={() => setLibraryOpen(true)} />
 
       {libraryOpen && <PhotoLibrary onClose={() => setLibraryOpen(false)} />}
 

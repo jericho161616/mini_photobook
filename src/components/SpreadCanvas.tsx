@@ -248,17 +248,15 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
     },
     decorations: {
       selected: selectedDecoration,
-      // Clicking an empty drawn box while a photo is picked up drops it in,
-      // exactly as clicking an empty slot would — the box is a slot you made
-      // yourself, so it should behave like one.
+      // Clicking a drawn box while a photo is picked up drops it in, exactly
+      // as clicking a slot would — the box is a slot you made yourself, so it
+      // behaves like one, including swapping the photo in an already-filled
+      // box rather than only filling an empty one.
       onSelect: (ref: DecorationRef) => {
         if (ref.kind === 'photoBox' && armedPhotoIds.length > 0) {
-          const box = pages[ref.pageIndex]?.photoBoxes?.find((b) => b.id === ref.id)
-          if (box && !box.placement) {
-            fillPhotoBox(ref, armedPhotoIds[0])
-            armPhoto(armedPhotoIds[0])
-            return
-          }
+          fillPhotoBox(ref, armedPhotoIds[0])
+          armPhoto(armedPhotoIds[0])
+          return
         }
         selectDecoration(ref)
       },

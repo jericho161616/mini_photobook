@@ -207,6 +207,12 @@ function PhotoBoxContent({
         transform: rotation ? `rotate(${rotation}deg)` : undefined,
         borderRadius: outline,
       }}
+      // Same gesture a filled slot uses, so swapping the photo in a box you
+      // drew works the way swapping one in a template slot does.
+      onDoubleClick={(e) => {
+        e.stopPropagation()
+        onPick()
+      }}
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         e.preventDefault()

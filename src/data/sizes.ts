@@ -43,6 +43,10 @@ export const NOVELTY_SIZES: BookSize[] = [
  * All of them start at a single page: a post is one slide until you add
  * another, unlike a book that has to be bound at some minimum thickness.
  *
+ * They also allow more photos per slide than any print trim. On paper a dozen
+ * photos on one page reads as crowded; on a phone a 4×3 contact sheet is a
+ * recognised look, so the cap follows the medium rather than the page count.
+ *
  * The template library isn't shape-restricted (templatesForSize only filters
  * by photo count), so most layouts already apply here the same as anywhere
  * else — see templates.ts for the ones added specifically for these formats.
@@ -55,7 +59,7 @@ export const SOCIAL_SIZES: BookSize[] = [
     name: 'Portrait',
     widthIn: 3.6,
     heightIn: 4.5,
-    maxPhotosPerPage: 6,
+    maxPhotosPerPage: 12,
     minPages: 1,
     social: { w: 1080, h: 1350 },
   },
@@ -66,7 +70,7 @@ export const SOCIAL_SIZES: BookSize[] = [
     name: 'Tall Portrait',
     widthIn: 3.6,
     heightIn: 4.8,
-    maxPhotosPerPage: 6,
+    maxPhotosPerPage: 12,
     minPages: 1,
     social: { w: 1080, h: 1440 },
   },
@@ -75,7 +79,7 @@ export const SOCIAL_SIZES: BookSize[] = [
     name: 'Square',
     widthIn: 3.6,
     heightIn: 3.6,
-    maxPhotosPerPage: 6,
+    maxPhotosPerPage: 12,
     minPages: 1,
     social: { w: 1080, h: 1080 },
   },
@@ -84,7 +88,7 @@ export const SOCIAL_SIZES: BookSize[] = [
     name: 'Story',
     widthIn: 3.6,
     heightIn: 6.4,
-    maxPhotosPerPage: 6,
+    maxPhotosPerPage: 12,
     minPages: 1,
     social: { w: 1080, h: 1920 },
   },

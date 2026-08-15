@@ -783,6 +783,149 @@ export const TEMPLATES: Template[] = [
     ],
   },
 
+  // ---- Feed contact sheets and editorial grids ----
+  // These carry more frames than any print trim allows, which is why the feed
+  // sizes raise maxPhotosPerPage — a dozen photos on paper reads as crowded,
+  // but a 4×3 contact sheet on a phone is a look people recognise.
+  {
+    id: 'feedQuad',
+    label: '4 · Quad',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    // A 2×2 with a deliberately wide gutter. Pair it with a dark page
+    // background from the Decorate panel and the gaps become heavy borders.
+    slots: [
+      { x: 0, y: 0, w: 47, h: 47 },
+      { x: 53, y: 0, w: 47, h: 47 },
+      { x: 0, y: 53, w: 47, h: 47 },
+      { x: 53, y: 53, w: 47, h: 47 },
+    ],
+  },
+  {
+    id: 'feedNine',
+    label: '9 · Contact Sheet 3×3',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    slots: [
+      { x: 0, y: 0, w: 30.67, h: 30.67 },
+      { x: 34.67, y: 0, w: 30.67, h: 30.67 },
+      { x: 69.33, y: 0, w: 30.67, h: 30.67 },
+      { x: 0, y: 34.67, w: 30.67, h: 30.67 },
+      { x: 34.67, y: 34.67, w: 30.67, h: 30.67 },
+      { x: 69.33, y: 34.67, w: 30.67, h: 30.67 },
+      { x: 0, y: 69.33, w: 30.67, h: 30.67 },
+      { x: 34.67, y: 69.33, w: 30.67, h: 30.67 },
+      { x: 69.33, y: 69.33, w: 30.67, h: 30.67 },
+    ],
+  },
+  {
+    id: 'feedTwelve',
+    label: '12 · Contact Sheet 4×3',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    // The densest layout in the library — a whole shoot on one slide, the way
+    // a photographer's proof sheet reads.
+    slots: [
+      { x: 0, y: 0, w: 22.75, h: 31.33 },
+      { x: 25.75, y: 0, w: 22.75, h: 31.33 },
+      { x: 51.5, y: 0, w: 22.75, h: 31.33 },
+      { x: 77.25, y: 0, w: 22.75, h: 31.33 },
+      { x: 0, y: 34.33, w: 22.75, h: 31.33 },
+      { x: 25.75, y: 34.33, w: 22.75, h: 31.33 },
+      { x: 51.5, y: 34.33, w: 22.75, h: 31.33 },
+      { x: 77.25, y: 34.33, w: 22.75, h: 31.33 },
+      { x: 0, y: 68.67, w: 22.75, h: 31.33 },
+      { x: 25.75, y: 68.67, w: 22.75, h: 31.33 },
+      { x: 51.5, y: 68.67, w: 22.75, h: 31.33 },
+      { x: 77.25, y: 68.67, w: 22.75, h: 31.33 },
+    ],
+  },
+  {
+    id: 'feedTriptych',
+    label: '3 · Triptych',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    // Three landscape frames stacked down the middle with wide air either
+    // side, and a line of type in the bottom corner. Deliberately restrained.
+    slots: [
+      { x: 12, y: 0, w: 76, h: 28 },
+      { x: 12, y: 30, w: 76, h: 28 },
+      { x: 12, y: 60, w: 76, h: 28 },
+    ],
+    textSlot: { x: 0, y: 91, w: 52, h: 8 },
+  },
+  {
+    id: 'feedTallPair',
+    label: '4 · Short Over Tall',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    // Two rows of two, but the lower row is markedly taller — an uneven grid
+    // reads as composed where an even one reads as a contact sheet.
+    slots: [
+      { x: 0, y: 0, w: 48, h: 38 },
+      { x: 52, y: 0, w: 48, h: 38 },
+      { x: 0, y: 42, w: 48, h: 58 },
+      { x: 52, y: 42, w: 48, h: 58 },
+    ],
+  },
+  {
+    id: 'feedRagged',
+    label: '6 · Ragged Grid',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    // Three rows whose columns don't agree with each other, with one gap left
+    // open on purpose. The unevenness is the design — an editorial page rarely
+    // fills its own grid.
+    slots: [
+      { x: 0, y: 0, w: 40, h: 30 },
+      { x: 44, y: 0, w: 56, h: 30 },
+      { x: 0, y: 34, w: 52, h: 32 },
+      { x: 56, y: 34, w: 30, h: 32 },
+      { x: 0, y: 70, w: 44, h: 30 },
+      { x: 48, y: 70, w: 52, h: 30 },
+    ],
+  },
+  {
+    id: 'feedEditorial',
+    label: '5 · Editorial Scatter',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    // A magazine spread rather than a grid: nothing shares an edge with
+    // anything else, and the sizes are all different on purpose.
+    slots: [
+      { x: 0, y: 0, w: 46, h: 28 },
+      { x: 54, y: 8, w: 46, h: 26 },
+      { x: 2, y: 32, w: 44, h: 44 },
+      { x: 52, y: 38, w: 44, h: 38 },
+      { x: 20, y: 80, w: 60, h: 18 },
+    ],
+  },
+  {
+    id: 'feedFramedPair',
+    label: '3 · Framed Pair',
+    family: 'Instagram',
+    fits: ['instagram'],
+    onlyFor: FEED_SIZE_IDS,
+    bleed: true,
+    decoration: 'poster',
+    // No tape and no tilt — these two sit square on the photo behind them,
+    // touching edge to edge, like a pair of prints laid on a table.
+    posterAttachment: 'none',
+    slotRotations: [0, 0, 0],
+    slots: [
+      { x: 0, y: 0, w: 100, h: 100 },
+      { x: 8, y: 30, w: 42, h: 44 },
+      { x: 50, y: 28, w: 42, h: 44 },
+    ],
+  },
+
   // ---- Seamless: one artboard cut into several slides ----
   //
   // Every rect below is a percentage of the *whole strip*, not of one slide,
@@ -1275,6 +1418,11 @@ const GRID_IDS = new Set([
   'igStaggered',
   'feedContact',
   'feedTrio',
+  'feedQuad',
+  'feedNine',
+  'feedTwelve',
+  'feedTallPair',
+  'feedRagged',
 ])
 const NOVELTY_IDS = new Set(['polaroid', 'polaroidNote', 'polaroidStrip', 'confettiScatter', 'igContactStrip'])
 const TEXT_FORWARD_CAPTION_STYLES = new Set<Template['captionStyle']>(['quote', 'divider', 'stamp', 'ruled'])

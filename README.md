@@ -78,6 +78,19 @@ Throughout a post the editor says "slides" where a book says "pages", and shows
 pixels where a book shows inches. Everything else — the templates, the filters,
 frames, tape, stickers, drawing pad, text boxes — is the same editor.
 
+**Single-slide layouts.** Alongside the seamless ones there's a set for
+ordinary slides: contact sheets at 3×3 and 4×3, a 2×2 Quad with a wide gutter
+(set a dark page background and the gaps become heavy borders), a Triptych of
+three landscape frames stacked down the middle with a line of type in the
+corner, Short Over Tall for an uneven grid, a Ragged Grid whose rows don't
+agree with each other and leaves one gap open on purpose, an Editorial Scatter
+where nothing shares an edge with anything, and a Framed Pair — two bordered
+prints laid square on a full-bleed photo behind them.
+
+The feed formats allow up to twelve photos on one slide where no print trim
+goes past nine: on paper a dozen photos reads as crowded, but on a phone a
+contact sheet is a look people recognise, so the cap follows the medium.
+
 **Seamless carousels.** A layout can be several slides wide. Pick one from the
 Seamless group and the page becomes a single artboard that size; export cuts
 the finished picture into that many images, so a photo lying across a cut

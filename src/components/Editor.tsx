@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getSize } from '../data/sizes'
 import { exportBookOverview, exportToPdf } from '../lib/exportPdf'
 import type { ThemeChoice } from '../lib/theme'
@@ -52,6 +52,40 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
   useEffect(() => {
     localStorage.setItem(DRAWER_OPEN_KEY, String(drawerOpen))
   }, [drawerOpen])
+
+  /**
+   * Focus mode: entering full screen also gets the drawer out of the way, so
+   * the page actually grows rather than the window just losing its browser
+   * chrome around the same layout. Leaving restores whatever the drawer was
+   * before, since collapsing it was our idea rather than the user's.
+   *
+   * Driven off fullscreenchange rather than the button's own click: Escape,
+   * F11 and the browser's own overlay all exit without telling us, and the
+   * drawer has to come back for those too.
+   */
+  // Read inside the listener below without making it re-subscribe on every
+  // drawer toggle, which would lose the remembered state.
+  const drawerOpenRef = useRef(drawerOpen)
+  drawerOpenRef.current = drawerOpen
+
+  const drawerBeforeFocus = useRef<boolean | null>(null)
+  useEffect(() => {
+    function onChange() {
+      if (document.fullscreenElement) {
+        // Guard against repeat events — the first one holds the real state.
+        if (drawerBeforeFocus.current === null) {
+          drawerBeforeFocus.current = drawerOpenRef.current
+          setDrawerOpen(false)
+        }
+      } else if (drawerBeforeFocus.current !== null) {
+        setDrawerOpen(drawerBeforeFocus.current)
+        drawerBeforeFocus.current = null
+      }
+    }
+    document.addEventListener('fullscreenchange', onChange)
+    return () => document.removeEventListener('fullscreenchange', onChange)
+  }, [])
+
 
   // Selecting a photo slot turns the drawer into that photo's controls — the
   // panel is never a dead end telling you to go click something.

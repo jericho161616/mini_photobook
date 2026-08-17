@@ -240,8 +240,12 @@ export function TopBar({
         <button
           className="btn btn-icon"
           onClick={toggleFullscreen}
-          aria-label={isFullscreen ? 'Leave full screen' : 'Full screen'}
-          title={isFullscreen ? 'Leave full screen (Esc)' : 'Full screen — hide the browser chrome'}
+          aria-label={isFullscreen ? 'Leave focus mode' : 'Focus mode'}
+          title={
+            isFullscreen
+              ? 'Leave focus mode (Esc)'
+              : 'Focus mode — full screen, bigger page, tools still one click away'
+          }
         >
           <Icon name={isFullscreen ? 'fullscreenExit' : 'fullscreen'} size={16} />
         </button>

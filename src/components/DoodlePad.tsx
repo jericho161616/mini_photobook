@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../state/useStore'
+import { Icon } from './Icon'
 
 const COLORS = [
   { id: 'ink', hex: '#201f1c' },
@@ -290,7 +291,7 @@ export function DoodlePad({ pageIndex, targetHalf, locked }: DoodlePadProps) {
   return (
     <div className="doodle-pad-section">
       <button className="btn add-text-btn" onClick={() => setOpen(true)} disabled={locked}>
-        ✏️ Draw a Sticker
+        <Icon name="pencil" size={14} /> Draw a Sticker
       </button>
 
       {/* In a modal rather than inline: the pad is the one thing here that

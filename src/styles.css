@@ -1040,6 +1040,7 @@ input:focus-visible,
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 10px;
 }
 
 .page-zoom-frame {
@@ -1052,15 +1053,14 @@ input:focus-visible,
 
 .page-zoom-close {
   position: absolute;
-  top: -40px;
-  right: 0;
-  width: 32px;
-  height: 32px;
+  top: 20px;
+  right: 20px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: none;
   background: rgba(255, 255, 255, 0.15);
   color: #fff;
-  font-size: 20px;
   line-height: 1;
   display: flex;
   align-items: center;
@@ -1070,6 +1070,44 @@ input:focus-visible,
 
 .page-zoom-close:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+/* Paging without dropping out of full screen. In the flex row beside the
+   page rather than floating over it, so a wide landscape page never has a
+   chevron sitting on top of the photo. */
+.page-zoom-nav {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.12s, opacity 0.12s;
+}
+
+.page-zoom-nav:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.page-zoom-nav:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.page-zoom-count {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
 }
 
 .page-size-picker {

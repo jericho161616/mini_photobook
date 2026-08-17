@@ -4,6 +4,7 @@ import { isOverlaySlot, MAX_ZOOM, MIN_ZOOM } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
 import type { Placement, PhotoFilter } from '../types'
 import { DEFAULT_TAPE_COLOR } from './AttachmentGraphic'
+import { Icon } from './Icon'
 
 const FILTERS: { id: PhotoFilter | 'none'; label: string }[] = [
   { id: 'none', label: 'Color' },
@@ -69,7 +70,7 @@ function InspectorFold({
     <div className={`inspector-fold${open ? ' open' : ''}`}>
       <button className="inspector-fold-head" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
         <span className="chev" aria-hidden="true">
-          ▸
+          <Icon name="chevronRight" size={13} />
         </span>
         {label}
         <span className="val">{value}</span>

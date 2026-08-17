@@ -7,6 +7,7 @@ import { BackgroundPhotoModal } from './BackgroundPhotoModal'
 import { DoodlePad } from './DoodlePad'
 import { PanelSection } from './PanelSection'
 import { StickerGlyph } from './StickerGlyph'
+import { Icon } from './Icon'
 
 /** A handful of tinted "cardstock" options — swatches, not a full color picker, to keep this simple. */
 const PAGE_TINTS: { id: string; color: string; label: string }[] = [
@@ -153,7 +154,7 @@ export function DecoratePanel() {
                 aria-expanded={photoGridOpen}
               >
                 <span className="chev" aria-hidden="true">
-                  ▾
+                  <Icon name="chevronDown" size={12} />
                 </span>
                 Choose photo
               </button>
@@ -162,7 +163,7 @@ export function DecoratePanel() {
                 onClick={() => setBrowsingPhotos(true)}
                 disabled={photos.length === 0}
               >
-                ⤢ Browse all
+                <Icon name="expand" size={12} /> Browse all
               </button>
             </div>
             {photoGridOpen && (
@@ -312,7 +313,7 @@ export function DecoratePanel() {
         disabled={page.locked}
         title="Add a PNG (or other image) from your own files as a placeable sticker"
       >
-        ↑ Upload Image
+        <Icon name="upload" size={14} /> Upload Image
       </button>
       <input
         ref={uploadInputRef}

@@ -5,6 +5,7 @@ import { useLibraryStore, type BookSummary } from '../state/useLibraryStore'
 import { DeleteBookConfirm } from './DeleteBookConfirm'
 import { NewBookModal } from './NewBookModal'
 import { TrashView } from './TrashView'
+import { Icon } from './Icon'
 
 function relativeTime(ms: number): string {
   const diff = Date.now() - ms
@@ -88,7 +89,7 @@ function BookCard({ book, onOpen, onRename, onDuplicate, onDelete }: BookCardPro
           />
         ) : (
           <span className="placeholder-icon" aria-hidden="true">
-            ＋
+            <Icon name="plus" size={24} />
           </span>
         )}
       </button>
@@ -125,7 +126,7 @@ function BookCard({ book, onOpen, onRename, onDuplicate, onDelete }: BookCardPro
               aria-haspopup="menu"
               title="Rename, duplicate or delete this book"
             >
-              ⋯
+              <Icon name="more" size={16} />
             </button>
             {menuOpen && (
               <div className="menu open" role="menu">

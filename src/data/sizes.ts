@@ -101,8 +101,8 @@ const A4_FAMILY_IDS = ['a4', 'a4-landscape', 'a4-folded-portrait', 'a4-folded-la
 const A4_FAMILY_SHORT_LABELS: Record<string, string> = {
   'a4': 'A4',
   'a4-landscape': 'A4 Landscape',
-  'a4-folded-portrait': 'A4 Folded ↕',
-  'a4-folded-landscape': 'A4 Folded ↔',
+  'a4-folded-portrait': 'A4 Folded (tall)',
+  'a4-folded-landscape': 'A4 Folded (wide)',
 }
 
 /**

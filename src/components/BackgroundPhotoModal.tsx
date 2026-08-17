@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { photoThumbUrl } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
+import { Icon } from './Icon'
 
 interface BackgroundPhotoModalProps {
   pageIndex: number
@@ -60,7 +61,7 @@ export function BackgroundPhotoModal({ pageIndex, onClose }: BackgroundPhotoModa
                     <img src={photoThumbUrl(photo)} alt={photo.name} draggable={false} loading="lazy" decoding="async" />
                     {isActive && (
                       <span className="library-check" aria-hidden="true">
-                        ✓
+                        <Icon name="check" size={12} />
                       </span>
                     )}
                     <span className="library-caption">{photo.name}</span>

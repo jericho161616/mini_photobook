@@ -4,6 +4,7 @@ import { capacityRange, minPageCount, sizeMinPages, suggestPageCount } from '../
 import { useStore } from '../state/useStore'
 import { MAX_PAGES } from '../types'
 import { ResetConfirm } from './ResetConfirm'
+import { Icon } from './Icon'
 
 /** Shared line-icon geometry — keeps every icon in the bar visually the same weight. */
 const iconStroke = {
@@ -190,7 +191,7 @@ export function TopBar({
             aria-label="More actions"
             title="More actions"
           >
-            ⋯
+            <Icon name="more" size={16} />
           </button>
           {moreOpen && (
             <div className="topbar-menu" role="menu">
@@ -203,7 +204,7 @@ export function TopBar({
                 disabled={previewing || pages.length === 0}
                 title="Download an image showing every page's spot in the book, in order"
               >
-                {previewing ? 'Rendering…' : '⊞ Preview whole book'}
+                <Icon name="grid" size={14} /> {previewing ? 'Rendering…' : 'Preview whole book'}
               </button>
               <button
                 role="menuitem"
@@ -226,7 +227,7 @@ export function TopBar({
           aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
         >
-          {theme === 'dark' ? '☀' : '☾'}
+          <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={16} />
         </button>
       </div>
 

@@ -21,6 +21,7 @@ import type { DecorationRef } from '../state/useStore'
 import type { CustomSticker, Page, Photo, Sticker, TextBox } from '../types'
 import { DecorationLayer } from './DecorationLayer'
 import { SlotView } from './SlotView'
+import { Icon } from './Icon'
 
 const CAPTION_CLASS: Record<string, string> = {
   centered: ' centered',
@@ -205,7 +206,7 @@ export function PageView({
         aria-label={page.locked ? `Unlock page ${pageIndex + 1}` : `Lock page ${pageIndex + 1}`}
         title={page.locked ? 'Unlock this page' : 'Lock this page to protect it from edits'}
       >
-        {page.locked ? '🔒' : '🔓'}
+        <Icon name={page.locked ? 'lock' : 'unlock'} size={14} />
       </button>
       {onFullscreen && (
         <button
@@ -217,7 +218,7 @@ export function PageView({
           aria-label={`View page ${pageIndex + 1} full-screen`}
           title="View even larger, full-screen"
         >
-          ⤢
+          <Icon name="expand" size={13} />
         </button>
       )}
       {sizePicker && (

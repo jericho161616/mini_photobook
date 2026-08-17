@@ -136,13 +136,16 @@ function getGrainPattern(ctx: CanvasRenderingContext2D): CanvasPattern {
 }
 
 /**
- * The speckle is one pixel per grain, so drawn 1:1 it gets finer the higher the
- * export resolution — a 300 DPI page came out about four times tighter than the
- * screen preview, which for a slider you dial in by eye is just wrong. Scaling
- * the pattern by the resolution instead pins each speck to a fixed physical
- * size, near enough to what a CSS pixel covers on screen at the editor's zoom.
+ * The resolution a CSS pixel is treated as covering, used to keep
+ * pixel-sized detail a fixed *physical* size in the export.
+ *
+ * Anything drawn 1:1 gets finer the higher the export resolution — grain speckle
+ * and the tape weave both came out about four times tighter on a 300 DPI page
+ * than the editor showed. Scaling by dpi / DESIGN_DPI instead pins each speck
+ * and each stripe to roughly what a CSS pixel covers on screen at the editor's
+ * zoom, so what you set is what prints.
  */
-const GRAIN_DESIGN_DPI = 96
+const DESIGN_DPI = 96
 
 /**
  * Overlays fine grain speckle over `rect` — call with the same clip already
@@ -153,13 +156,13 @@ function drawFilmGrain(
   ctx: CanvasRenderingContext2D,
   rect: { x: number; y: number; w: number; h: number },
   alpha = 0.16,
-  dpi = GRAIN_DESIGN_DPI,
+  dpi = DESIGN_DPI,
 ) {
   ctx.save()
   ctx.globalAlpha = alpha
   ctx.globalCompositeOperation = 'overlay'
   const pattern = getGrainPattern(ctx)
-  pattern.setTransform(new DOMMatrix().scaleSelf(dpi / GRAIN_DESIGN_DPI))
+  pattern.setTransform(new DOMMatrix().scaleSelf(dpi / DESIGN_DPI))
   ctx.fillStyle = pattern
   ctx.fillRect(rect.x, rect.y, rect.w, rect.h)
   ctx.restore()
@@ -169,6 +172,64 @@ const TAPE_COLORS: Record<string, string> = {
   'tape-yellow': 'rgba(232, 217, 160, 0.85)',
   'tape-pink': 'rgba(227, 184, 176, 0.85)',
   'tape-sage': 'rgba(185, 196, 168, 0.85)',
+}
+
+/** The alpha the .sticker-tape-* rules carry on the element itself. */
+const TAPE_ALPHA = 0.85
+
+/**
+ * Mirrors the repeating-linear-gradient in each .sticker-tape-* rule: washi
+ * tape has a diagonal weave, and printing it as a flat strip was losing the
+ * only thing that made it read as tape rather than a coloured rectangle.
+ * `band` is the CSS band width; `dir` is 1 for the 45deg weave and -1 for
+ * -45deg. Pink has no entry because it is a flat strip on screen too.
+ *
+ * The lighter of each pair is stroked over TAPE_COLORS' darker base, which
+ * already matches the gradient's first stop.
+ */
+const TAPE_STRIPES: Record<string, { over: string; band: number; dir: 1 | -1 }> = {
+  'tape-yellow': { over: '#f2e8c4', band: 6, dir: 1 },
+  'tape-sage': { over: '#d3dac6', band: 5, dir: -1 },
+}
+
+/**
+ * Strokes the weave inside `rect`. The band keeps a fixed physical width via
+ * DESIGN_DPI rather than a fixed device-pixel one, so a 300 DPI print gets
+ * the same weave the editor showed instead of stripes four times finer.
+ */
+function drawTapeWeave(
+  ctx: CanvasRenderingContext2D,
+  rect: { x: number; y: number; w: number; h: number },
+  spec: { over: string; band: number; dir: 1 | -1 },
+  dpi: number,
+) {
+  const band = spec.band * (dpi / DESIGN_DPI)
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(rect.x, rect.y, rect.w, rect.h)
+  ctx.clip()
+  ctx.globalAlpha = TAPE_ALPHA
+  ctx.strokeStyle = spec.over
+  ctx.lineWidth = band
+  // A 45° line advances one band-width diagonally for every band*√2 across.
+  const step = band * 2 * Math.SQRT2
+  ctx.beginPath()
+  for (let x = rect.x - rect.h - step; x < rect.x + rect.w + rect.h + step; x += step) {
+    // A CSS gradient angle names the axis the colours run along, and the bands
+    // sit perpendicular to it — so 45deg (axis pointing north-east) draws
+    // north-west/south-east bands, "\", and -45deg draws "/". Getting this
+    // backwards mirrors the weave against the editor, which is exactly what
+    // the first cut of this did.
+    if (spec.dir === 1) {
+      ctx.moveTo(x, rect.y - 1)
+      ctx.lineTo(x + rect.h + 2, rect.y + rect.h + 1)
+    } else {
+      ctx.moveTo(x, rect.y + rect.h + 1)
+      ctx.lineTo(x + rect.h + 2, rect.y - 1)
+    }
+  }
+  ctx.stroke()
+  ctx.restore()
 }
 
 /**
@@ -621,11 +682,14 @@ export async function renderPage(
       ctx.save()
       ctx.shadowColor = 'rgba(0,0,0,0.15)'
       ctx.shadowBlur = rect.h * 0.15
-      // A recolored tape loses its woven pattern and prints as a flat strip,
-      // exactly as .sticker-glyph's background override shows it on screen.
       ctx.fillStyle = sticker.color ?? tapeColor
       ctx.fillRect(rect.x, rect.y, rect.w, rect.h)
       ctx.restore()
+      // The weave goes on top of the flat strip, and only while the sticker
+      // keeps its own colour — recolouring it flattens the pattern on screen
+      // too, so a recoloured tape printing flat is correct.
+      const weave = sticker.color ? undefined : TAPE_STRIPES[sticker.type]
+      if (weave) drawTapeWeave(ctx, rect, weave, dpi)
       return
     }
     const icon = ICON_PATHS[sticker.type]

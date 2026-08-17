@@ -203,6 +203,12 @@ export interface Placement {
   filter?: PhotoFilter
   /** Undefined means no frame — a plain crop. 'stamp' cuts a scalloped postage-stamp edge. */
   frame?: 'hairline' | 'polaroid' | 'stamp'
+  /**
+   * The frame's own colour — the card for a polaroid or stamp, the rule for a
+   * hairline. Undefined keeps each frame's default, which for a polaroid is
+   * white and so nearly invisible against white paper.
+   */
+  frameColor?: string
   /** Manual tilt in degrees, on top of any fixed rotation the template itself applies. Undefined means 0. */
   rotation?: number
   /** A piece of tape, a binder clip, or a paperclip pinning the photo to the page — independent of, and combinable with, any frame. */

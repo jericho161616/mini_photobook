@@ -83,6 +83,7 @@ export function DecoratePanel() {
   const photos = useStore((s) => s.photos)
   const setPageBackground = useStore((s) => s.setPageBackground)
   const setPageBackgroundPhoto = useStore((s) => s.setPageBackgroundPhoto)
+  const togglePageLock = useStore((s) => s.togglePageLock)
   const setPageBackgroundDim = useStore((s) => s.setPageBackgroundDim)
   const setPageBackgroundOpacity = useStore((s) => s.setPageBackgroundOpacity)
   const setPageBackgroundGrain = useStore((s) => s.setPageBackgroundGrain)
@@ -103,11 +104,24 @@ export function DecoratePanel() {
   return (
     <section className="panel">
       <h2>Decorate</h2>
-      <p className="hint">
-        {isSplit
-          ? 'Placed on whichever half is selected in the Layout panel above.'
-          : 'Drag onto the page, resize from the corner, drag the × to remove.'}
-      </p>
+      {/* A locked page greys out every control below with no reason given,
+          which reads as the panel being broken rather than the page being
+          protected. Say which it is, and offer the way out. */}
+      {page.locked ? (
+        <p className="hint hint-blocked">
+          This page is locked, so nothing can be added to it. Unlock it to
+          decorate.{' '}
+          <button className="link-btn" onClick={() => togglePageLock(activePageIndex)}>
+            Unlock page {activePageIndex + 1}
+          </button>
+        </p>
+      ) : (
+        <p className="hint">
+          {isSplit
+            ? 'Placed on whichever half is selected in the Layout panel above.'
+            : 'Drag onto the page, resize from the corner, drag the × to remove.'}
+        </p>
+      )}
 
       <PanelSection title="Page styling" defaultOpen>
         <div className="inspector-row">

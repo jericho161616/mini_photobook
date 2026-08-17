@@ -92,6 +92,9 @@ const PATHS: Record<string, ReactNode> = {
   upload: <path d="M12 16.5V4M7.2 8.8L12 4l4.8 4.8M4 20h16" />,
   plus: <path d="M12 5v14M5 12h14" />,
   close: <path d="M6.4 6.4l11.2 11.2M17.6 6.4L6.4 17.6" />,
+  /** Send a page to the front / back of the book in one click. */
+  toStart: <path d="M5 5v14M19 5l-7 7 7 7M12 5l-7 7 7 7" />,
+  toEnd: <path d="M19 5v14M5 5l7 7-7 7M12 5l7 7-7 7" />,
   /** The fold direction of an A4 Folded sheet. */
   foldTall: (
     <>

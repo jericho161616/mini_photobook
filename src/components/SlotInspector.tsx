@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { getTemplate } from '../data/templates'
-import { isOverlaySlot, MAX_ZOOM, MIN_ZOOM } from '../lib/imageUtils'
+import { FRAME_COLORS, FRAME_DEFAULT_COLOR, isOverlaySlot, MAX_ZOOM, MIN_ZOOM } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
 import type { Placement, PhotoFilter } from '../types'
 import { DEFAULT_TAPE_COLOR } from './AttachmentGraphic'
@@ -171,6 +171,26 @@ export function SlotInspector() {
                 </button>
               ))}
             </div>
+            {/* Only once there is a frame to colour. A polaroid's default white
+                card all but disappears against white paper, which is what made
+                picking one feel like nothing had happened. */}
+            {placement.frame && (
+              <div className="frame-color-row">
+                {FRAME_COLORS.map((c) => (
+                  <button
+                    key={c.id}
+                    className={`frame-color-chip${
+                      (placement.frameColor ?? FRAME_DEFAULT_COLOR[placement.frame!]) === c.color ? ' active' : ''
+                    }`}
+                    style={{ background: c.color }}
+                    onClick={() => updatePlacement(selected, { frameColor: c.color })}
+                    aria-pressed={(placement.frameColor ?? FRAME_DEFAULT_COLOR[placement.frame!]) === c.color}
+                    aria-label={`${c.label} frame`}
+                    title={c.label}
+                  />
+                ))}
+              </div>
+            )}
           </InspectorFold>
 
           {!isPosterSlot && (

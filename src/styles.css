@@ -2488,14 +2488,41 @@ kbd {
 .filmstrip {
   flex: 0 0 auto;
   display: flex;
-  align-items: center;
-  gap: 2px;
-  overflow-x: auto;
-  padding: 14px;
+  align-items: stretch;
   background: var(--linen);
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: none;
+  overflow: hidden;
+}
+
+/* Sits outside .filmstrip-scroll on purpose — a control that acts on every
+   page is useless if it scrolls away in a thirty-page book. */
+.filmstrip-pinned {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  padding: 14px 12px;
+  border-right: 1px solid var(--line);
+}
+
+.filmstrip-scroll {
+  flex: 1 1 auto;
+  overflow-x: auto;
+  padding: 14px;
+}
+
+.filmstrip-track {
+  display: flex;
+  align-items: flex-start;
+  gap: 2px;
+  width: max-content;
+  min-width: 100%;
+}
+
+.fs-lock-all {
+  width: 32px;
+  height: 32px;
 }
 
 .fs-insert {
@@ -2524,7 +2551,63 @@ kbd {
 .fs-item {
   display: flex;
   flex-direction: column;
+  align-items: center;
   flex: 0 0 auto;
+  position: relative;
+}
+
+/* The drop indicator is a line in the gap the page will land in, not an
+   outline on whichever page happens to be under the cursor — an outline
+   can't say "before" or "after", and looked like the active page. */
+.fs-item.drop-left::before,
+.fs-item.drop-right::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 16px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--brass);
+  pointer-events: none;
+}
+
+.fs-item.drop-left::before { left: -3px; }
+.fs-item.drop-right::after { right: -3px; }
+
+/* Move to start / end — the one-click alternative to hauling a page past
+   thirty thumbnails. */
+.fs-jump {
+  display: flex;
+  gap: 3px;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.fs-item:hover .fs-jump,
+.fs-item:focus-within .fs-jump {
+  opacity: 1;
+}
+
+.fs-jump button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 4px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--linen);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.fs-jump button:hover:not(:disabled) {
+  color: var(--brass);
+  border-color: var(--brass-soft);
+}
+
+.fs-jump button:disabled {
+  opacity: 0.3;
+  cursor: default;
 }
 
 .fs-page-wrap {
@@ -2549,8 +2632,17 @@ kbd {
   outline-color: var(--brass);
 }
 
-.fs-page.drag-over {
-  outline-color: var(--navy);
+.fs-page:not(.locked) {
+  cursor: grab;
+}
+
+.fs-page:not(.locked):active {
+  cursor: grabbing;
+}
+
+/* The page being carried fades out, so it's obvious which one leaves the row. */
+.fs-page.dragging {
+  opacity: 0.32;
 }
 
 .fs-page.locked::after {
@@ -3601,4 +3693,39 @@ kbd {
   * {
     transition: none !important;
   }
+}
+
+
+/* Frame colours — swatches rather than names, since the choice is the colour. */
+.frame-color-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.frame-color-chip {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.frame-color-chip:hover {
+  transform: scale(1.1);
+}
+
+.frame-color-chip.active {
+  box-shadow: 0 0 0 2px var(--linen), 0 0 0 4px var(--brass);
+}
+
+
+.hint-blocked {
+  background: var(--linen-deep);
+  border-left: 2px solid var(--brass);
+  padding: 8px 10px;
+  border-radius: 0 5px 5px 0;
 }

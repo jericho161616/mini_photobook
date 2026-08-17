@@ -10,6 +10,38 @@ function nextPhotoId(): string {
 
 export const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
 
+/**
+ * Frame colours, shared by the editor and the export.
+ *
+ * A polaroid frame defaults to white, which on white paper reads as no frame
+ * at all — the point of choosing one is lost. These give it something to be.
+ */
+export const FRAME_COLORS: { id: string; color: string; label: string }[] = [
+  { id: 'white', color: '#ffffff', label: 'White' },
+  { id: 'cream', color: '#f2ead2', label: 'Cream' },
+  { id: 'kraft', color: '#c9a87c', label: 'Kraft' },
+  { id: 'sage', color: '#b9c4a8', label: 'Sage' },
+  { id: 'blush', color: '#e3b8b0', label: 'Blush' },
+  { id: 'slate', color: '#5c7992', label: 'Slate' },
+  { id: 'ink', color: '#2b2722', label: 'Ink' },
+]
+
+/** What each frame falls back to when no colour has been picked. */
+export const FRAME_DEFAULT_COLOR: Record<string, string> = {
+  polaroid: '#ffffff',
+  stamp: '#f2ead2',
+  hairline: '#6b5f4a',
+}
+
+/** The frame colour actually in force for a placement. */
+export function frameColorFor(
+  frame: 'hairline' | 'polaroid' | 'stamp' | undefined,
+  frameColor: string | undefined,
+  fallbackKey: string,
+): string {
+  return frameColor ?? FRAME_DEFAULT_COLOR[frame ?? fallbackKey] ?? FRAME_DEFAULT_COLOR[fallbackKey]
+}
+
 /** Shared with SlotView and PageView so a photo's filter reads identically whether it's in a slot or a page background. */
 export const PHOTO_FILTER_CSS: Record<PhotoFilter, string> = {
   bw: 'grayscale(1)',

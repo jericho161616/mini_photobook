@@ -34,6 +34,8 @@ interface SlotViewProps {
   onPan: (offsetX: number, offsetY: number) => void
   /** A small white card mount around the photo — the Instant Grid look. */
   framed?: boolean
+  /** The frame's own colour — card for polaroid/stamp, rule for hairline. */
+  frameColor?: string
   /** Taped-on-top styling for a 'poster'-decorated template's overlay slot(s). */
   poster?: boolean
   /** Which pin a poster slot draws — meaningless unless `poster` is true. Defaults to 'tape'. */
@@ -65,6 +67,7 @@ export function SlotView({
   onDropPhoto,
   onPan,
   framed,
+  frameColor,
   poster,
   posterAttachment = 'tape',
   circle,
@@ -202,6 +205,11 @@ export function SlotView({
           top: box.y,
           width: box.w,
           height: box.h,
+          // A polaroid's white card is invisible on white paper, so the colour
+          // is worth overriding — as a card fill for polaroid/stamp, and as the
+          // rule for a hairline, which has no card to fill.
+          ...(frameColor && (framed || stamp) ? { background: frameColor } : {}),
+          ...(frameColor && hairline ? { boxShadow: `inset 0 0 0 1.5px ${frameColor}` } : {}),
           ...(rotationDeg ? { transform: `rotate(${rotationDeg}deg)` } : {}),
           ...(stampClipPath ? { clipPath: stampClipPath } : {}),
         }}

@@ -127,6 +127,8 @@ interface StoreState {
   placeArmedPhoto: (ref: SlotRef) => void
   updatePlacement: (ref: SlotRef, patch: Partial<Placement>) => void
   togglePageLock: (pageIndex: number) => void
+  /** Locks or unlocks every page at once — the filmstrip's one bulk control. */
+  setAllPagesLocked: (locked: boolean) => void
   /** Overrides one page's size within the A4 family (e.g. A4 <-> A4 Folded — Landscape). */
   setPageSize: (pageIndex: number, sizeId: string) => void
   setPageText: (pageIndex: number, text: string) => void
@@ -616,6 +618,13 @@ export const useStore = create<StoreState>((set, get) => {
       mutatePages((pages) =>
         pages.map((page, i) => (i === pageIndex ? { ...page, locked: !page.locked } : page)),
       )
+    },
+
+    setAllPagesLocked(locked) {
+      // No lock check of its own: this is the control that changes the locks.
+      recordHistory()
+      mutatePages((pages) => pages.map((page) => (page.locked === locked ? page : { ...page, locked })))
+      if (locked) set({ selected: null, selectedDecoration: null })
     },
 
     setPageSize(pageIndex, sizeId) {

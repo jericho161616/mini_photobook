@@ -303,7 +303,8 @@ export function PageView({
                     onSelect={() => onSelectSlot(slotIndex, halfIndex as 0 | 1)}
                     onDropPhoto={(photoId) => onDropPhoto(slotIndex, photoId, halfIndex as 0 | 1)}
                     onPan={(x, y) => onPan(slotIndex, x, y, halfIndex as 0 | 1)}
-                    {...resolveSlotStyle(halfTemplate, slotIndex, placement)}
+                    frameColor={placement?.frameColor}
+                          {...resolveSlotStyle(halfTemplate, slotIndex, placement)}
                     rotationDeg={slotRotationDeg(halfTemplate, slotIndex, placement)}
                     hasArmedPhoto={hasArmedPhoto}
                     quickPick={
@@ -419,7 +420,8 @@ export function PageView({
                   onSelect={() => onSelectSlot(slotIndex)}
                   onDropPhoto={(photoId) => onDropPhoto(slotIndex, photoId)}
                   onPan={(x, y) => onPan(slotIndex, x, y)}
-                  {...resolveSlotStyle(template, slotIndex, placement)}
+                  frameColor={placement?.frameColor}
+                          {...resolveSlotStyle(template, slotIndex, placement)}
                   rotationDeg={slotRotationDeg(template, slotIndex, placement)}
                   hasArmedPhoto={hasArmedPhoto}
                   quickPick={

@@ -7,6 +7,7 @@ import {
   CLIP_ASPECT,
   CLIP_WIDTH_RATIO,
   coverGeometry,
+  FRAME_DEFAULT_COLOR,
   FRAME_INSET_RATIO,
   GRAIN_MAX_CANVAS,
   GRAIN_TILE_PX,
@@ -432,12 +433,12 @@ export async function renderPage(
   }
 
   /** The Stamp frame/caption's scalloped cream card — filled (and left as the active clip) for the caller to draw into. */
-  const fillScallopCard = (rect: { x: number; y: number; w: number; h: number }) => {
+  const fillScallopCard = (rect: { x: number; y: number; w: number; h: number }, color?: string) => {
     const points = stampScallopPoints(rect.w, rect.h).map((p) => ({ x: rect.x + p.x, y: rect.y + p.y }))
     ctx.beginPath()
     points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)))
     ctx.closePath()
-    ctx.fillStyle = '#f2ead2'
+    ctx.fillStyle = color ?? FRAME_DEFAULT_COLOR.stamp
     ctx.fill()
   }
 
@@ -520,7 +521,7 @@ export async function renderPage(
     }
     if (opts.stamp) {
       ctx.save()
-      fillScallopCard(rect)
+      fillScallopCard(rect, placement.frameColor)
       ctx.clip()
       const inset = Math.min(rect.w, rect.h) * STAMP_INSET_RATIO
       drawPhoto(
@@ -533,7 +534,7 @@ export async function renderPage(
       return
     }
     if (opts.framed) {
-      ctx.fillStyle = '#ffffff'
+      ctx.fillStyle = placement.frameColor ?? FRAME_DEFAULT_COLOR.polaroid
       ctx.fillRect(rect.x, rect.y, rect.w, rect.h)
       const inset = Math.min(rect.w, rect.h) * FRAME_INSET_RATIO
       drawPhoto(
@@ -554,7 +555,7 @@ export async function renderPage(
     }
     if (opts.hairline) {
       ctx.save()
-      ctx.strokeStyle = '#6b5f4a'
+      ctx.strokeStyle = placement.frameColor ?? FRAME_DEFAULT_COLOR.hairline
       ctx.lineWidth = 1.5
       ctx.strokeRect(rect.x + 0.75, rect.y + 0.75, rect.w - 1.5, rect.h - 1.5)
       ctx.restore()

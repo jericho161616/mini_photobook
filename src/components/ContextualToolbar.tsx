@@ -4,6 +4,7 @@ import { decorationHost } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
 import type { Sticker, TextBox, TextStyle } from '../types'
 import { isTapeSticker } from './DecorationLayer'
+import { Icon, type IconName } from './Icon'
 
 /** Gap between the selection's own edge and the bar, in px. */
 const OFFSET_PX = 12
@@ -19,10 +20,10 @@ const STICKER_COLORS = [
   { id: 'plum', hex: '#a8628f', label: 'Plum' },
 ]
 
-const ALIGNS: { id: TextBox['align']; label: string; title: string }[] = [
-  { id: 'left', label: '⟸', title: 'Align left' },
-  { id: 'center', label: '☰', title: 'Align center' },
-  { id: 'right', label: '⟹', title: 'Align right' },
+const ALIGNS: { id: TextBox['align']; icon: IconName; title: string }[] = [
+  { id: 'left', icon: 'alignLeft', title: 'Align left' },
+  { id: 'center', icon: 'alignCenter', title: 'Align center' },
+  { id: 'right', icon: 'alignRight', title: 'Align right' },
 ]
 
 const ROTATE_STEP_DEG = 15
@@ -303,7 +304,7 @@ export function ContextualToolbar() {
               title={a.title}
               aria-pressed={textBox.align === a.id}
             >
-              {a.label}
+              <Icon name={a.icon} size={14} />
             </button>
           ))}
         </>

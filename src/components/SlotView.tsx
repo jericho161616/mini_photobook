@@ -299,7 +299,7 @@ export function SlotView({
             </div>
           )}
           <button className="quick-picker-more" onClick={() => quickPick.onOpenLibrary()}>
-            Open full library →
+            Open full library
           </button>
         </div>
       )}

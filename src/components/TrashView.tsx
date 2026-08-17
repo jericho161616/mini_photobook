@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { photoThumbUrl } from '../lib/imageUtils'
 import { useLibraryStore, type BookSummary } from '../state/useLibraryStore'
 import { TRASH_RETENTION_MS } from '../types'
+import { Icon } from './Icon'
 
 function daysLeft(deletedAt: number | undefined): number {
   if (!deletedAt) return 0
@@ -24,7 +25,7 @@ function TrashCard({ book, onRestore, onDeleteForever }: TrashCardProps) {
           <img className="cover-photo" src={photoThumbUrl(book.coverPhoto)} alt="" draggable={false} />
         ) : (
           <span className="placeholder-icon" aria-hidden="true">
-            ＋
+            <Icon name="plus" size={24} />
           </span>
         )}
       </div>

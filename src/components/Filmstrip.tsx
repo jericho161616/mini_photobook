@@ -5,6 +5,7 @@ import { resolvePageSize, sizeMinPages } from '../lib/autoLayout'
 import { photoThumbUrl } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
 import { MAX_PAGES, type Photo } from '../types'
+import { Icon } from './Icon'
 
 const THUMB_WIDTH = 72
 
@@ -133,7 +134,7 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
                 aria-label={page.locked ? `Unlock page ${index + 1}` : `Lock page ${index + 1}`}
                 title={page.locked ? 'Unlock this page' : 'Lock this page'}
               >
-                {page.locked ? '🔒' : '🔓'}
+                <Icon name={page.locked ? 'lock' : 'unlock'} size={11} />
               </button>
               {!page.locked && canRemove && (
                 <button

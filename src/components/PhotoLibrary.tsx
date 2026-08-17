@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { usedPhotoIds } from '../lib/autoLayout'
 import { photoThumbUrl } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
+import { Icon } from './Icon'
 
 interface PhotoLibraryProps {
   onClose: () => void
@@ -150,7 +151,7 @@ export function PhotoLibrary({ onClose }: PhotoLibraryProps) {
                       decoding="async"
                     />
                     <span className="library-check" aria-hidden="true">
-                      {isSelected ? '✓' : ''}
+                      {isSelected && <Icon name="check" size={12} />}
                     </span>
                     {!used.has(photo.id) && <span className="library-unused">Unplaced</span>}
                     <button
@@ -162,7 +163,7 @@ export function PhotoLibrary({ onClose }: PhotoLibraryProps) {
                       }}
                       title="Pick up this photo — click a slot on the page to place it"
                     >
-                      ✋ Place
+                      <Icon name="pointer" size={13} /> Place
                     </button>
                     <span className="library-caption">
                       {photo.name}

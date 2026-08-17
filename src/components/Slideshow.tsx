@@ -5,6 +5,7 @@ import { resolvePageSize } from '../lib/autoLayout'
 import { PAGE_MARGIN_RATIO } from '../lib/exportPdf'
 import { PHOTO_FILTER_CSS, PHOTO_FILTER_OVERLAY, photoUrl, slotPixelRect } from '../lib/imageUtils'
 import type { BookSize, Page, Photo } from '../types'
+import { Icon } from './Icon'
 
 /** How long a page stays up before the next one starts fading in. */
 const DEFAULT_ADVANCE_MS = 3000
@@ -272,14 +273,14 @@ export function Slideshow({ pages, photos, size, title, startIndex, onClose }: S
           }}
           aria-label="Previous page"
         >
-          ‹
+          <Icon name="chevronLeft" size={22} />
         </button>
         <button
           className="btn-primary"
           onClick={() => setPlaying((p) => !p)}
           aria-label={playing ? 'Pause' : 'Play'}
         >
-          {playing ? '⏸ Pause' : '▶ Play'}
+          <Icon name={playing ? 'pause' : 'play'} size={14} /> {playing ? 'Pause' : 'Play'}
         </button>
         <button
           className="btn"
@@ -289,7 +290,7 @@ export function Slideshow({ pages, photos, size, title, startIndex, onClose }: S
           }}
           aria-label="Next page"
         >
-          ›
+          <Icon name="chevronRight" size={22} />
         </button>
         <span className="mono slideshow-count">
           {index + 1} / {pages.length}

@@ -4,6 +4,7 @@ import { resolvePageSize, usedPhotoIds } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
 import type { Page, Photo } from '../types'
 import { PageView } from './PageView'
+import { Icon } from './Icon'
 
 /** How many unplaced photos the quick picker offers before pointing at the full library. */
 const QUICK_PICK_COUNT = 6
@@ -170,11 +171,18 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
   useEffect(() => {
     if (!zoomed) return
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setZoomed(false)
+      if (e.key === 'Escape') {
+        setZoomed(false)
+        return
+      }
+      // Paging without leaving full screen — the whole point of opening it is
+      // to look at pages closely, and that rarely means just the one.
+      if (e.key === 'ArrowLeft' && canPrev) setActivePage(activePageIndex - 1)
+      if (e.key === 'ArrowRight' && canNext) setActivePage(activePageIndex + 1)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [zoomed])
+  }, [zoomed, canPrev, canNext, activePageIndex, setActivePage])
 
   // Everything a PageView needs besides its own size and whether it can open
   // the zoom overlay — shared between the normal view and the zoomed-in one
@@ -263,7 +271,7 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
           aria-label="Previous page"
           title="Previous page"
         >
-          ‹
+          <Icon name="chevronLeft" size={20} />
         </button>
 
         {page && <PageView {...pageViewProps(true)} width={dims.width} height={dims.height} />}
@@ -275,7 +283,7 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
           aria-label="Next page"
           title="Next page"
         >
-          ›
+          <Icon name="chevronRight" size={20} />
         </button>
       </div>
 
@@ -299,12 +307,45 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
 
       {zoomed && page && zoomDims && (
         <div className="page-zoom-overlay" onClick={() => setZoomed(false)}>
+          <button className="page-zoom-close" onClick={() => setZoomed(false)} aria-label="Close full-screen view">
+            <Icon name="close" size={18} />
+          </button>
+
+          {/* Outside the frame, so they stay put as pages of different sizes
+              and orientations swap underneath them. */}
+          <button
+            className="page-zoom-nav prev"
+            onClick={(e) => {
+              e.stopPropagation()
+              setActivePage(activePageIndex - 1)
+            }}
+            disabled={!canPrev}
+            aria-label="Previous page"
+            title="Previous page (←)"
+          >
+            <Icon name="chevronLeft" size={26} />
+          </button>
+
           <div className="page-zoom-frame" onClick={(e) => e.stopPropagation()}>
-            <button className="page-zoom-close" onClick={() => setZoomed(false)} aria-label="Close full-screen view">
-              ×
-            </button>
             <PageView {...pageViewProps(false)} width={zoomDims.width} height={zoomDims.height} />
           </div>
+
+          <button
+            className="page-zoom-nav next"
+            onClick={(e) => {
+              e.stopPropagation()
+              setActivePage(activePageIndex + 1)
+            }}
+            disabled={!canNext}
+            aria-label="Next page"
+            title="Next page (→)"
+          >
+            <Icon name="chevronRight" size={26} />
+          </button>
+
+          <span className="page-zoom-count mono">
+            {activePageIndex + 1} / {pages.length}
+          </span>
         </div>
       )}
     </main>

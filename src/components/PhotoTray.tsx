@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { usedPhotoIds } from '../lib/autoLayout'
 import { ACCEPTED_TYPES, photoThumbUrl } from '../lib/imageUtils'
 import { useStore } from '../state/useStore'
+import { Icon } from './Icon'
 
 interface PhotoTrayProps {
   onOpenLibrary: () => void
@@ -94,7 +95,7 @@ export function PhotoTray({ onOpenLibrary }: PhotoTrayProps) {
 
       {photos.length > 0 && (
         <button className="btn expand-btn" onClick={onOpenLibrary}>
-          ⤢ View & manage all photos
+          <Icon name="expand" size={13} /> View &amp; manage all photos
         </button>
       )}
 

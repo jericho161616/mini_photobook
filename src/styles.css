@@ -3729,3 +3729,120 @@ kbd {
   padding: 8px 10px;
   border-radius: 0 5px 5px 0;
 }
+
+/* ---- Fonts added to a book ---- */
+.font-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.font-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.font-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--linen);
+}
+
+.font-sample {
+  flex: 1 1 auto;
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.font-remove {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.font-remove:hover {
+  background: var(--linen-deep);
+  color: var(--ink);
+}
+
+.font-add-btn {
+  width: 100%;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.font-error {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  border-left: 2px solid var(--brass);
+  padding-left: 8px;
+}
+
+.font-scan {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.font-search {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--linen);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.font-scan-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.font-scan-list button {
+  width: 100%;
+  text-align: left;
+  padding: 5px 9px;
+  border: none;
+  background: none;
+  color: var(--ink);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.font-scan-list button:hover:not(:disabled) {
+  background: var(--linen-deep);
+}
+
+.font-scan-list button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

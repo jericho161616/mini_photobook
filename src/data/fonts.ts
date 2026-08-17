@@ -1,3 +1,4 @@
+import { fontFamilyById } from '../lib/fonts'
 import type { FontId, FontSize, TextStyle } from '../types'
 
 /**
@@ -16,8 +17,16 @@ export const FONT_OPTIONS: { id: FontId; label: string; stack: string }[] = [
   { id: 'slab', label: 'Slab Serif', stack: 'Rockwell, "Roboto Slab", Georgia, serif' },
 ]
 
+/**
+ * An id that is neither a built-in nor one of the open book's added fonts
+ * falls back to the default serif — which is exactly what should happen when
+ * a book is opened on a machine that hasn't got its scanned font installed.
+ */
 export function fontStack(id: FontId | undefined): string {
-  return FONT_OPTIONS.find((f) => f.id === id)?.stack ?? FONT_OPTIONS[0].stack
+  const builtIn = FONT_OPTIONS.find((f) => f.id === id)
+  if (builtIn) return builtIn.stack
+  const family = id ? fontFamilyById(id) : undefined
+  return family ? `"${family}", Georgia, serif` : FONT_OPTIONS[0].stack
 }
 
 /** 'md' (1x) is the size every note and text box already rendered at before this option existed. */

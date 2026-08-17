@@ -89,6 +89,7 @@ export function ContextualToolbar() {
   const pages = useStore((s) => s.pages)
   const updateSticker = useStore((s) => s.updateSticker)
   const updateTextBox = useStore((s) => s.updateTextBox)
+  const customFonts = useStore((s) => s.customFonts)
   const removeDecoration = useStore((s) => s.removeDecoration)
 
   const page = selectedDecoration ? pages[selectedDecoration.pageIndex] : undefined
@@ -257,6 +258,15 @@ export function ContextualToolbar() {
                 {f.label}
               </option>
             ))}
+            {customFonts.length > 0 && (
+              <optgroup label="Your fonts">
+                {customFonts.map((f) => (
+                  <option key={f.id} value={f.id} style={{ fontFamily: `"${f.family}", Georgia, serif` }}>
+                    {f.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </select>
 
           <span className="ctx-sep" />

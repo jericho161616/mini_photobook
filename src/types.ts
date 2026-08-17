@@ -9,11 +9,32 @@ export type Shape = 'square' | 'tall' | 'wide' | 'instagram'
 export type TemplateFamily = 'Minimal' | 'Portfolio' | 'Instagram'
 
 /**
- * Every option is either already on every computer (no download, ever) or a
- * small font file bundled inside the app itself under a free license — never
- * fetched from anywhere, so the offline/free guarantee holds either way.
+ * The eight built-ins are on every computer already (nothing downloaded,
+ * ever). Beyond those, a FontId can also name one of this book's own added
+ * fonts — a file you dropped in, or one picked off your machine — which is
+ * why this is a plain string rather than a closed union. Unknown ids fall
+ * back to the default serif, so a book opened without its fonts still reads.
  */
-export type FontId = 'serif' | 'sans' | 'mono' | 'hand1' | 'hand2' | 'brush' | 'condensed' | 'slab'
+export type BuiltInFontId = 'serif' | 'sans' | 'mono' | 'hand1' | 'hand2' | 'brush' | 'condensed' | 'slab'
+export type FontId = BuiltInFontId | (string & {})
+
+/**
+ * A font added to this book — either a file dropped in, or one read off the
+ * machine with the Local Font Access API. `data` is kept so the book still
+ * has the font on another computer; `local` marks the ones that came from an
+ * installed family, where the name alone is enough.
+ */
+export interface CustomFont {
+  id: string
+  /** What to show in the picker — the family name. */
+  name: string
+  /** The CSS family this registers as, unique per font so two "Script" faces can't collide. */
+  family: string
+  /** The font file, base64 in a data URL. Absent for a `local` font, which needs no file. */
+  data?: string
+  /** True when this is an installed family found by scanning, not an uploaded file. */
+  local?: boolean
+}
 
 /** A relative size, not a pixel value — the actual font size is always computed from the space available. */
 export type FontSize = 'sm' | 'md' | 'lg' | 'xl'
@@ -294,6 +315,8 @@ export interface Project {
   deletedAt?: number
   /** This book's own library of hand-drawn stickers — undefined on older books means none yet. */
   customStickers?: CustomSticker[]
+  /** Fonts added to this book, by upload or by scanning the machine. Undefined on older books means none. */
+  customFonts?: CustomFont[]
 }
 
 /** How long a trashed book is kept before it's purged for good. */

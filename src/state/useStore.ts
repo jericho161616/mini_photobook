@@ -15,9 +15,11 @@ import {
   sizeMinPages,
 } from '../lib/autoLayout'
 import * as storage from '../lib/db'
+import { registerAll, registerFont, unregisterFont } from '../lib/fonts'
 import { clampOffset, clampZoom, importFiles, releasePhotoUrl } from '../lib/imageUtils'
 import { MAX_PAGES } from '../types'
 import type {
+  CustomFont,
   CustomSticker,
   HalfLayout,
   Page,
@@ -68,6 +70,8 @@ interface StoreState {
   pages: Page[]
   /** This book's own drawn-sticker library — reused across as many pages as you like. */
   customStickers: CustomSticker[]
+  /** Fonts added to this book — uploaded files, or families scanned off this machine. */
+  customFonts: CustomFont[]
   activePageIndex: number
   /** Which side of a Split at Fold page the sidebar is currently editing. */
   activeHalfIndex: 0 | 1
@@ -161,6 +165,10 @@ interface StoreState {
   addCustomSticker: (dataUrl: string) => string
   /** Removes a drawing from the library and strips any already-placed copies of it. */
   removeCustomSticker: (id: string) => void
+  /** Adds a font file to this book and registers it for immediate use. */
+  addCustomFont: (font: CustomFont) => void
+  /** Removes a font; anything still set to it falls back to the default serif. */
+  removeCustomFont: (id: string) => void
   updateSticker: (ref: DecorationRef, patch: Partial<Sticker>) => void
   updateTextBox: (ref: DecorationRef, patch: Partial<TextBox>) => void
   removeDecoration: (ref: DecorationRef) => void
@@ -187,7 +195,7 @@ const MAX_HISTORY = 50
 const HISTORY_COALESCE_MS = 500
 
 function projectFrom(
-  state: Pick<StoreState, 'projectId' | 'title' | 'sizeId' | 'pages' | 'customStickers'>,
+  state: Pick<StoreState, 'projectId' | 'title' | 'sizeId' | 'pages' | 'customStickers' | 'customFonts'>,
   createdAt: number,
 ): Project {
   return {
@@ -196,6 +204,7 @@ function projectFrom(
     sizeId: state.sizeId,
     pages: state.pages,
     customStickers: state.customStickers,
+    customFonts: state.customFonts,
     createdAt,
     updatedAt: Date.now(),
   }
@@ -207,9 +216,11 @@ export const useStore = create<StoreState>((set, get) => {
   let importNoticeTimer: number | undefined
   let openedAt = Date.now()
   const writeNow = () => {
-    const { projectId, title, sizeId, pages, customStickers } = get()
+    const { projectId, title, sizeId, pages, customStickers, customFonts } = get()
     if (!projectId) return
-    void storage.saveProject(projectFrom({ projectId, title, sizeId, pages, customStickers }, openedAt))
+    void storage.saveProject(
+      projectFrom({ projectId, title, sizeId, pages, customStickers, customFonts }, openedAt),
+    )
   }
   const persist = () => {
     window.clearTimeout(saveTimer)
@@ -248,6 +259,7 @@ export const useStore = create<StoreState>((set, get) => {
     sizeId: DEFAULT_SIZE_ID,
     pages: [],
     customStickers: [],
+    customFonts: [],
     activePageIndex: 0,
     activeHalfIndex: 0,
     selected: null,
@@ -265,6 +277,9 @@ export const useStore = create<StoreState>((set, get) => {
         storage.loadProject(projectId),
       ])
       openedAt = project?.createdAt ?? Date.now()
+      // Before the first render, so text already set to a book font doesn't
+      // flash in serif on the way in.
+      await registerAll(project?.customFonts ?? [])
       if (project) {
         set({
           ready: true,
@@ -274,6 +289,7 @@ export const useStore = create<StoreState>((set, get) => {
           sizeId: project.sizeId,
           pages: normalizePages(project.pages),
           customStickers: project.customStickers ?? [],
+          customFonts: project.customFonts ?? [],
           activePageIndex: 0,
           selected: null,
           armedPhotoIds: [],
@@ -293,6 +309,7 @@ export const useStore = create<StoreState>((set, get) => {
           sizeId: DEFAULT_SIZE_ID,
           pages,
           customStickers: [],
+    customFonts: [],
           activePageIndex: 0,
           selected: null,
           undoStack: [],
@@ -848,6 +865,22 @@ export const useStore = create<StoreState>((set, get) => {
       )
     },
 
+    addCustomFont(font) {
+      // Deliberately outside the undo stack: a font is a resource the book
+      // owns, like an imported photo, not an edit to the layout. Undoing a
+      // caption change shouldn't quietly uninstall the font it used.
+      set((state) => ({ customFonts: [...state.customFonts, font] }))
+      void registerFont(font)
+      persist()
+    },
+
+    removeCustomFont(id) {
+      const font = get().customFonts.find((f) => f.id === id)
+      set((state) => ({ customFonts: state.customFonts.filter((f) => f.id !== id) }))
+      if (font) unregisterFont(font)
+      persist()
+    },
+
     updateSticker(ref, patch) {
       if (get().pages[ref.pageIndex]?.locked) return
       recordHistory()
@@ -926,6 +959,7 @@ export const useStore = create<StoreState>((set, get) => {
         sizeId: DEFAULT_SIZE_ID,
         pages: autoLayout({ photos: [], size, pageCount: sizeMinPages(size) }),
         customStickers: [],
+    customFonts: [],
         activePageIndex: 0,
         selected: null,
         undoStack: [],

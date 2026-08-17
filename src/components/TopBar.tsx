@@ -48,6 +48,22 @@ export function TopBar({
   const canUndo = useStore((s) => s.undoStack.length > 0)
   const canRedo = useStore((s) => s.redoStack.length > 0)
   const [confirmingReset, setConfirmingReset] = useState(false)
+  // Whole-app full screen: the browser's own chrome goes, everything of ours
+  // stays — rail, drawer, filmstrip, top bar. Tracked by event rather than by
+  // our own flag, since Escape and the browser's UI can exit it behind our back.
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  useEffect(() => {
+    const sync = () => setIsFullscreen(Boolean(document.fullscreenElement))
+    document.addEventListener('fullscreenchange', sync)
+    sync()
+    return () => document.removeEventListener('fullscreenchange', sync)
+  }, [])
+
+  function toggleFullscreen() {
+    if (document.fullscreenElement) void document.exitFullscreen()
+    else void document.documentElement.requestFullscreen().catch(() => {})
+  }
   // Reset and Preview Book are occasional — tucked behind "More" so the bar
   // isn't ten controls all shouting equally loudly.
   const [moreOpen, setMoreOpen] = useState(false)
@@ -220,6 +236,15 @@ export function TopBar({
             </div>
           )}
         </div>
+
+        <button
+          className="btn btn-icon"
+          onClick={toggleFullscreen}
+          aria-label={isFullscreen ? 'Leave full screen' : 'Full screen'}
+          title={isFullscreen ? 'Leave full screen (Esc)' : 'Full screen — hide the browser chrome'}
+        >
+          <Icon name={isFullscreen ? 'fullscreenExit' : 'fullscreen'} size={16} />
+        </button>
 
         <button
           className="btn theme-toggle"

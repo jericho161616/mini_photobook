@@ -4,6 +4,8 @@ import { getTemplate } from '../data/templates'
 import { resolvePageSize } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
 import type { TextStyle } from '../types'
+import { FontManager } from './FontManager'
+import { PanelSection } from './PanelSection'
 
 /**
  * A free-form note for the active page — a date, a place, a line of text.
@@ -15,6 +17,7 @@ import type { TextStyle } from '../types'
  */
 export function PageTextPanel() {
   const pages = useStore((s) => s.pages)
+  const customFonts = useStore((s) => s.customFonts)
   const sizeId = useStore((s) => s.sizeId)
   const activePageIndex = useStore((s) => s.activePageIndex)
   const activeHalfIndex = useStore((s) => s.activeHalfIndex)
@@ -29,7 +32,23 @@ export function PageTextPanel() {
   const half = getTemplate(page.templateId).halfSplit ? page.halves?.[activeHalfIndex] : undefined
   const template = getTemplate(half ? half.templateId : page.templateId)
 
-  if (!template.textSlot) return null
+  // Not `return null`: fonts belong to the book, not to one page, so they
+  // can't vanish because the current layout has nowhere to put a note — and
+  // returning nothing left the drawer showing a bare "NOTE" header anyway.
+  if (!template.textSlot) {
+    return (
+      <section className="panel">
+        <h2>Page Note</h2>
+        <p className="hint">
+          This layout has no place for a note. Pick a layout with a caption area, or add a free
+          text box from Decorate.
+        </p>
+        <PanelSection title="Fonts" defaultOpen={false}>
+          <FontManager />
+        </PanelSection>
+      </section>
+    )
+  }
 
   const foldOrientation = foldOrientationForSize(resolvePageSize(page, getSize(sizeId)).id)
   const halfName = half
@@ -76,6 +95,15 @@ export function PageTextPanel() {
               {f.label}
             </option>
           ))}
+          {customFonts.length > 0 && (
+            <optgroup label="Your fonts">
+              {customFonts.map((f) => (
+                <option key={f.id} value={f.id} style={{ fontFamily: `"${f.family}", Georgia, serif` }}>
+                  {f.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
         </select>
         <button
           className={`bold-btn${style.bold ? ' active' : ''}`}
@@ -101,6 +129,12 @@ export function PageTextPanel() {
           </button>
         ))}
       </div>
+      {/* Fonts belong with the text controls: this is the panel you are in
+          when you discover the eight built-ins aren't the one you wanted. */}
+      <PanelSection title="Fonts" defaultOpen={false}>
+        <FontManager />
+      </PanelSection>
+
       {text.trim() && (
         <p
           className="text-style-preview"

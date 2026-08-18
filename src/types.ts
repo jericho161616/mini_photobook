@@ -36,8 +36,19 @@ export interface CustomFont {
   local?: boolean
 }
 
-/** A relative size, not a pixel value — the actual font size is always computed from the space available. */
-export type FontSize = 'sm' | 'md' | 'lg' | 'xl'
+/**
+ * A percentage of the size the layout would pick on its own — 100 is that
+ * default, 150 is half again. Relative rather than absolute because the real
+ * size is always computed from the space available, so the same book reads
+ * correctly at any page size.
+ *
+ * The four old presets are still accepted so books made before this keep
+ * their sizing; fontSizeScale maps them.
+ */
+export type FontSize = number | 'sm' | 'md' | 'lg' | 'xl'
+
+export const MIN_FONT_SIZE = 50
+export const MAX_FONT_SIZE = 300
 
 export interface TextStyle {
   font: FontId

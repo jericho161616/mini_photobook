@@ -15,6 +15,9 @@ import { TopBar } from './TopBar'
 
 /** Remembered across sessions: whoever closes the panel to get room usually wants it to stay closed. */
 const DRAWER_OPEN_KEY = 'moments.drawerOpen'
+/** Guides are drawing aids, not part of the book — remembered locally, never saved into it or exported. */
+const GRID_KEY = 'moments.showGrid'
+const RULERS_KEY = 'moments.showRulers'
 
 interface EditorProps {
   projectId: string
@@ -48,6 +51,15 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
   const [drawerOpen, setDrawerOpen] = useState(
     () => localStorage.getItem(DRAWER_OPEN_KEY) !== 'false',
   )
+  const [showGrid, setShowGrid] = useState(() => localStorage.getItem(GRID_KEY) === 'true')
+  const [showRulers, setShowRulers] = useState(() => localStorage.getItem(RULERS_KEY) === 'true')
+
+  useEffect(() => {
+    localStorage.setItem(GRID_KEY, String(showGrid))
+  }, [showGrid])
+  useEffect(() => {
+    localStorage.setItem(RULERS_KEY, String(showRulers))
+  }, [showRulers])
 
   useEffect(() => {
     localStorage.setItem(DRAWER_OPEN_KEY, String(drawerOpen))
@@ -182,6 +194,10 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
         }}
         theme={theme}
         onToggleTheme={onToggleTheme}
+        showGrid={showGrid}
+        onToggleGrid={() => setShowGrid((v) => !v)}
+        showRulers={showRulers}
+        onToggleRulers={() => setShowRulers((v) => !v)}
       />
 
       {error && (
@@ -201,7 +217,12 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
           onCollapse={() => setDrawerOpen(false)}
         />
 
-        <SpreadCanvas photos={photoMap} onOpenLibrary={() => setLibraryOpen(true)} />
+        <SpreadCanvas
+          photos={photoMap}
+          onOpenLibrary={() => setLibraryOpen(true)}
+          showGrid={showGrid}
+          showRulers={showRulers}
+        />
       </div>
 
       <Filmstrip photos={photoMap} />

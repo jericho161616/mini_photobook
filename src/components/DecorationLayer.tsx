@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { fontSizeScale, fontStack } from '../data/fonts'
 import { StickerGlyph } from './StickerGlyph'
 import type { CustomSticker, Sticker, TextBox } from '../types'
+import { SNAP_TOLERANCE_PX, snapBox, targetsFrom, type SnapBox, type SnapTargets } from '../lib/snap'
 
 interface Box {
   id: string
@@ -14,6 +15,10 @@ interface Box {
 interface DecorationBoxProps {
   box: Box
   containerSize: { w: number; h: number }
+  /** The *other* decorations on this page — a box aligning to its own edges would win at zero distance and mean nothing. */
+  otherBoxes: SnapBox[]
+  /** Reports the lines that grabbed, so the layer can draw them; null on drop. */
+  onGuides: (guides: { v: number[]; h: number[] } | null) => void
   selected: boolean
   locked: boolean
   onSelect: () => void
@@ -58,12 +63,16 @@ export function stickerArtStyle(sticker: Sticker): React.CSSProperties {
  * Tracks the gesture with window-level listeners rather than pointer capture
  * on the element itself, so a fast drag can't outrun the element under it.
  */
-function DecorationBox({ box, containerSize, selected, locked, onSelect, onChange, onDelete, onActivate, children }: DecorationBoxProps) {
+function DecorationBox({ box, containerSize, otherBoxes, onGuides, selected, locked, onSelect, onChange, onDelete, onActivate, children }: DecorationBoxProps) {
   const [dragging, setDragging] = useState(false)
   const boxRef = useRef(box)
   boxRef.current = box
   const containerSizeRef = useRef(containerSize)
   containerSizeRef.current = containerSize
+  // Rebuilt each render so the lines follow the other boxes if they move,
+  // and read through a ref so the drag handler always sees the current set.
+  const snapRef = useRef<SnapTargets>(targetsFrom(otherBoxes))
+  snapRef.current = targetsFrom(otherBoxes)
 
   // Listeners are attached synchronously inside the mousedown handler itself,
   // not via a useEffect — an effect only runs after React commits the state
@@ -87,7 +96,23 @@ function DecorationBox({ box, containerSize, selected, locked, onSelect, onChang
         moved = true
       }
       if (kind === 'drag') {
-        onChange({ x: start.box.x + dxPct, y: start.box.y + dyPct })
+        const raw = { x: start.box.x + dxPct, y: start.box.y + dyPct, w: start.box.w, h: start.box.h }
+        // Holding Alt drags freely, for the times the guides are in the way.
+        if (ev.altKey) {
+          onGuides(null)
+          onChange({ x: raw.x, y: raw.y })
+        } else {
+          // The tolerance is a fixed number of screen pixels, so it feels the
+          // same on a tall page as a wide one — hence converting per axis.
+          const snapped = snapBox(
+            raw,
+            snapRef.current,
+            (SNAP_TOLERANCE_PX / w) * 100,
+            (SNAP_TOLERANCE_PX / h) * 100,
+          )
+          onGuides(snapped.guides.v.length || snapped.guides.h.length ? snapped.guides : null)
+          onChange({ x: snapped.x, y: snapped.y })
+        }
       } else {
         onChange({
           w: Math.max(MIN_SIZE_PCT, start.box.w + dxPct),
@@ -100,6 +125,7 @@ function DecorationBox({ box, containerSize, selected, locked, onSelect, onChang
       window.removeEventListener('mouseup', onUp)
       if (kind === 'drag') {
         setDragging(false)
+        onGuides(null)
         // A click (no real movement) on a box already selected before this
         // gesture started activates it (e.g. enters text-edit mode) instead
         // of just re-selecting it — a genuine drag never does, so moving an
@@ -235,6 +261,13 @@ export function DecorationLayer({
   onDelete,
   onEditText,
 }: DecorationLayerProps) {
+  // Guides live here rather than in each box: they are drawn once over the
+  // whole page, and only one box is ever dragged at a time.
+  const [guides, setGuides] = useState<{ v: number[]; h: number[] } | null>(null)
+
+  const allBoxes: (SnapBox & { id: string })[] = [...stickers, ...textBoxes]
+  const othersOf = (id: string) => allBoxes.filter((b) => b.id !== id)
+
   // Which text box (if any) is in edit mode — entered via double-click, or a
   // plain click on a box already selected, or automatically right after it's
   // first created. Not persisted: it's transient UI state, reset by default
@@ -258,6 +291,8 @@ export function DecorationLayer({
           key={sticker.id}
           box={sticker}
           containerSize={containerSize}
+          otherBoxes={othersOf(sticker.id)}
+          onGuides={setGuides}
           selected={isSelected('sticker', sticker.id)}
           locked={locked}
           onSelect={() => onSelect('sticker', sticker.id)}
@@ -289,6 +324,8 @@ export function DecorationLayer({
             key={box.id}
             box={box}
             containerSize={containerSize}
+            otherBoxes={othersOf(box.id)}
+            onGuides={setGuides}
             selected={isSelected('textBox', box.id)}
             locked={locked}
             onSelect={() => onSelect('textBox', box.id)}
@@ -310,6 +347,15 @@ export function DecorationLayer({
           </DecorationBox>
         )
       })}
+
+      {/* Drawn last so they sit over everything, and pointer-events: none so
+          they never interrupt the drag that summoned them. */}
+      {guides?.v.map((x) => (
+        <span key={`v${x}`} className="snap-guide vertical" style={{ left: `${x}%` }} aria-hidden="true" />
+      ))}
+      {guides?.h.map((y) => (
+        <span key={`h${y}`} className="snap-guide horizontal" style={{ top: `${y}%` }} aria-hidden="true" />
+      ))}
     </>
   )
 }

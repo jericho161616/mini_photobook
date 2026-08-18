@@ -5,6 +5,7 @@ import { useStore } from '../state/useStore'
 import type { Page, Photo } from '../types'
 import { PageView } from './PageView'
 import { Icon } from './Icon'
+import { Rulers } from './Rulers'
 
 /** How many unplaced photos the quick picker offers before pointing at the full library. */
 const QUICK_PICK_COUNT = 6
@@ -279,15 +280,10 @@ export function SpreadCanvas({ photos, onOpenLibrary, showGrid, showRulers }: Sp
 
         {page && (
           <div className={`page-frame${showRulers ? ' with-rulers' : ''}`}>
-            {showRulers && (
-              <>
-                <span className="ruler top" aria-hidden="true" />
-                <span className="ruler left" aria-hidden="true" />
-              </>
-            )}
             <div className="page-stack">
               <PageView {...pageViewProps(true)} width={dims.width} height={dims.height} />
               {showGrid && <span className="page-grid" aria-hidden="true" />}
+              {showRulers && <Rulers size={pageSize} width={dims.width} height={dims.height} />}
             </div>
           </div>
         )}

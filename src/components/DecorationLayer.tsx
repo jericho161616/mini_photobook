@@ -3,6 +3,7 @@ import { fontSizeScale, fontStack } from '../data/fonts'
 import { StickerGlyph } from './StickerGlyph'
 import type { CustomSticker, Sticker, TextBox } from '../types'
 import { SNAP_TOLERANCE_PX, snapBox, targetsFrom, type SnapBox, type SnapTargets } from '../lib/snap'
+import { useStore } from '../state/useStore'
 
 interface Box {
   id: string
@@ -17,6 +18,8 @@ interface DecorationBoxProps {
   containerSize: { w: number; h: number }
   /** The *other* decorations on this page — a box aligning to its own edges would win at zero distance and mean nothing. */
   otherBoxes: SnapBox[]
+  /** Ruler guides for the book, which snap like any other line. */
+  guides: { v: number[]; h: number[] }
   /** Reports the lines that grabbed, so the layer can draw them; null on drop. */
   onGuides: (guides: { v: number[]; h: number[] } | null) => void
   selected: boolean
@@ -63,7 +66,7 @@ export function stickerArtStyle(sticker: Sticker): React.CSSProperties {
  * Tracks the gesture with window-level listeners rather than pointer capture
  * on the element itself, so a fast drag can't outrun the element under it.
  */
-function DecorationBox({ box, containerSize, otherBoxes, onGuides, selected, locked, onSelect, onChange, onDelete, onActivate, children }: DecorationBoxProps) {
+function DecorationBox({ box, containerSize, otherBoxes, guides, onGuides, selected, locked, onSelect, onChange, onDelete, onActivate, children }: DecorationBoxProps) {
   const [dragging, setDragging] = useState(false)
   const boxRef = useRef(box)
   boxRef.current = box
@@ -71,8 +74,8 @@ function DecorationBox({ box, containerSize, otherBoxes, onGuides, selected, loc
   containerSizeRef.current = containerSize
   // Rebuilt each render so the lines follow the other boxes if they move,
   // and read through a ref so the drag handler always sees the current set.
-  const snapRef = useRef<SnapTargets>(targetsFrom(otherBoxes))
-  snapRef.current = targetsFrom(otherBoxes)
+  const snapRef = useRef<SnapTargets>(targetsFrom(otherBoxes, guides))
+  snapRef.current = targetsFrom(otherBoxes, guides)
 
   // Listeners are attached synchronously inside the mousedown handler itself,
   // not via a useEffect — an effect only runs after React commits the state
@@ -264,6 +267,7 @@ export function DecorationLayer({
   // Guides live here rather than in each box: they are drawn once over the
   // whole page, and only one box is ever dragged at a time.
   const [guides, setGuides] = useState<{ v: number[]; h: number[] } | null>(null)
+  const rulerGuides = useStore((s) => s.guides)
 
   const allBoxes: (SnapBox & { id: string })[] = [...stickers, ...textBoxes]
   const othersOf = (id: string) => allBoxes.filter((b) => b.id !== id)
@@ -292,6 +296,7 @@ export function DecorationLayer({
           box={sticker}
           containerSize={containerSize}
           otherBoxes={othersOf(sticker.id)}
+          guides={rulerGuides}
           onGuides={setGuides}
           selected={isSelected('sticker', sticker.id)}
           locked={locked}
@@ -325,6 +330,7 @@ export function DecorationLayer({
             box={box}
             containerSize={containerSize}
             otherBoxes={othersOf(box.id)}
+            guides={rulerGuides}
             onGuides={setGuides}
             selected={isSelected('textBox', box.id)}
             locked={locked}

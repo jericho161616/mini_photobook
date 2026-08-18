@@ -427,7 +427,7 @@ storage, jsPDF for assembly. No UI framework, no CSS framework, no icon package
 src/
   data/
     sizes.ts        trim sizes, shapes, the A4 family
-    templates.ts    all 66 templates
+    templates.ts    all 55 templates
     fonts.ts        built-in font stacks and size scaling
   lib/
     autoLayout.ts   template scoring, page creation, re-flow

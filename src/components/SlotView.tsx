@@ -4,6 +4,9 @@ import {
   coverGeometry,
   FRAME_INSET_RATIO,
   PHOTO_FILTER_CSS,
+  GRAIN_MAX_CSS,
+  GRAIN_OVERLAY_IMAGE,
+  GRAIN_TILE_PX,
   PHOTO_FILTER_OVERLAY,
   photoThumbUrl,
   photoUrl,
@@ -129,6 +132,8 @@ export function SlotView({
 
   const activeFilter = forceFilter ?? placement?.filter
   const textureOverlay = activeFilter ? PHOTO_FILTER_OVERLAY[activeFilter] : undefined
+  const photoOpacity = (placement?.opacity ?? 100) / 100
+  const photoGrain = placement?.grain ?? 0
 
   // Only worth dragging if the photo actually overflows the slot somewhere.
   const pannable = !!geo && (geo.slackX > 0.5 || geo.slackY > 0.5)
@@ -249,6 +254,7 @@ export function SlotView({
                 width: geo.drawWidth,
                 height: geo.drawHeight,
                 filter: activeFilter ? PHOTO_FILTER_CSS[activeFilter] : undefined,
+                opacity: photoOpacity,
               }}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
@@ -268,7 +274,28 @@ export function SlotView({
                   backgroundRepeat: textureOverlay.tile ? 'repeat' : 'no-repeat',
                   backgroundSize: textureOverlay.tile ? '140px 140px' : '100% 100%',
                   mixBlendMode: textureOverlay.blend,
-                  opacity: textureOverlay.opacity,
+                  // The filter's own texture belongs to the photo, so it fades
+                  // with it — same split the page background uses.
+                  opacity: textureOverlay.opacity * photoOpacity,
+                }}
+              />
+            )}
+            {/* Grain reads as the print rather than the picture, so it holds
+                at full strength however far the photo is faded back. */}
+            {photoGrain > 0 && (
+              <span
+                className="photo-texture-overlay"
+                aria-hidden="true"
+                style={{
+                  left: inset + geo.x,
+                  top: inset + geo.y,
+                  width: geo.drawWidth,
+                  height: geo.drawHeight,
+                  backgroundImage: GRAIN_OVERLAY_IMAGE,
+                  backgroundRepeat: 'repeat',
+                  backgroundSize: `${GRAIN_TILE_PX}px ${GRAIN_TILE_PX}px`,
+                  mixBlendMode: 'overlay',
+                  opacity: (photoGrain / 100) * GRAIN_MAX_CSS,
                 }}
               />
             )}

@@ -106,6 +106,16 @@ export function SlotInspector() {
   const template = templateId ? getTemplate(templateId) : undefined
   const isOverlay = !!(template && selected && isOverlaySlot(template, selected.slotIndex))
   const isPosterSlot = isOverlay && template?.decoration === 'poster'
+  /**
+   * Does this slot actually end up with tape on it? Either the photo was given
+   * some, or the template tapes it down itself (Poster Overlay and friends).
+   * A poster template can pin with a paperclip or nothing instead, so
+   * posterAttachment has to be consulted rather than assumed — otherwise a
+   * paperclipped layout offered a "Tape color" that coloured nothing.
+   */
+  const hasTape =
+    placement?.attachment === 'tape' ||
+    (isPosterSlot && (template?.posterAttachment ?? 'tape') === 'tape')
 
   return (
     <section className="panel">
@@ -159,6 +169,38 @@ export function SlotInspector() {
             </div>
           </InspectorFold>
 
+          <InspectorFold
+            label="Photo"
+            value={`${placement.opacity ?? 100}%${(placement.grain ?? 0) > 0 ? ` · grain ${placement.grain}%` : ''}`}
+          >
+            <div className="inspector-row">
+              <label htmlFor="slot-opacity">Opacity</label>
+              <input
+                id="slot-opacity"
+                type="range"
+                min={10}
+                max={100}
+                step={5}
+                value={placement.opacity ?? 100}
+                onChange={(e) => updatePlacement(selected, { opacity: Number(e.target.value) })}
+              />
+              <span className="value mono">{placement.opacity ?? 100}%</span>
+            </div>
+            <div className="inspector-row">
+              <label htmlFor="slot-grain">Grain</label>
+              <input
+                id="slot-grain"
+                type="range"
+                min={0}
+                max={100}
+                step={5}
+                value={placement.grain ?? 0}
+                onChange={(e) => updatePlacement(selected, { grain: Number(e.target.value) })}
+              />
+              <span className="value mono">{placement.grain ?? 0}%</span>
+            </div>
+          </InspectorFold>
+
           <InspectorFold label="Frame" value={labelFor(FRAMES, placement.frame ?? 'none')}>
             <div className="filter-chips-row">
               {FRAMES.map((f) => (
@@ -202,7 +244,7 @@ export function SlotInspector() {
             </InspectorFold>
           )}
 
-          {(isPosterSlot || placement.attachment === 'tape') && (
+          {hasTape && (
             <InspectorFold
               label="Tape color"
               value={TAPE_COLORS.find((t) => t.color === placement.attachmentColor)?.label ?? 'Cream'}

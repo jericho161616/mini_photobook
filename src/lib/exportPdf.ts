@@ -360,7 +360,9 @@ export async function renderPage(
     if (!bitmap) return
     const geo = coverGeometry(bitmap.width / bitmap.height, rect.w, rect.h, placement)
     const filterKey = forceFilter ?? placement.filter
+    const photoOpacity = (placement.opacity ?? 100) / 100
     ctx.save()
+    ctx.globalAlpha = photoOpacity
     ctx.beginPath()
     ctx.rect(rect.x, rect.y, rect.w, rect.h)
     ctx.clip()
@@ -368,7 +370,12 @@ export async function renderPage(
     ctx.drawImage(bitmap, rect.x + geo.x, rect.y + geo.y, geo.drawWidth, geo.drawHeight)
     ctx.filter = 'none'
     if (filterKey === 'paper') drawPaperCrease(ctx, rect)
-    if (filterKey === 'film') drawFilmGrain(ctx, rect, 0.16, dpi)
+    ctx.globalAlpha = 1
+    // The filter's texture fades with the photo; the Grain slider's doesn't —
+    // the same split the page background uses.
+    if (filterKey === 'film') drawFilmGrain(ctx, rect, 0.16 * photoOpacity, dpi)
+    const grain = placement.grain ?? 0
+    if (grain > 0) drawFilmGrain(ctx, rect, (grain / 100) * GRAIN_MAX_CANVAS, dpi)
     ctx.restore()
   }
 

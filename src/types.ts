@@ -231,6 +231,10 @@ export interface Placement {
   offsetY: number
   /** Undefined means full color. */
   filter?: PhotoFilter
+  /** How solid this photo is, 0–100 — undefined means fully opaque. Same control the page background already had. */
+  opacity?: number
+  /** Film-grain speckle over this photo, 0–100. Undefined means none; the Film filter brings its own regardless. */
+  grain?: number
   /** Undefined means no frame — a plain crop. 'stamp' cuts a scalloped postage-stamp edge. */
   frame?: 'hairline' | 'polaroid' | 'stamp'
   /**

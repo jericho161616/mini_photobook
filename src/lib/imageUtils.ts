@@ -1,3 +1,4 @@
+import { looksLikeSame, perceptualHash } from './perceptualHash'
 import type { Photo, PhotoFilter, Placement, SlotRect, Template } from '../types'
 
 type OverlayPosition = NonNullable<Placement['overlayPosition']>
@@ -281,35 +282,47 @@ async function hashBlob(blob: Blob): Promise<string> {
     .join('')
 }
 
+/** Why an incoming file looks like one already in the book. */
+export type DuplicateReason = 'identical' | 'sameName' | 'looksSame'
+
+export interface DuplicateCandidate {
+  /** Fully prepared, so accepting it costs nothing more than saving it. */
+  photo: Photo
+  reason: DuplicateReason
+  /** The photo already in the book that it matched — undefined when the match was another file in the same batch. */
+  existingId?: string
+  /** The name of whatever it matched, for saying so in the dialog. */
+  matchedName: string
+}
+
 export interface ImportResult {
+  /** Files with nothing like them already here — added without asking. */
   photos: Photo[]
-  /** Files that hashed the same as a photo already in this book (or another file in the same batch), and so weren't added again. */
-  duplicateCount: number
+  /** Files that resemble something already here. The caller decides. */
+  duplicates: DuplicateCandidate[]
 }
 
 /**
- * existingHashes should be every hash already in this book's photo library,
- * so a file re-imported later (or the same batch selected twice by mistake)
- * gets caught and skipped rather than added as a visually identical second copy.
+ * Prepares every accepted file, then sorts them into "new" and "looks like
+ * something you already have".
+ *
+ * Three kinds of resemblance, in descending confidence: the same bytes, the
+ * same picture (different bytes — a re-export, a screenshot, a messaging-app
+ * copy), and merely the same filename. Every file is prepared either way, so
+ * accepting a flagged one afterwards is instant rather than a second decode.
  */
 export async function importFiles(
   files: File[],
   projectId: string,
-  existingHashes: Set<string>,
+  existing: Photo[],
 ): Promise<ImportResult> {
   const images = files.filter((f) => ACCEPTED_TYPES.includes(f.type))
-  const seenThisBatch = new Set<string>()
-  let duplicateCount = 0
 
-  const results = await Promise.all(
+  const prepared = await Promise.all(
     images.map(async (file) => {
-      const hash = await hashBlob(file)
-      if (existingHashes.has(hash) || seenThisBatch.has(hash)) {
-        duplicateCount += 1
-        return null
-      }
-      seenThisBatch.add(hash)
-      const [{ width, height }, thumbBlob] = await Promise.all([
+      const [hash, pHash, { width, height }, thumbBlob] = await Promise.all([
+        hashBlob(file),
+        perceptualHash(file),
         measure(file),
         makeThumbnail(file),
       ])
@@ -323,12 +336,39 @@ export async function importFiles(
         height,
         addedAt: Date.now() + Math.random(),
         hash,
+        pHash,
       }
       return photo
     }),
   )
-  return { photos: results.filter((p): p is Photo => p !== null), duplicateCount }
+
+  const photos: Photo[] = []
+  const duplicates: DuplicateCandidate[] = []
+  // Files accepted so far this batch count as "already here" for the ones
+  // after them, so selecting the same picture twice in one go is caught too.
+  const pool: Photo[] = [...existing]
+
+  for (const photo of prepared) {
+    const identical = pool.find((p) => p.hash && p.hash === photo.hash)
+    const looksSame = identical ? undefined : pool.find((p) => looksLikeSame(p.pHash, photo.pHash))
+    const sameName = identical || looksSame ? undefined : pool.find((p) => p.name === photo.name)
+    const match = identical ?? looksSame ?? sameName
+    if (match) {
+      duplicates.push({
+        photo,
+        reason: identical ? 'identical' : looksSame ? 'looksSame' : 'sameName',
+        existingId: match.id,
+        matchedName: match.name,
+      })
+    } else {
+      photos.push(photo)
+      pool.push(photo)
+    }
+  }
+
+  return { photos, duplicates }
 }
+
 
 /**
  * Object URLs are handed out per photo and reused, so the same blob isn't

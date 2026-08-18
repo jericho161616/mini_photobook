@@ -18,6 +18,7 @@ import * as storage from '../lib/db'
 import { registerAll, registerFont, unregisterFont } from '../lib/fonts'
 import { MAX_RECENT_COLORS } from '../lib/colors'
 import { clampOffset, clampZoom, importFiles, releasePhotoUrl } from '../lib/imageUtils'
+import type { DuplicateCandidate } from '../lib/imageUtils'
 import { MAX_PAGES } from '../types'
 import type {
   CustomFont,
@@ -90,14 +91,22 @@ interface StoreState {
    * the right photo, a trackpad, a small screen).
    */
   armedPhotoIds: string[]
-  /** A brief, self-clearing message about the last import — e.g. how many duplicate photos were skipped. */
+  /** A brief, self-clearing message about the last import. */
   importNotice: string | null
+  /**
+   * Files from the last import that resemble photos already here, waiting on a
+   * decision. Nothing is saved for these until the dialog is answered, so
+   * closing it without choosing keeps the book exactly as it was.
+   */
+  pendingDuplicates: DuplicateCandidate[]
   /** Snapshots of {pages, title, sizeId, customStickers} to step back/forward through — photo library changes aren't included, since a deleted photo's file is truly gone. */
   undoStack: HistorySnapshot[]
   redoStack: HistorySnapshot[]
 
   init: (projectId: string) => Promise<void>
   addFiles: (files: File[]) => Promise<void>
+  /** Answers the duplicate dialog: adds the chosen files, drops the rest. */
+  resolveDuplicates: (keepIds: string[]) => Promise<void>
   removePhoto: (photoId: string) => Promise<void>
   removePhotos: (photoIds: string[]) => Promise<void>
   setTitle: (title: string) => void
@@ -222,7 +231,6 @@ function projectFrom(
 export const useStore = create<StoreState>((set, get) => {
   /** Debounced write-behind so dragging a photo doesn't hammer IndexedDB. */
   let saveTimer: number | undefined
-  let importNoticeTimer: number | undefined
   let openedAt = Date.now()
   const writeNow = () => {
     const { projectId, title, sizeId, pages, customStickers, customFonts, recentColors } = get()
@@ -280,6 +288,7 @@ export const useStore = create<StoreState>((set, get) => {
     importing: false,
     armedPhotoIds: [],
     importNotice: null,
+    pendingDuplicates: [],
     undoStack: [],
     redoStack: [],
 
@@ -339,8 +348,7 @@ export const useStore = create<StoreState>((set, get) => {
       if (!projectId) return
       set({ importing: true })
       try {
-        const existingHashes = new Set(existing.map((p) => p.hash).filter((h): h is string => !!h))
-        const { photos: imported, duplicateCount } = await importFiles(files, projectId, existingHashes)
+        const { photos: imported, duplicates } = await importFiles(files, projectId, existing)
 
         if (imported.length > 0) {
           // Importing only adds photos to the library. Nothing is placed on any
@@ -350,18 +358,22 @@ export const useStore = create<StoreState>((set, get) => {
           persist()
         }
 
-        if (duplicateCount > 0) {
-          const notice =
-            duplicateCount === 1
-              ? 'Skipped 1 photo — already in this book.'
-              : `Skipped ${duplicateCount} photos — already in this book.`
-          set({ importNotice: notice })
-          window.clearTimeout(importNoticeTimer)
-          importNoticeTimer = window.setTimeout(() => set({ importNotice: null }), 4000)
-        }
+        // Anything that resembles a photo already here waits for an answer
+        // rather than being silently dropped, which was easy to miss.
+        if (duplicates.length > 0) set({ pendingDuplicates: duplicates })
       } finally {
         set({ importing: false })
       }
+    },
+
+    async resolveDuplicates(keepIds) {
+      const pending = get().pendingDuplicates
+      const keep = pending.filter((d) => keepIds.includes(d.photo.id)).map((d) => d.photo)
+      set({ pendingDuplicates: [] })
+      if (keep.length === 0) return
+      await storage.savePhotos(keep)
+      set((state) => ({ photos: [...state.photos, ...keep] }))
+      persist()
     },
 
     async removePhoto(photoId) {

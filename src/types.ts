@@ -228,6 +228,8 @@ export interface Photo {
   addedAt: number
   /** SHA-256 of the file's own bytes — lets a re-imported copy of the same file be caught and skipped. Undefined for photos imported before this existed. */
   hash?: string
+  /** Fingerprint of what the picture looks like, so a re-export or screenshot of the same shot is recognised even though its bytes differ. */
+  pHash?: string
 }
 
 /**

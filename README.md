@@ -1,11 +1,39 @@
 # Moments — Mini Photobook
 
-A local-first photobook layout generator. Point it at a folder of photos, pick a
-trim size, and it lays out a book you can then rearrange by hand and export as a
+A local-first photobook designer. Point it at a folder of photos, pick a trim
+size, and it lays out a book you can rearrange by hand and export as a
 print-ready PDF.
 
-Nothing is uploaded. There is no account, no server, and no paid service — the
-photos never leave your machine.
+**Nothing is uploaded.** No account, no server, no paid tier. Your photos never
+leave your machine — they live in your browser's IndexedDB and are read straight
+off disk. The app works with the network switched off, and there is no asset it
+needs to fetch: every sticker, texture and frame is drawn in code at render time.
+
+---
+
+## Contents
+
+- [Running it](#running-it)
+- [The idea in one minute](#the-idea-in-one-minute)
+- [How the layout engine works](#how-the-layout-engine-works)
+  - [Sizes, shapes and templates](#sizes-shapes-and-templates)
+  - [How a page picks its layout](#how-a-page-picks-its-layout)
+  - [Slots, placements and the two render paths](#slots-placements-and-the-two-render-paths)
+  - [Folded sheets and halves](#folded-sheets-and-halves)
+- [Working with books](#working-with-books)
+- [Photos](#photos)
+- [Pages](#pages)
+- [Layouts](#layouts)
+- [Decorating a page](#decorating-a-page)
+- [Text](#text)
+- [Colour](#colour)
+- [Placing things precisely](#placing-things-precisely)
+- [Viewing](#viewing)
+- [Exporting](#exporting)
+- [How it's built](#how-its-built)
+- [Not built yet](#not-built-yet)
+
+---
 
 ## Running it
 
@@ -14,358 +42,426 @@ npm install
 npm run dev
 ```
 
-That opens `http://localhost:5173`. For a static build you can open from disk or
-serve locally:
+That opens `http://localhost:5173`. For a static build:
 
 ```bash
 npm run build
 npm run preview
 ```
 
-## What it does
+There is nothing else to configure — no keys, no env file, no backend.
 
-**My Books.** The app opens to a library of every book you've started —
-click "Moments" in the top bar any time to come back to it. Each book keeps
-its own separate photo library and pages; nothing is shared between them.
-From a book's card you can rename it inline, duplicate it (a true
-independent copy — editing the duplicate never touches the original), or
-delete it. There's no limit on how many books you can keep beyond your
-browser's own IndexedDB storage quota.
+---
 
-**Undo a mistaken delete.** Deleting a book doesn't erase it — it moves to
-Trash (the button next to "+ New Book"), stays there for 30 days, and can be
-restored back to My Books at any time before that. "Delete Forever" on a
-trashed book (or "Empty Trash") skips the wait for when you're sure. Past 30
-days a trashed book is quietly cleaned up on its own the next time you open
-the app.
+## The idea in one minute
 
-**You decide where every photo goes.** Importing photos only adds them to your
-library — nothing gets placed automatically. A new book opens at the minimum
-10 pages, empty, and there are three ways to fill a slot: drag a photo onto
-it; click the empty slot for a quick picker of your still-unplaced photos
-(newest first, with an "Open full library" way out for anything further
-back); or click a photo first — in the tray, or via a "Place" button on each
-thumbnail in "View & manage all photos" — then click the slot to drop it
-there. Clicking more than one photo before placing queues them in the order
-you clicked, so clicking a run of empty slots afterward — say, both halves
-of a Split at Fold page — fills them one after another instead of one at a
-time. Esc, or clicking a photo again, clears the pick-up list. Click a filled
-slot to select it, then press Delete or Backspace to clear it (same as the
-Remove button) — ignored while you're typing in a note, so it never eats a
-keystroke by accident. An auto-layout engine exists (the "Re-flow" button)
-for when you want a starting point or want to fill in the rest quickly: it
-picks a template per page by comparing each photo's aspect ratio to the
-shape of the slots available, and it skips any page you've locked.
+A **book** has a **trim size** (say 8×8 in) and an ordered list of **pages**.
+Each page has one **template**, which is a set of **slots** — rectangles given
+in percentages of the page. A **placement** puts one photo in one slot, along
+with how it's cropped and how it's treated.
 
-**Sizes across five groups.** Nine standard photobook trims (6×6 up to 14×11),
-the ISO paper sizes a home printer actually takes (A6–A3, including A4
-Landscape), the standard 4R photo-lab print in both orientations, a Polaroid-style
-3.5×4.2 frame, and A4 Folded — a single A4 sheet folded once down the middle
-into a small card, in a Portrait fold (fold a landscape sheet top-to-bottom)
-or a Landscape fold (fold a portrait sheet left-to-right). A folded page can
-carry two different photos, one on each side of the fold, or one photo
-spanning the whole sheet — the fold line itself is always shown in the editor
-as a dashed guide so you know where it lands, but it's never printed. A folded
-page still offers the full general layout library too (grids, rows, collages),
-not just its two fold-aware ones. Larger sizes allow denser pages — a 6×6 caps
-at three photos per page where a 14×11 allows five. Changing size re-fits any
-page whose layout no longer suits the trim.
+Everything else — stickers, text boxes, background photos, frames — hangs off
+that. The layout engine's job is only to choose sensible templates and pour
+photos into them; from there you rearrange by hand.
 
-**Each half of a folded page is its own little page.** On a folded sheet the
-only page-level choice is how the sheet is divided — "Split at Fold" or one
-photo across the whole thing. Everything else happens per half: pick Split at
-Fold and each half gets its own Layout panel offering the whole general
-template library, exactly as a standalone page would. One side can be a
-Polaroid with a note while the other is a 2×2 grid or a three-tier column —
-up to four photos per half, chosen independently, with the shape chips
-filtering both halves the same way they filter a whole page.
+Two rules explain most of the behaviour:
 
-You work one half at a time: a **Left half / Right half** toggle (or Top /
-Bottom, depending on which way the sheet folds) switches which half the
-sidebar is laying out, so the panel stays short and there's no reaching past
-one half's options to get at the other's. The Page Note follows the same
-toggle — each half keeps its own note, so a Polaroid + Note on one side and a
-different note on the other both print in their own half.
+1. **Percentages, not pixels.** Every slot, sticker and text box is stored as a
+   percentage of its container, so the same book renders correctly at editor
+   size, at full-screen size, and at 300 DPI for print.
+2. **Two render paths that must agree.** The editor draws with React and CSS;
+   the export draws the same page onto a `<canvas>`. Anything visual has to be
+   implemented in both, and shared constants live in `src/lib/imageUtils.ts` so
+   the two can't drift.
 
-This is deliberate rather than a restriction: a general layout applied across
-a folded sheet would put a photo right over the crease, and folding the print
-would ruin it. Keeping layouts inside a half means nothing ever lands on the
-fold. Flipping the page's fold orientation keeps both halves' photos and
-layouts; choosing "Full Sheet" collapses them into one photo spanning the
-sheet, for when crossing the fold is what you actually want.
+---
 
-**Mix any A4 size, page by page.** A page sized A4, A4 Landscape, A4 Folded —
-Portrait, or A4 Folded — Landscape gets a small per-page size picker, so a
-single book can freely combine a plain full-sheet page, a landscape page, and
-a folded-card page wherever you want them — not just two fixed orientations.
-Locking a page also locks in whichever of the four it's currently set to.
+## How the layout engine works
 
-**Five more layouts, and a black & white / sepia filter per photo.** Instant Grid
-(six small photos, each in its own white card mount), Poster Overlay (a second
-photo taped on top of the first at an angle), Circle Inset (a second photo set
-into a centered white-ringed circle — always a true circle, whatever the
-book's own shape), Full + Caption (a full photo with a quiet centered line
-underneath), and Note Cover (a small centered photo with your own note below,
-no title) round out the template library. Any photo in any slot can also be
-set to black & white or sepia from the Selected Photo panel — useful on its
-own, or paired with Poster Overlay or Circle Inset so the background photo
-goes muted while the one on top stays in color.
+### Sizes, shapes and templates
 
-**Fonts, bold, and size, on every note.** The Page Note — and a Split at Fold
-half's own note — can be set to any of five fonts (a serif, the plain system
-font, a typewriter face, and two handwritten-style scripts), toggled bold,
-and sized from S to XL, all from a small picker right under the text box.
-The three plain fonts are already on every computer; the two handwritten
-ones fall back to a similar system font if the exact one isn't installed —
-either way, nothing is ever downloaded. Free-placed text boxes (below) get
-the same size control.
+There are **20 trim sizes**: 18 ordinary ones across five groups — squares,
+landscapes, portraits, the A-series (A6 to A3), and digital/print oddities
+(Polaroid, Instagram Story, 4R) — plus two **folded sheets** (see below).
 
-**Stickers and free-placed text.** A Decorate panel adds tape and simple
-line-drawn heart/star/arrow stickers, plus text boxes you can drop anywhere
-on a page — over a photo, off to the side, wherever — instead of being tied
-to a template's fixed caption slot. Drag a sticker or text box to move it,
-resize from the corner handle, click the × to remove it, and edit a text
-box's words, font, bold, italic, and alignment right in place. A freshly
-added text box opens straight into typing; after that, double-click it (or
-click it again once it's already selected) to go back into edit mode —
-otherwise a plain click-and-drag always just moves it, since it's easy to
-mean "move this" and land on "edit this" when both share the same click.
-On a Split at Fold page, stickers and text stay confined to whichever half
-they were added to, so nothing ever lands on the physical crease.
-Everything is drawn with plain CSS/SVG shapes — no downloaded images, icon
-packs, or fonts — so it stays just as free and offline as the rest of the
-app.
+Each size carries its dimensions in inches, a `maxPhotosPerPage` ceiling, and
+optionally a `minPages` floor (Instagram Story can be a single page; everything
+else starts at 10).
 
-**Draw your own sticker.** "✏️ Draw a Sticker" in the Decorate panel opens a
-small pad — pick from 8 colors, draw with mouse, touch, or stylus, then "Save
-as Sticker" trims it to your drawing and adds it to this book's own sticker
-library, right alongside the built-in tape/heart/star/arrow ones. Click it
-from the tray any time to stamp another copy onto a page — draw once, reuse
-everywhere. Deleting a drawing from the library also clears out any copies
-already placed on a page, so nothing is left behind pointing at artwork that
-no longer exists. Saved as a plain PNG on your own device — nothing is ever
-uploaded anywhere.
+Every size resolves to one of three **shapes**, purely from its aspect ratio:
 
-**Per-photo frame and tilt, per-page tint and margin.** From the Selected
-Photo panel's "Photo" tab, any photo can get a thin Hairline border or a
-Polaroid-style white card mount, plus a manual tilt from -20° to 20° — on top
-of whatever fixed tilt the template itself already applies (Confetti Scatter,
-below). From the Layout panel, a whole page can take a tinted "cardstock"
-background (a handful of warm/cool swatches, or back to plain paper) and a
-Margin slider that loosens or tightens the template's own margin, from a
-tight 30% up to a loose 200%. All of it prints exactly as shown, pixel for
-pixel, in the exported PDF.
+| Ratio | Shape |
+|---|---|
+| > 1.15 | `wide` |
+| 0.87 – 1.15 | `square` |
+| < 0.87 | `tall` |
 
-**Four more layouts.** Contact Sheet (nine small photos in a tight 3×3 grid),
-Diary (three stacked photos beside a note on faint ruled-paper lines),
-Confetti Scatter (seven photos tossed at their own fixed angles, like loose
-prints on a table), and Before & After (two edge-to-edge photos split by a
-quiet divider line, labeled accordingly) round out the template library —
-Contact Sheet and Confetti Scatter need a Large-trim size or bigger to fit
-their photo count.
+There are **55 templates** in three families:
 
-**One page on screen, always.** The canvas shows exactly one page at a time,
-sized to fill as much of it as it can, rather than pairing pages up like an
-open book — a two-page spread mostly wasted space (a blank placeholder next
-to a lone opening page, or dead air below a short, wide A4 Folded sheet)
-without actually helping you work on either page faster. The ‹ › arrows
-beside the page (or the filmstrip below) move to the page before or after,
-one at a time — you never see two at once. A small ⤢ button in the corner
-still opens it even larger in a full-screen overlay, for checking crops and
-details up close — the same live page underneath, click the × or press Esc
-to close it.
+- **Minimal** (21) — quiet grids and single-photo pages.
+- **Portfolio** (25) — the ones with character: Poster Overlay, Circle Inset,
+  Postage Stamp Duo, Instant Grid, Confetti Scatter, Before/After.
+- **Instagram** (9) — vertical story layouts, only offered on Instagram Story.
 
-**Insert a page anywhere, not just at the end.** Small "+" gaps between the
-filmstrip's page thumbnails (and one before the first page) drop a new blank
-page in exactly that spot, shifting everything after it back by one — for
-slotting a page in between two existing ones without disturbing either.
+A template declares which shapes it `fits`, how many slots it has, and
+optionally a caption area, a note area, a decoration style, and per-slot
+rotations.
 
-**Undo and redo.** Ctrl+Z (Cmd+Z on Mac) steps back through layout, text,
-photo-placement, and decoration changes; Ctrl+Shift+Z or Ctrl+Y steps forward
-again — matching toolbar ↺/↻ buttons sit next to Reset. A whole drag or
-slider sweep collapses into one step rather than one per pixel. Typing in a
-text field keeps its own native undo instead, so it doesn't fight this.
-Photo library changes (importing or deleting a photo outright) aren't part
-of this history, since a deleted photo's file is genuinely gone.
+### How a page picks its layout
 
-**Night and tinted page backgrounds.** Alongside the warm/cool cardstock
-tints, a page background can go all the way to Night or Midnight navy — the
-caption and note automatically switch to light parchment text whenever the
-chosen background is dark enough to need it, so nothing goes unreadable.
+When you create a book or press **Re-flow**, `layoutPages()` walks the pages in
+order and, for each one, scores every eligible template:
 
-**Two layout families, including full-bleed.** *Minimal* is one to a few photos
-with room around them — including an edge-to-edge Full Bleed option with no
-margin at all. *Portfolio* is editorial — rows, collages, covers, and a
-bleed diptych where two photos touch with no gutter between them. Filter
-either family by page shape (square / tall / wide) and mix shapes freely
-from page to page.
+1. **Photo count.** A page may take at most `maxPhotosPerPage`, and never so
+   many that later pages would run dry — every remaining page should get at
+   least one photo.
+2. **Aspect fit.** The main cost. Each of the template's slots is compared
+   against the photo that would land in it, and the average mismatch between
+   the photo's aspect ratio and the slot's is the score. A tall portrait in a
+   wide letterbox slot scores badly.
+3. **Shape penalty.** A template that doesn't list the book's shape gets
+   `+1.5`. That's a strong nudge, not a ban — an unusual trim size never runs
+   out of options.
+4. **Cover bias.** Page one prefers a template with a caption area, so the book
+   opens with its title. No other page does.
+5. **Variety.** Repeating the previous page's template is penalised, so a book
+   doesn't come out as twenty identical grids.
 
-**Lock a page.** Once a page is the way you want it, lock it — a locked page
-ignores template changes, photo drops, panning, reordering, and even the
-"Re-flow" button, so a stray click elsewhere in the book can't disturb it.
+The lowest score wins. **Locked pages are skipped entirely** — Re-flow relays
+out everything else around them.
 
-**Full manual control.** Drag photos from the tray into any slot, swap the
-template on any page, drag within a slot to reframe, zoom from 1× to 3×, and
-reorder pages by dragging thumbnails in the filmstrip.
+### Slots, placements and the two render paths
 
-**Page count from 10 to 30**, adjustable at any time. Resizing keeps the pages
-you have already worked on and only adds or trims from the end.
+A `SlotRect` is `{ x, y, w, h }` in percent, measured **inside** the page
+margin (9% by default, adjustable per page). A `Placement` is what actually
+sits in a slot:
 
-**Duplicate photos are caught automatically.** Each imported photo is
-fingerprinted from its own file bytes (a quick hash, computed locally —
-nothing leaves your device), so re-importing the same file — even under a
-different name, or selected twice in the same batch — is skipped instead of
-adding a visible second copy. A small note under the "Add photos" button
-says how many were skipped, if any.
+```
+photoId, offsetX, offsetY, zoom      — the crop
+filter, opacity, grain               — the treatment
+frame, frameColor                    — polaroid / hairline / stamp card
+attachment, attachmentColor          — tape / clip / paperclip
+rotation, overlayPosition            — for overlay templates
+```
 
-**Five more layouts.** Polaroid Strip (three prints stacked on a dark page,
-like a contact strip — pairs well with the Night background), Overlapping
-Duo (two tilted taped photos layered over a full background photo), Postage
-Stamp Duo (a photo and a short line of text, each in a scalloped stamp
-frame), Quote Card (one photo, a big italic line doing the talking), Photo
-Window (a grayscale background with a sharp color window cut into it — no
-tape, no rotation, just an inset), and Text Divider (no photo at all — a
-title/quote page to open or close a section of the book).
+Because a placement holds all of that, **one photo in the library can appear on
+many pages with a different crop and treatment each time.** There's no need to
+import it twice.
 
-**Tape, clips, and a stamp frame — all customizable.** Any photo taped on
-top of another (Poster Overlay, Overlapping Duo) now has its own tape color,
-picked from a small swatch row, and its own spot to sit in — a 3×3 grid of
-preset positions instead of one fixed place. Any photo can also carry a
-Binder Clip or Paperclip instead of tape, and a fourth Frame option, Stamp,
-cuts a scalloped postage-stamp edge around the photo. All of it — the tape
-color, the clip, the stamp's scalloped cut — prints exactly as shown.
+`resolveSlotStyle()` in `src/lib/imageUtils.ts` is the single place that decides
+which frame and decoration a given slot gets, combining the template's own
+design with the placement's choices. `PageView` and `exportPdf` both call it, so
+the screen and the PDF can't disagree.
 
-**A Negative filter** joins Color / B&W / Sepia in the Selected Photo panel.
+### Folded sheets and halves
 
-**PNG stickers from your own files.** An "Upload Image" button next to "Draw
-a Sticker" in the Decorate panel lets you add any image — a graphic you
-downloaded, a transparent PNG — as a draggable, resizable sticker, stored
-alongside your own drawings in this book's sticker library. Large images are
-downscaled on the way in so the book's own storage stays small.
+**A4 Folded — Portrait** and **A4 Folded — Landscape** are single sheets meant
+to be folded down the middle. They offer exactly two layouts:
 
-**Three more font stacks**: Brush Script, Condensed, and Slab Serif, joining
-the original five — still every one either already on your computer or a
-close, free system equivalent, so nothing is ever downloaded.
+- **One photo across the whole sheet**, running over the fold.
+- **Split at Fold**, where each half becomes an independent mini-page with its
+  own template, photos, note, and stickers.
 
-**Titled cover.** Page one uses a cover layout carrying the book title, which
-renders in the editor and in the exported PDF.
+A split page stores a `halves: [HalfLayout, HalfLayout]` tuple, and the Layout
+panel gains half tabs. `decorationHost()` is the helper that answers "which
+object do stickers belong to here" — the page, or one of its halves.
 
-**A photo tray that only shows what you still need.** Once a photo is placed
-on a page it drops out of the tray — there's no reason to keep dragging past
-photos you've already used. "View & manage all photos" opens a larger grid
-of the full library, defaulting to the Unplaced filter (since that's almost
-always what you're there to find), with Placed and All alongside it. Check
-off several photos to remove them at once — or to place them all in one go
-with "Fill Next", which drops them into the next empty slots in order,
-starting from the page you're on and continuing into later pages as needed,
-skipping locked pages and slots that already have a photo.
+---
 
-**Book size is a one-time decision.** The sidebar shows your current size and
-a "Change" button rather than the full picker sitting there permanently —
-that space goes to photos and layout instead. The picker itself is grouped
-into Photobook trims, printer paper (A6–A3), and novelty (Polaroid).
+## Working with books
 
-**Light and dark themes**, matching your OS by default with a manual toggle in
-the top bar that's remembered next time you open the app. Both themes use an
-"Ink & Parchment" palette — aged-paper cream with a deep ink accent in light
-mode, a near-black ground with parchment panels and antique gold in dark
-mode — carried through the editor, exported PDFs, and the on-page note text.
+**My Books** is the front door. Every book keeps its own photo library, pages,
+fonts, drawings and colours — nothing is shared between them. From a card you
+can rename inline, **duplicate** (a true independent copy), or delete.
 
-**A tabbed editing panel**, not one long stack you scroll through. Selected
-Photo, Page Note, Layout, and Decorate live behind Photo/Note/Layout/Decorate
-tabs on the right, so the panel stays a fixed height no matter how much any
-one section grows — the doodle pad, say — instead of pushing everything below
-it further down the page.
+**Deleting moves to Trash**, not oblivion. A trashed book is restorable for 30
+days, after which it's cleaned up automatically. *Delete Forever* and *Empty
+Trash* skip the wait.
 
-**300 DPI PDF export** at true trim dimensions. Pages are drawn programmatically
-onto a canvas rather than screenshotting the editor, so the output is genuinely
-print resolution and every crop matches what you arranged on screen.
+**Reset book** wipes one book's photos and pages. Because that can't be undone
+— the photo files themselves are gone — it asks you to **type `DELETE`**, and
+tells you exactly how many photos and pages will go.
 
-**Export just a page range.** Export PDF opens a small dialog asking which
-pages to include — the whole book by default, or a "From – To" range (say,
-pages 5–18) for a proof of one section or a reprint of only what changed.
+---
 
-Work is saved to the browser's IndexedDB as you go and restored when you reopen
-the app.
+## Photos
 
-**Thumbnails are actually thumbnails.** Each photo gets a small (320px)
-downscaled copy generated once at import; the tray, filmstrip, and library
-grid all use that instead of decoding the full-resolution original at
-postage-stamp size. Only the main editing canvas and the PDF export touch
-the full-resolution file.
+Drop files onto the tray, or use **Add photos**. Accepted: JPEG, PNG, WebP,
+AVIF. Each import produces a full-resolution blob (kept for print) and a
+downscaled thumbnail (used everywhere else), so scrolling a large library
+doesn't decode originals.
 
-**A reorganized Layout panel and Selected Photo panel**, once both had grown
-long enough to make the thing you wanted hard to find. The Layout panel now
-splits into two collapsible sections — "Choose a template" (open by default)
-and "Page styling" (background tint and margin, collapsed by default since
-it's changed far less often) — and a second "style" filter (Classic / Grids
-/ Overlays / Text-forward / Novelty) sits alongside the existing shape filter
-so ~40 templates stay browsable. The Selected Photo panel's controls are now
-grouped under Crop / Style / Position headers instead of one flat stack, with
-no change to what any control does.
+### Duplicate detection
 
-**A background photo for any page**, alongside the existing tinted-cardstock
-option — pick any photo (even one already placed in a slot elsewhere) to fill
-the page behind its slots, with a Darken slider so foreground photos and
-captions stay legible. A Covers control picks how much of the page it
-fills — the whole page, or just its left/right/top/bottom half, leaving the
-rest plain background. Not offered on Full Bleed or Full Sheet templates,
-since those pages are already entirely one photo with nothing behind them to
-layer. Prints exactly as shown, same as everything else. Lives in the
-Decorate tab's Page Styling section, open by default, alongside the Margin
-slider.
+Every incoming file is checked three ways, and anything that matches is shown to
+you rather than silently dropped:
 
-**Preview Book**, next to Export PDF, renders every page in order into one
-downloadable image — a quick way to check the whole book's flow without
-paging through it one screen at a time. It reuses the exact same per-page
-drawing code as the real PDF export, just at thumbnail resolution.
+| Kind | How it's found | Default |
+|---|---|---|
+| **Same file** | SHA-256 of the bytes | skip |
+| **Same picture** | a dHash fingerprint of the image itself | skip |
+| **Same name** | filename match | keep |
 
-**"Slate Studio" — a flatter, quieter interface.** The whole app's chrome was
-redone: flat panels with hairline dividers instead of card borders and
-shadows, a plain sans-serif in place of the old serif headings, and one quiet
-slate-blue accent reserved for whatever's active — a tab underline, a
-selected template, the primary button — instead of two competing warm
-accents. None of it touches the book itself: every template, decoration,
-font choice for your own page text, and feature works exactly as before.
+**"Same picture" catches what a byte hash can't** — a re-export, a screenshot,
+a copy that came back through a chat app. It shrinks the image to 9×8 greyscale
+and records whether each pixel is brighter than its right-hand neighbour; those
+64 bits survive resizing and recompression. Two pictures match within a Hamming
+distance of 6.
+
+A shared filename is treated as weak evidence (two cameras both produce
+`IMG_0042`), so those default to being kept while confident matches default to
+being skipped. Nothing is saved or dropped until you answer.
+
+### Placing photos
+
+Three ways, because dragging isn't always convenient:
+
+- **Drag** a photo from the tray onto a slot.
+- **Click a slot** for a quick picker of recently unplaced photos.
+- **Click photos in the tray first**, then click slots — they're placed in the
+  order you picked them up. Escape cancels.
+
+Click a filled slot to adjust it; **Delete** clears it.
+
+---
+
+## Pages
+
+The **filmstrip** along the bottom is the page list. The active page is marked
+with a thick ring and a filled number badge.
+
+- **Reorder** by dragging. An insertion line shows exactly which gap the page
+  will land in — the left half of a thumbnail means *before*, the right half
+  *after*. The page being carried fades out.
+- **Jump** a page to the front or back with the ⇤ / ⇥ buttons that appear on
+  hover — faster than dragging past thirty thumbnails.
+- **Insert** a page at any gap with the `+` between thumbnails.
+- **Delete** a page with its ×, or press Delete with it selected.
+- **Lock** a page (🔒 on its thumbnail) to protect it from Re-flow, drops,
+  panning and reordering. The pinned button at the left end locks or unlocks
+  **every** page at once.
+
+**Re-flow** in the top bar lays the book out again from scratch, leaving locked
+pages untouched. It grows a warning dot when you have more photos than the
+current page count can hold.
+
+Pages in the A4 family can individually switch between portrait and landscape,
+so one book can mix them.
+
+---
+
+## Layouts
+
+The **Layout** panel shows the current template and a **Change** button that
+opens the full picker — 55 templates, filterable by family and by photo count.
+Folded sheets skip the picker entirely and show their two choices inline, since
+a binary choice doesn't need a modal built for 55 options.
+
+Some templates have distinctive behaviour worth knowing:
+
+- **Poster Overlay** and friends tape a second photo on top at an angle. The
+  pin can be tape, a paperclip, or nothing, per template.
+- **Circle Inset** cuts the second photo into a centred circular portrait.
+- **Before/After** draws a divider and small labels between two photos.
+- **Window** forces the first photo to greyscale and cuts a sharp colour window
+  through it at the second.
+- **Split at Fold** gives each half of a folded sheet its own layout.
+
+---
+
+## Decorating a page
+
+**Page background.** A tinted cardstock colour, or a photo. A background photo
+gets its own controls: which portion of the page it **covers** (whole / left /
+right / top / bottom), a **filter**, **opacity**, **grain**, and **darken**.
+
+Opacity and darken do different things and both are useful: opacity fades the
+photo towards the paper (keeping its colour), while darken lays a scrim over it.
+
+**Filters** apply to any photo — in a slot or as a background:
+
+| Filter | What it does |
+|---|---|
+| B&W, Sepia, Negative | straightforward colour treatments |
+| **Film** | warm shift, boosted saturation, plus fine grain |
+| **Paper** | a creased-printed-paper texture, no colour change |
+
+Film and Paper are drawn as blend-mode overlays rather than CSS `filter: url()`,
+which silently no-ops in some browsers. The export draws the equivalent with
+canvas composite operations, and scales the grain by export DPI so a 300 DPI
+print gets the texture you saw rather than one four times finer.
+
+**Stickers.** Washi tape in three colours, plus a heart, star and arrow. Select
+one and a floating toolbar appears with rotate, flip, colour and opacity.
+
+**Draw your own.** The drawing pad offers pen, pencil and marker with an
+adjustable nib. Strokes are smoothed through quadratic curves rather than
+straight segments, and translucent pens composite once per stroke so overlaps
+don't blotch. A saved drawing joins the book's own sticker library and can be
+stamped on any number of pages.
+
+**Frames and attachments.** Any photo can take a polaroid card, a hairline rule
+or a scalloped postage-stamp edge, in any of seven colours — a white polaroid on
+white paper is nearly invisible, which is what the colour option is for. Photos
+can also be pinned with tape, a binder clip or a paperclip.
+
+---
+
+## Text
+
+Two kinds:
+
+- **Page notes** sit in the area a template reserves for them. Not every layout
+  has one; the panel says so when it doesn't. Templates style them differently —
+  `ruled` draws diary lines, `quote` sets it large and italic, `stamp` puts it
+  in a scalloped card.
+- **Text boxes** go anywhere, on any page, at any size.
+
+**Size is a number** — a percentage of the size the layout would pick on its
+own, so it still adapts to the page — with S / M / L / XL beside it as presets.
+
+### Fonts
+
+Eight built-ins that are on every machine already. Beyond those, two ways to add
+your own:
+
+- **Add a font file** (`.ttf`, `.otf`, `.woff`, `.woff2`). Works everywhere and
+  **travels with the book**, so opening it on another computer still shows the
+  right typeface.
+- **Scan my fonts** reads the families installed on your machine. Quicker, but
+  Chromium-only and permission-gated, so the button doesn't appear elsewhere. A
+  scanned font stores only its name and falls back to serif on a machine that
+  hasn't got it.
+
+Added fonts appear in every font menu in the book **and in the exported PDF** —
+no font embedding needed, because the export rasterises each page to canvas.
+
+---
+
+## Colour
+
+Every colour control — text, stickers, page background, photo frames, tape, and
+the drawing pad's ink — is the same field:
+
+- **Swatches** for speed.
+- **A hex box.** Type `7B3F00`. Accepts `#fff` shorthand, with or without the
+  `#`. It applies as you type, but only once the code is valid: a half-finished
+  `7B3` changes nothing rather than flashing the page through wrong colours.
+- **A colour wheel** — the OS picker, which on most systems also gives you an
+  eyedropper to lift a colour off your own photo.
+- **Recent colours**, remembered per book. Only colours you mixed by hand; a
+  palette swatch is already one click away.
+
+**Tape keeps its transparency.** Those colours are deliberately semi-opaque so
+the photo shows through like real washi tape, so a typed hex is applied *at the
+existing transparency* rather than turning the tape solid.
+
+**Text colour overrides automatic contrast.** Notes normally flip between dark
+ink and light parchment to stay legible; once you set a colour, that stops and
+your choice wins.
+
+---
+
+## Placing things precisely
+
+**Snapping.** While you drag a sticker or text box, its edges and centre are
+compared against the page's edges and centre, against every other decoration,
+and against your own guides. Anything within six pixels pulls it exactly onto
+that line and draws a guide showing why it stopped. **Hold Alt** to drag freely.
+
+**Rulers** (⋯ menu) run in **inches** — the unit the book is quoted and printed
+in — with tick spacing chosen from how large the page is currently drawn.
+
+**Guides.** Drag off a ruler to leave a guide line. Drag it to move; drag it off
+the page to remove. Decorations snap to guides like any other line. Guides
+belong to the **book**, not one page, so the same line falls in the same place
+throughout — which is the whole point of placing one.
+
+**Grid** (⋯ menu) marks tenths of the page with the centre lines picked out.
+
+Rulers, guides and the grid are editor-only. **None of them ever prints.**
+
+---
+
+## Viewing
+
+**Focus mode** (top bar) hides the browser's own chrome and collapses the drawer
+so the page gets the room. The rail stays — click any section and the drawer
+slides back without leaving focus. Leaving restores the drawer to how you had it.
+
+**Full-screen page** (⤢ on the page corner) opens one page large over a dark
+backdrop, with ‹ › and arrow keys to page through and a counter. For looking
+rather than editing.
+
+**Slideshow** (▶) plays the book with a cross-fade between pages.
+
+**Preview whole book** (⋯ menu) renders a contact sheet of every page in order,
+as a downloadable image.
+
+**Dark mode** (☾) themes the app — but never the page. A page is paper in both
+themes, because a printed page has no dark mode.
+
+---
+
+## Exporting
+
+**Export PDF** renders every page at 300 DPI onto a canvas and embeds it, so
+what you see is what prints. You can export the whole book or a page range.
+
+The export re-implements everything the editor draws: filters, textures, grain,
+frames, tape, stickers, custom drawings, notes, text boxes and background
+photos. Where a value is shared between the two paths it lives in
+`src/lib/imageUtils.ts` rather than being written twice.
+
+---
 
 ## How it's built
 
-| Piece | Choice | Why |
-| --- | --- | --- |
-| UI | React 18 + TypeScript + Vite | Fast local dev, no build server |
-| State | Zustand | Small store, no boilerplate |
-| Storage | Dexie (IndexedDB) | Photo blobs and project state, offline |
-| Export | jsPDF | Loaded on demand, only when you export |
-| Editor surface | Plain DOM + CSS | No canvas library needed; crisper text and simpler hit-testing |
-
-All dependencies are MIT or Apache-2.0. `npm audit` reports no vulnerabilities.
+React 19 + TypeScript + Vite. Zustand for state, Dexie over IndexedDB for
+storage, jsPDF for assembly. No UI framework, no CSS framework, no icon package
+— the icon set is drawn in `src/components/Icon.tsx` at one stroke weight.
 
 ### Layout of the source
 
 ```
 src/
-  data/         trim sizes and the template library
+  data/
+    sizes.ts        trim sizes, shapes, the A4 family
+    templates.ts    all 66 templates
+    fonts.ts        built-in font stacks and size scaling
   lib/
-    autoLayout  page/template assignment and aspect-ratio fitting
-    imageUtils  import, measurement, and the shared cover-fit geometry
-    exportPdf   300 DPI page rendering and PDF assembly
-    db          Dexie schema (photos + projects, scoped by projectId)
-  state/
-    useStore         the active book's editor state
-    useLibraryStore  the My Books list (create/rename/duplicate/delete)
-  components/   editor UI + My Books screen
+    autoLayout.ts   template scoring, page creation, re-flow
+    imageUtils.ts   import, cropping maths, slot styles, shared constants
+    exportPdf.ts    the canvas render of every page
+    snap.ts         alignment targets and snapping
+    colors.ts       hex parsing, alpha-preserving recolour, palettes
+    fonts.ts        font registration (FontFace, local font scanning)
+    perceptualHash.ts   dHash fingerprints for duplicate detection
+    db.ts           Dexie schema and project persistence
+  components/       36 components; PageView and exportPdf are the two
+                    render paths that must stay in agreement
+  state/useStore.ts single Zustand store — the whole editor's state
 ```
 
-`coverGeometry` in `lib/imageUtils.ts` is deliberately shared between the
-on-screen editor and the PDF exporter — it is the single definition of how a
-photo sits inside its slot, which is what keeps the preview and the print
-identical.
+### Things worth knowing before changing it
 
-## Ideas not yet built
+- **Anything visual must be done twice** — once in `PageView`/`SlotView`, once
+  in `exportPdf`. Shared numbers go in `imageUtils.ts`.
+- **The page is paper in both themes.** Never paint text on a page with
+  `var(--ink)`; it flips light in dark mode and vanishes on white paper.
+- **Theme tokens are defined in four blocks** (`:root`, the
+  `prefers-color-scheme` media query, `[data-theme='dark']`,
+  `[data-theme='light']`). Miss one and the app half-themes.
+- **Undo covers the layout, not the library.** Photos, fonts, guides and recent
+  colours sit outside it — a deleted photo's file is genuinely gone, and undoing
+  a caption edit shouldn't uninstall a font.
 
-- Text/caption blocks on interior pages, not just the cover
-- Background colour or paper stock per book
-- Bleed and safe-area guides for commercial printers (the full-bleed and
-  diptych templates skip the *page* margin, but don't yet add printer-specific
-  trim/safe zones)
-- Exporting the project to a file so books move between machines
+---
+
+## Not built yet
+
+- A mirror/flip photo effect (one photo duplicated with a strip flipped).
+- A scrapbook direction: page paper textures, photo corners, torn edges, and a
+  Scrapbook template family.
+- Keyboard reordering of pages (`Alt` + arrows).
+- Perceptual duplicate detection across *different books*, not just within one.

@@ -12,6 +12,7 @@ import { PhotoLibrary } from './PhotoLibrary'
 import { Slideshow } from './Slideshow'
 import { SpreadCanvas } from './SpreadCanvas'
 import { TopBar } from './TopBar'
+import { DuplicateImportModal } from './DuplicateImportModal'
 
 /** Remembered across sessions: whoever closes the panel to get room usually wants it to stay closed. */
 const DRAWER_OPEN_KEY = 'moments.drawerOpen'
@@ -229,6 +230,9 @@ export function Editor({ projectId, onGoToLibrary, theme, onToggleTheme }: Edito
 
       {/* Floats over the canvas next to whatever is selected — renders nothing at all otherwise. */}
       <ContextualToolbar />
+
+      {/* Renders nothing unless an import turned up something familiar. */}
+      <DuplicateImportModal />
 
       {libraryOpen && <PhotoLibrary onClose={() => setLibraryOpen(false)} />}
 

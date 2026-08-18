@@ -90,6 +90,7 @@ export function Filmstrip({ photos }: { photos: Map<string, Photo> }) {
             const height = THUMB_WIDTH / ratio
             const itemClass = [
               'fs-item',
+              index === activePageIndex && 'current',
               dropIndex === index && 'drop-left',
               dropIndex === pages.length && index === pages.length - 1 && 'drop-right',
             ]

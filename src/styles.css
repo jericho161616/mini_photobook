@@ -1437,7 +1437,10 @@ input:focus-visible,
   overflow: hidden;
   padding: 4%;
   line-height: 1.25;
-  color: var(--ink);
+  /* Fixed ink, not var(--ink): a page is paper in both themes (see
+     --page-stock), so a themed colour turned this near-white on near-white
+     the moment night mode was switched on. Matches .page-caption. */
+  color: #241f16;
   outline: none;
   cursor: text;
   overflow-wrap: anywhere;
@@ -2628,8 +2631,21 @@ kbd {
   overflow: hidden;
 }
 
+/* The active page has to be findable at a glance in a thirty-page strip, so
+   it gets a thicker ring, a lift, and a filled number badge below — an
+   outline alone was too close to every other thumbnail. */
 .fs-page.active {
   outline-color: var(--brass);
+  outline-width: 3px;
+  box-shadow: 0 0 0 1px var(--brass-soft), 0 3px 10px rgba(92, 121, 146, 0.35);
+}
+
+.fs-item.current .fs-num {
+  background: var(--brass);
+  color: #fff;
+  border-radius: 20px;
+  padding: 1px 7px;
+  font-weight: 600;
 }
 
 .fs-page:not(.locked) {

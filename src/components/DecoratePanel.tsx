@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { getTemplate, isFullSheetTemplate } from '../data/templates'
 import { photoThumbUrl } from '../lib/imageUtils'
+import { ColorField } from './ColorField'
 import { useStore } from '../state/useStore'
 import type { Page, PhotoFilter, StickerType } from '../types'
 import { BackgroundPhotoModal } from './BackgroundPhotoModal'
@@ -158,6 +159,17 @@ export function DecoratePanel() {
             )}
           </div>
         </div>
+
+        {/* Only once a tint is chosen: with None or a photo there is no
+            cardstock colour to adjust. */}
+        {page.backgroundColor !== undefined && (
+          <ColorField
+            label="Background colour"
+            value={page.backgroundColor}
+            swatches={PAGE_TINTS}
+            onChange={(color) => setPageBackground(activePageIndex, color)}
+          />
+        )}
 
         {page.backgroundPhotoId !== undefined && (
           <div className="inspector-row bg-photo-row">

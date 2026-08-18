@@ -269,7 +269,8 @@ export function PageView({
                 fontSizeScale((page.textStyle ?? DEFAULT_TEXT_STYLE).size),
               fontFamily: fontStack((page.textStyle ?? DEFAULT_TEXT_STYLE).font),
               fontWeight: (page.textStyle ?? DEFAULT_TEXT_STYLE).bold ? 700 : 400,
-              color: onDark ? '#c9bfa4' : undefined,
+              // An explicit choice wins over the automatic light/dark pick.
+              color: (page.textStyle ?? DEFAULT_TEXT_STYLE).color ?? (onDark ? '#c9bfa4' : undefined),
               clipPath: template.captionStyle === 'stamp' ? stampClipPathCss(textRect.w, textRect.h) : undefined,
             }}
           >
@@ -341,7 +342,8 @@ export function PageView({
                         fontSizeScale(halfStyle.size),
                       fontFamily: fontStack(halfStyle.font),
                       fontWeight: halfStyle.bold ? 700 : 400,
-                      color: onDark ? '#c9bfa4' : undefined,
+                      // An explicit choice wins over the automatic light/dark pick.
+                      color: halfStyle.color ?? (onDark ? '#c9bfa4' : undefined),
                       clipPath:
                         halfTemplate.captionStyle === 'stamp' ? stampClipPathCss(inner.w, inner.h) : undefined,
                     }}

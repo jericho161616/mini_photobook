@@ -198,6 +198,9 @@ function FreeTextContent({ box, containerSize, editing, locked, onStartEditing, 
       suppressContentEditableWarning
       style={{
         fontFamily: fontStack(box.font),
+        // Undefined falls through to the stylesheet's own ink, which already
+        // adapts to a dark page — an explicit colour overrides that.
+        color: box.color,
         fontWeight: box.bold ? 700 : 400,
         fontStyle: box.italic ? 'italic' : 'normal',
         textAlign: box.align,

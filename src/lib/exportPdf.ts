@@ -605,7 +605,9 @@ export async function renderPage(
     }
 
     const centered = captionStyle === 'centered' || captionStyle === 'divider' || captionStyle === 'stamp'
-    ctx.fillStyle = captionStyle === 'stamp' ? '#241f16' : noteColor
+    // An explicit note colour beats both the stamp card's ink and the
+    // automatic light/dark pick, matching the editor.
+    ctx.fillStyle = style.color ?? (captionStyle === 'stamp' ? '#241f16' : noteColor)
     // The page note is always italic on screen (.page-note in styles.css) — matched here so export doesn't go upright.
     ctx.font = `italic ${weight} ${fontSize}px ${fontStack(style.font)}`
     ctx.textAlign = centered ? 'center' : 'left'
@@ -711,7 +713,7 @@ export async function renderPage(
   const drawFreeText = (rect: { x: number; y: number; w: number; h: number }, box: TextBox) => {
     if (!box.text.trim()) return
     const fontSize = Math.max(10, rect.h * 0.28) * fontSizeScale(box.size)
-    ctx.fillStyle = '#241f16'
+    ctx.fillStyle = box.color ?? '#241f16'
     ctx.font = `${box.italic ? 'italic ' : ''}${box.bold ? 'bold' : 'normal'} ${fontSize}px ${fontStack(box.font)}`
     ctx.textAlign = box.align
     ctx.textBaseline = 'top'

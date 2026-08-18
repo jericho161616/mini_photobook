@@ -15,6 +15,9 @@ const PAGE_CHROME_Y = 72
 const MAX_PAGE_WIDTH = 720
 
 interface SpreadCanvasProps {
+  /** Editor-only drawing aids. Never reach the export — they aren't part of the book. */
+  showGrid?: boolean
+  showRulers?: boolean
   photos: Map<string, Photo>
   onOpenLibrary: () => void
 }
@@ -27,7 +30,7 @@ interface SpreadCanvasProps {
  * either page faster. The ‹ › arrows (and the filmstrip below) move between
  * pages one at a time; you never see two at once.
  */
-export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
+export function SpreadCanvas({ photos, onOpenLibrary, showGrid, showRulers }: SpreadCanvasProps) {
   const allPhotos = useStore((s) => s.photos)
   const customStickers = useStore((s) => s.customStickers)
   const pages = useStore((s) => s.pages)
@@ -274,7 +277,20 @@ export function SpreadCanvas({ photos, onOpenLibrary }: SpreadCanvasProps) {
           <Icon name="chevronLeft" size={20} />
         </button>
 
-        {page && <PageView {...pageViewProps(true)} width={dims.width} height={dims.height} />}
+        {page && (
+          <div className={`page-frame${showRulers ? ' with-rulers' : ''}`}>
+            {showRulers && (
+              <>
+                <span className="ruler top" aria-hidden="true" />
+                <span className="ruler left" aria-hidden="true" />
+              </>
+            )}
+            <div className="page-stack">
+              <PageView {...pageViewProps(true)} width={dims.width} height={dims.height} />
+              {showGrid && <span className="page-grid" aria-hidden="true" />}
+            </div>
+          </div>
+        )}
 
         <button
           className="page-nav next"

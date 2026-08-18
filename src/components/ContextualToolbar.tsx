@@ -1,7 +1,8 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { FONT_OPTIONS, FONT_SIZE_OPTIONS } from '../data/fonts'
+import { FONT_OPTIONS, FONT_SIZE_PRESETS, fontSizeNumber } from '../data/fonts'
 import { decorationHost } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
+import { MAX_FONT_SIZE, MIN_FONT_SIZE } from '../types'
 import type { Sticker, TextBox, TextStyle } from '../types'
 import { ColorPopover } from './ColorField'
 import { TEXT_COLORS } from '../lib/colors'
@@ -29,7 +30,7 @@ const ALIGNS: { id: TextBox['align']; icon: IconName; title: string }[] = [
 
 const ROTATE_STEP_DEG = 15
 
-const SIZE_TITLES: Record<string, string> = { sm: 'Small', md: 'Medium', lg: 'Large', xl: 'Extra large' }
+const SIZE_TITLES: Record<string, string> = { S: 'Small', M: 'Medium', L: 'Large', XL: 'Extra large' }
 
 /**
  * Measures the currently selected decoration in viewport coordinates.
@@ -289,15 +290,36 @@ export function ContextualToolbar() {
 
           <span className="ctx-sep" />
 
-          {FONT_SIZE_OPTIONS.map((s) => (
+          {/* A number, not four t-shirt sizes: "a bit bigger than L" had
+              nowhere to go. Percent of the size the layout would pick on its
+              own, so it still adapts to the page. */}
+          <label className="ctx-size">
+            <input
+              type="number"
+              min={MIN_FONT_SIZE}
+              max={MAX_FONT_SIZE}
+              step={5}
+              value={fontSizeNumber(textBox.size)}
+              onChange={(e) => {
+                const n = Number(e.target.value)
+                if (Number.isFinite(n)) {
+                  patchText({ size: Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, n)) })
+                }
+              }}
+              aria-label="Text size, percent"
+              title="Text size — percent of the layout's own size"
+            />
+            <span className="pct">%</span>
+          </label>
+          {FONT_SIZE_PRESETS.map((preset) => (
             <button
-              key={s.id}
-              className={`ctx-btn ctx-text-btn${(textBox.size ?? 'md') === s.id ? ' active' : ''}`}
-              onClick={() => patchText({ size: s.id })}
-              title={`${SIZE_TITLES[s.id] ?? s.label} text`}
-              aria-pressed={(textBox.size ?? 'md') === s.id}
+              key={preset.label}
+              className={`ctx-btn ctx-text-btn${fontSizeNumber(textBox.size) === preset.value ? ' active' : ''}`}
+              onClick={() => patchText({ size: preset.value })}
+              title={`${SIZE_TITLES[preset.label] ?? preset.label} — ${preset.value}%`}
+              aria-pressed={fontSizeNumber(textBox.size) === preset.value}
             >
-              {s.label}
+              {preset.label}
             </button>
           ))}
 

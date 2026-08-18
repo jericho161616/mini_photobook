@@ -30,15 +30,26 @@ export function fontStack(id: FontId | undefined): string {
 }
 
 /** 'md' (1x) is the size every note and text box already rendered at before this option existed. */
-export const FONT_SIZE_OPTIONS: { id: FontSize; label: string; scale: number }[] = [
-  { id: 'sm', label: 'S', scale: 0.75 },
-  { id: 'md', label: 'M', scale: 1 },
-  { id: 'lg', label: 'L', scale: 1.35 },
-  { id: 'xl', label: 'XL', scale: 1.75 },
+/** Quick presets beside the number box — the old S/M/L/XL, as the numbers they always were. */
+export const FONT_SIZE_PRESETS: { label: string; value: number }[] = [
+  { label: 'S', value: 75 },
+  { label: 'M', value: 100 },
+  { label: 'L', value: 135 },
+  { label: 'XL', value: 175 },
 ]
 
+/** What the four old preset ids meant, so books made before the number box keep their sizing. */
+const LEGACY_SCALES: Record<string, number> = { sm: 0.75, md: 1, lg: 1.35, xl: 1.75 }
+
 export function fontSizeScale(size: FontSize | undefined): number {
-  return FONT_SIZE_OPTIONS.find((f) => f.id === size)?.scale ?? 1
+  if (typeof size === 'number') return size / 100
+  if (typeof size === 'string') return LEGACY_SCALES[size] ?? 1
+  return 1
+}
+
+/** The number to show in the box for a given stored size, presets included. */
+export function fontSizeNumber(size: FontSize | undefined): number {
+  return Math.round(fontSizeScale(size) * 100)
 }
 
 export const DEFAULT_TEXT_STYLE: TextStyle = { font: 'serif', bold: false }

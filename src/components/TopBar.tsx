@@ -24,6 +24,10 @@ interface TopBarProps {
   onGoToLibrary: () => void
   theme: 'light' | 'dark'
   onToggleTheme: () => void
+  showGrid: boolean
+  onToggleGrid: () => void
+  showRulers: boolean
+  onToggleRulers: () => void
 }
 
 export function TopBar({
@@ -35,6 +39,10 @@ export function TopBar({
   onGoToLibrary,
   theme,
   onToggleTheme,
+  showGrid,
+  onToggleGrid,
+  showRulers,
+  onToggleRulers,
 }: TopBarProps) {
   const title = useStore((s) => s.title)
   const setTitle = useStore((s) => s.setTitle)
@@ -221,6 +229,23 @@ export function TopBar({
                 title="Download an image showing every page's spot in the book, in order"
               >
                 <Icon name="grid" size={14} /> {previewing ? 'Rendering…' : 'Preview whole book'}
+              </button>
+              {/* Drawing aids, not part of the book — they never export. */}
+              <button
+                role="menuitem"
+                onClick={onToggleGrid}
+                aria-pressed={showGrid}
+                title="A grid over the page while you arrange things — never printed"
+              >
+                {showGrid ? '✓ ' : ''}Grid
+              </button>
+              <button
+                role="menuitem"
+                onClick={onToggleRulers}
+                aria-pressed={showRulers}
+                title="Rulers along the page edges — never printed"
+              >
+                {showRulers ? '✓ ' : ''}Rulers
               </button>
               <button
                 role="menuitem"

@@ -1,4 +1,4 @@
-import { DEFAULT_TEXT_STYLE, FONT_OPTIONS, FONT_SIZE_OPTIONS, fontSizeScale, fontStack } from '../data/fonts'
+import { DEFAULT_TEXT_STYLE, FONT_OPTIONS, FONT_SIZE_PRESETS, fontSizeNumber, fontSizeScale, fontStack } from '../data/fonts'
 import { foldOrientationForSize, getSize } from '../data/sizes'
 import { getTemplate } from '../data/templates'
 import { resolvePageSize } from '../lib/autoLayout'
@@ -6,6 +6,7 @@ import { useStore } from '../state/useStore'
 import type { TextStyle } from '../types'
 import { FontManager } from './FontManager'
 import { PanelSection } from './PanelSection'
+import { MAX_FONT_SIZE, MIN_FONT_SIZE } from '../types'
 
 /**
  * A free-form note for the active page — a date, a place, a line of text.
@@ -115,17 +116,35 @@ export function PageTextPanel() {
           B
         </button>
       </div>
-      <div className="filter-chips-row size-picker-row">
-        {FONT_SIZE_OPTIONS.map((s) => (
+      <div className="inspector-row size-picker-row">
+        <label htmlFor="note-size">Size</label>
+        <input
+          id="note-size"
+          type="number"
+          className="size-number"
+          min={MIN_FONT_SIZE}
+          max={MAX_FONT_SIZE}
+          step={5}
+          value={fontSizeNumber(style.size)}
+          disabled={page.locked}
+          onChange={(e) => {
+            const n = Number(e.target.value)
+            if (Number.isFinite(n)) {
+              setStyle({ ...style, size: Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, n)) })
+            }
+          }}
+        />
+        <span className="value mono">%</span>
+        {FONT_SIZE_PRESETS.map((preset) => (
           <button
-            key={s.id}
-            className={`filter-chip-btn${(style.size ?? 'md') === s.id ? ' active' : ''}`}
-            onClick={() => setStyle({ ...style, size: s.id })}
+            key={preset.label}
+            className={`filter-chip-btn${fontSizeNumber(style.size) === preset.value ? ' active' : ''}`}
+            onClick={() => setStyle({ ...style, size: preset.value })}
             disabled={page.locked}
-            aria-pressed={(style.size ?? 'md') === s.id}
-            title={`${s.label === 'S' ? 'Small' : s.label === 'M' ? 'Medium' : s.label === 'L' ? 'Large' : 'Extra large'} text`}
+            aria-pressed={fontSizeNumber(style.size) === preset.value}
+            title={`${preset.label} — ${preset.value}%`}
           >
-            {s.label}
+            {preset.label}
           </button>
         ))}
       </div>

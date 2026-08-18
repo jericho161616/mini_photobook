@@ -42,6 +42,13 @@ export type FontSize = 'sm' | 'md' | 'lg' | 'xl'
 export interface TextStyle {
   font: FontId
   bold: boolean
+  /**
+   * An explicit ink colour. Undefined keeps the automatic behaviour, where a
+   * note flips between dark ink and light parchment to stay legible against
+   * the page. Setting one turns that off: an explicit choice wins, even where
+   * it lands dark-on-dark.
+   */
+  color?: string
   /** Undefined means 'md', the original default size. */
   size?: FontSize
 }
@@ -103,6 +110,8 @@ export interface TextBox {
   text: string
   font: FontId
   bold: boolean
+  /** An explicit ink colour — undefined keeps the automatic light/dark choice. */
+  color?: string
   /** Undefined means not italic. */
   italic?: boolean
   align: 'left' | 'center' | 'right'
@@ -317,6 +326,8 @@ export interface Project {
   customStickers?: CustomSticker[]
   /** Fonts added to this book, by upload or by scanning the machine. Undefined on older books means none. */
   customFonts?: CustomFont[]
+  /** Colours mixed by hand in this book, most recent first — the palettes are always one click away and aren't kept here. */
+  recentColors?: string[]
 }
 
 /** How long a trashed book is kept before it's purged for good. */

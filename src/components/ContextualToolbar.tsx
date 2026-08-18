@@ -3,7 +3,8 @@ import { FONT_OPTIONS, FONT_SIZE_OPTIONS } from '../data/fonts'
 import { decorationHost } from '../lib/autoLayout'
 import { useStore } from '../state/useStore'
 import type { Sticker, TextBox, TextStyle } from '../types'
-import { isTapeSticker } from './DecorationLayer'
+import { ColorPopover } from './ColorField'
+import { TEXT_COLORS } from '../lib/colors'
 import { Icon, type IconName } from './Icon'
 
 /** Gap between the selection's own edge and the bar, in px. */
@@ -229,17 +230,13 @@ export function ContextualToolbar() {
                 title="Original color"
                 aria-pressed={!sticker.color}
               />
-              {STICKER_COLORS.map((c) => (
-                <button
-                  key={c.id}
-                  className={`ctx-swatch${sticker.color === c.hex ? ' active' : ''}`}
-                  style={{ background: c.hex }}
-                  onClick={() => patchSticker({ color: c.hex })}
-                  title={c.label}
-                  aria-label={`${c.label}${isTapeSticker(sticker.type) ? ' tape' : ''}`}
-                  aria-pressed={sticker.color === c.hex}
-                />
-              ))}
+              <ColorPopover
+                label="Sticker colour"
+                title="Sticker colour — swatches, hex or a colour wheel"
+                value={sticker.color}
+                swatches={STICKER_COLORS.map((c) => ({ id: c.id, color: c.hex, label: c.label }))}
+                onChange={(color) => patchSticker({ color })}
+              />
             </>
           )}
         </>
@@ -303,6 +300,16 @@ export function ContextualToolbar() {
               {s.label}
             </button>
           ))}
+
+          <span className="ctx-sep" />
+
+          <ColorPopover
+            label="Text colour"
+            title="Text colour — swatches, hex or a colour wheel"
+            value={textBox.color}
+            swatches={TEXT_COLORS}
+            onChange={(color) => patchText({ color })}
+          />
 
           <span className="ctx-sep" />
 

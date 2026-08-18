@@ -16,6 +16,7 @@ import {
 } from '../lib/autoLayout'
 import * as storage from '../lib/db'
 import { registerAll, registerFont, unregisterFont } from '../lib/fonts'
+import { MAX_RECENT_COLORS } from '../lib/colors'
 import { clampOffset, clampZoom, importFiles, releasePhotoUrl } from '../lib/imageUtils'
 import { MAX_PAGES } from '../types'
 import type {
@@ -72,6 +73,8 @@ interface StoreState {
   customStickers: CustomSticker[]
   /** Fonts added to this book — uploaded files, or families scanned off this machine. */
   customFonts: CustomFont[]
+  /** Hand-mixed colours, most recent first, shared by every colour control in this book. */
+  recentColors: string[]
   activePageIndex: number
   /** Which side of a Split at Fold page the sidebar is currently editing. */
   activeHalfIndex: 0 | 1
@@ -165,6 +168,8 @@ interface StoreState {
   addCustomSticker: (dataUrl: string) => string
   /** Removes a drawing from the library and strips any already-placed copies of it. */
   removeCustomSticker: (id: string) => void
+  /** Remembers a hand-mixed colour so it's one click away in every colour control. */
+  rememberColor: (hex: string) => void
   /** Adds a font file to this book and registers it for immediate use. */
   addCustomFont: (font: CustomFont) => void
   /** Removes a font; anything still set to it falls back to the default serif. */
@@ -195,7 +200,10 @@ const MAX_HISTORY = 50
 const HISTORY_COALESCE_MS = 500
 
 function projectFrom(
-  state: Pick<StoreState, 'projectId' | 'title' | 'sizeId' | 'pages' | 'customStickers' | 'customFonts'>,
+  state: Pick<
+    StoreState,
+    'projectId' | 'title' | 'sizeId' | 'pages' | 'customStickers' | 'customFonts' | 'recentColors'
+  >,
   createdAt: number,
 ): Project {
   return {
@@ -205,6 +213,7 @@ function projectFrom(
     pages: state.pages,
     customStickers: state.customStickers,
     customFonts: state.customFonts,
+    recentColors: state.recentColors,
     createdAt,
     updatedAt: Date.now(),
   }
@@ -216,10 +225,13 @@ export const useStore = create<StoreState>((set, get) => {
   let importNoticeTimer: number | undefined
   let openedAt = Date.now()
   const writeNow = () => {
-    const { projectId, title, sizeId, pages, customStickers, customFonts } = get()
+    const { projectId, title, sizeId, pages, customStickers, customFonts, recentColors } = get()
     if (!projectId) return
     void storage.saveProject(
-      projectFrom({ projectId, title, sizeId, pages, customStickers, customFonts }, openedAt),
+      projectFrom(
+        { projectId, title, sizeId, pages, customStickers, customFonts, recentColors },
+        openedAt,
+      ),
     )
   }
   const persist = () => {
@@ -260,6 +272,7 @@ export const useStore = create<StoreState>((set, get) => {
     pages: [],
     customStickers: [],
     customFonts: [],
+    recentColors: [],
     activePageIndex: 0,
     activeHalfIndex: 0,
     selected: null,
@@ -290,6 +303,7 @@ export const useStore = create<StoreState>((set, get) => {
           pages: normalizePages(project.pages),
           customStickers: project.customStickers ?? [],
           customFonts: project.customFonts ?? [],
+          recentColors: project.recentColors ?? [],
           activePageIndex: 0,
           selected: null,
           armedPhotoIds: [],
@@ -310,6 +324,7 @@ export const useStore = create<StoreState>((set, get) => {
           pages,
           customStickers: [],
     customFonts: [],
+    recentColors: [],
           activePageIndex: 0,
           selected: null,
           undoStack: [],
@@ -865,6 +880,18 @@ export const useStore = create<StoreState>((set, get) => {
       )
     },
 
+    rememberColor(hex) {
+      // Outside the undo stack, like fonts: a remembered colour is a tool the
+      // book gained, not an edit to the layout.
+      set((state) => ({
+        recentColors: [hex, ...state.recentColors.filter((c) => c !== hex)].slice(
+          0,
+          MAX_RECENT_COLORS,
+        ),
+      }))
+      persist()
+    },
+
     addCustomFont(font) {
       // Deliberately outside the undo stack: a font is a resource the book
       // owns, like an imported photo, not an edit to the layout. Undoing a
@@ -960,6 +987,7 @@ export const useStore = create<StoreState>((set, get) => {
         pages: autoLayout({ photos: [], size, pageCount: sizeMinPages(size) }),
         customStickers: [],
     customFonts: [],
+    recentColors: [],
         activePageIndex: 0,
         selected: null,
         undoStack: [],

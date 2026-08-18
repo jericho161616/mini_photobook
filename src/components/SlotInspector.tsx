@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { getTemplate } from '../data/templates'
 import { FRAME_COLORS, FRAME_DEFAULT_COLOR, isOverlaySlot, MAX_ZOOM, MIN_ZOOM } from '../lib/imageUtils'
+import { ColorField } from './ColorField'
 import { useStore } from '../state/useStore'
 import type { Placement, PhotoFilter } from '../types'
 import { DEFAULT_TAPE_COLOR } from './AttachmentGraphic'
@@ -175,21 +176,12 @@ export function SlotInspector() {
                 card all but disappears against white paper, which is what made
                 picking one feel like nothing had happened. */}
             {placement.frame && (
-              <div className="frame-color-row">
-                {FRAME_COLORS.map((c) => (
-                  <button
-                    key={c.id}
-                    className={`frame-color-chip${
-                      (placement.frameColor ?? FRAME_DEFAULT_COLOR[placement.frame!]) === c.color ? ' active' : ''
-                    }`}
-                    style={{ background: c.color }}
-                    onClick={() => updatePlacement(selected, { frameColor: c.color })}
-                    aria-pressed={(placement.frameColor ?? FRAME_DEFAULT_COLOR[placement.frame!]) === c.color}
-                    aria-label={`${c.label} frame`}
-                    title={c.label}
-                  />
-                ))}
-              </div>
+              <ColorField
+                label="Frame colour"
+                value={placement.frameColor ?? FRAME_DEFAULT_COLOR[placement.frame]}
+                swatches={FRAME_COLORS}
+                onChange={(frameColor) => updatePlacement(selected, { frameColor })}
+              />
             )}
           </InspectorFold>
 
@@ -215,19 +207,15 @@ export function SlotInspector() {
               label="Tape color"
               value={TAPE_COLORS.find((t) => t.color === placement.attachmentColor)?.label ?? 'Cream'}
             >
-              <div className="filter-chips-row">
-                {TAPE_COLORS.map((t) => (
-                  <button
-                    key={t.id}
-                    className={`filter-chip-btn${placement.attachmentColor === t.color ? ' active' : ''}`}
-                    onClick={() => updatePlacement(selected, { attachmentColor: t.color })}
-                    aria-pressed={placement.attachmentColor === t.color}
-                    title={t.label}
-                  >
-                    <span className="tint-swatch" style={{ background: t.color }} aria-hidden="true" />
-                  </button>
-                ))}
-              </div>
+              {/* The palette is rgba on purpose — tape is see-through so the
+                  photo shows underneath. ColorField keeps that alpha when a
+                  hex is typed, rather than turning the tape solid. */}
+              <ColorField
+                label="Tape colour"
+                value={placement.attachmentColor ?? TAPE_COLORS[0].color}
+                swatches={TAPE_COLORS}
+                onChange={(attachmentColor) => updatePlacement(selected, { attachmentColor })}
+              />
             </InspectorFold>
           )}
 

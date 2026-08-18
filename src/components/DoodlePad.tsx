@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { ColorField } from './ColorField'
 import { useStore } from '../state/useStore'
 import { Icon } from './Icon'
 
@@ -242,6 +243,17 @@ export function DoodlePad({ pageIndex, targetHalf, locked }: DoodlePadProps) {
     renderView()
   }
 
+  // Every other overlay in the app closes on Escape — reset, the layout
+  // picker, the zoom view, the colour popover. This one didn't.
+  useEffect(() => {
+    if (!open) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
   function saveAsSticker() {
     const base = baseRef.current
     const c = base?.getContext('2d')
@@ -369,18 +381,13 @@ export function DoodlePad({ pageIndex, targetHalf, locked }: DoodlePadProps) {
 
               <div className="doodle-tool-group">
                 <span className="doodle-tool-label">Color</span>
-                <div className="doodle-color-row">
-                  {COLORS.map((c) => (
-                    <button
-                      key={c.id}
-                      className={`doodle-swatch${color === c.hex ? ' active' : ''}`}
-                      style={{ background: c.hex }}
-                      onClick={() => setColor(c.hex)}
-                      aria-label={`${c.id} pen color`}
-                      aria-pressed={color === c.hex}
-                    />
-                  ))}
-                </div>
+                <ColorField
+                  label="Pen colour"
+                  compact
+                  value={color}
+                  swatches={COLORS.map((c) => ({ id: c.id, color: c.hex, label: c.id }))}
+                  onChange={setColor}
+                />
               </div>
 
               <div className="doodle-actions">

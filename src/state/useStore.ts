@@ -76,6 +76,8 @@ interface StoreState {
   customFonts: CustomFont[]
   /** Hand-mixed colours, most recent first, shared by every colour control in this book. */
   recentColors: string[]
+  /** Ruler guides for this book, in percent of the page. Editor-only — never exported. */
+  guides: { v: number[]; h: number[] }
   activePageIndex: number
   /** Which side of a Split at Fold page the sidebar is currently editing. */
   activeHalfIndex: 0 | 1
@@ -179,6 +181,12 @@ interface StoreState {
   removeCustomSticker: (id: string) => void
   /** Remembers a hand-mixed colour so it's one click away in every colour control. */
   rememberColor: (hex: string) => void
+  /** Drops a new guide line at `position` percent along the given axis. */
+  addGuide: (axis: 'v' | 'h', position: number) => void
+  /** Moves an existing guide; pass a position outside 0–100 to drop it off the page and delete it. */
+  moveGuide: (axis: 'v' | 'h', index: number, position: number) => void
+  removeGuide: (axis: 'v' | 'h', index: number) => void
+  clearGuides: () => void
   /** Adds a font file to this book and registers it for immediate use. */
   addCustomFont: (font: CustomFont) => void
   /** Removes a font; anything still set to it falls back to the default serif. */
@@ -211,7 +219,14 @@ const HISTORY_COALESCE_MS = 500
 function projectFrom(
   state: Pick<
     StoreState,
-    'projectId' | 'title' | 'sizeId' | 'pages' | 'customStickers' | 'customFonts' | 'recentColors'
+    | 'projectId'
+    | 'title'
+    | 'sizeId'
+    | 'pages'
+    | 'customStickers'
+    | 'customFonts'
+    | 'recentColors'
+    | 'guides'
   >,
   createdAt: number,
 ): Project {
@@ -223,6 +238,7 @@ function projectFrom(
     customStickers: state.customStickers,
     customFonts: state.customFonts,
     recentColors: state.recentColors,
+    guides: state.guides,
     createdAt,
     updatedAt: Date.now(),
   }
@@ -233,11 +249,11 @@ export const useStore = create<StoreState>((set, get) => {
   let saveTimer: number | undefined
   let openedAt = Date.now()
   const writeNow = () => {
-    const { projectId, title, sizeId, pages, customStickers, customFonts, recentColors } = get()
+    const { projectId, title, sizeId, pages, customStickers, customFonts, recentColors, guides } = get()
     if (!projectId) return
     void storage.saveProject(
       projectFrom(
-        { projectId, title, sizeId, pages, customStickers, customFonts, recentColors },
+        { projectId, title, sizeId, pages, customStickers, customFonts, recentColors, guides },
         openedAt,
       ),
     )
@@ -281,6 +297,7 @@ export const useStore = create<StoreState>((set, get) => {
     customStickers: [],
     customFonts: [],
     recentColors: [],
+    guides: { v: [], h: [] },
     activePageIndex: 0,
     activeHalfIndex: 0,
     selected: null,
@@ -313,6 +330,7 @@ export const useStore = create<StoreState>((set, get) => {
           customStickers: project.customStickers ?? [],
           customFonts: project.customFonts ?? [],
           recentColors: project.recentColors ?? [],
+          guides: project.guides ?? { v: [], h: [] },
           activePageIndex: 0,
           selected: null,
           armedPhotoIds: [],
@@ -334,6 +352,7 @@ export const useStore = create<StoreState>((set, get) => {
           customStickers: [],
     customFonts: [],
     recentColors: [],
+    guides: { v: [], h: [] },
           activePageIndex: 0,
           selected: null,
           undoStack: [],
@@ -904,6 +923,37 @@ export const useStore = create<StoreState>((set, get) => {
       persist()
     },
 
+    addGuide(axis, position) {
+      // Guides are a drawing aid, not a change to the book's contents, so they
+      // stay out of the undo stack — same reasoning as fonts and recent colours.
+      set((state) => ({ guides: { ...state.guides, [axis]: [...state.guides[axis], position] } }))
+      persist()
+    },
+
+    moveGuide(axis, index, position) {
+      set((state) => {
+        const next = [...state.guides[axis]]
+        // Dragged clear off the page means "get rid of it", the way a guide
+        // dragged back to the ruler behaves everywhere else.
+        if (position < 0 || position > 100) next.splice(index, 1)
+        else next[index] = position
+        return { guides: { ...state.guides, [axis]: next } }
+      })
+      persist()
+    },
+
+    removeGuide(axis, index) {
+      set((state) => ({
+        guides: { ...state.guides, [axis]: state.guides[axis].filter((_, i) => i !== index) },
+      }))
+      persist()
+    },
+
+    clearGuides() {
+      set({ guides: { v: [], h: [] } })
+      persist()
+    },
+
     addCustomFont(font) {
       // Deliberately outside the undo stack: a font is a resource the book
       // owns, like an imported photo, not an edit to the layout. Undoing a
@@ -1000,6 +1050,7 @@ export const useStore = create<StoreState>((set, get) => {
         customStickers: [],
     customFonts: [],
     recentColors: [],
+    guides: { v: [], h: [] },
         activePageIndex: 0,
         selected: null,
         undoStack: [],

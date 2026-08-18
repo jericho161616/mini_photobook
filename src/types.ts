@@ -345,6 +345,13 @@ export interface Project {
   customFonts?: CustomFont[]
   /** Colours mixed by hand in this book, most recent first — the palettes are always one click away and aren't kept here. */
   recentColors?: string[]
+  /**
+   * Guide lines dragged off the rulers, in percent of the page. Kept for the
+   * whole book rather than per page: the point of a guide is that the same
+   * line falls in the same place on every page, so a caption sits at the same
+   * height throughout. They never print.
+   */
+  guides?: { v: number[]; h: number[] }
 }
 
 /** How long a trashed book is kept before it's purged for good. */

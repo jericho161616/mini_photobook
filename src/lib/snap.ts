@@ -39,9 +39,15 @@ export function pageTargets(): SnapTargets {
 }
 
 /** Adds every other decoration's edges and centre line, so boxes line up with each other too. */
-export function targetsFrom(boxes: SnapBox[], pageLines = pageTargets()): SnapTargets {
-  const v = [...pageLines.v]
-  const h = [...pageLines.h]
+export function targetsFrom(
+  boxes: SnapBox[],
+  guides: { v: number[]; h: number[] } = { v: [], h: [] },
+  pageLines = pageTargets(),
+): SnapTargets {
+  // A guide you placed by hand is the strongest intent there is, so it lines
+  // up alongside the page's own centre and edges.
+  const v = [...pageLines.v, ...guides.v]
+  const h = [...pageLines.h, ...guides.h]
   for (const b of boxes) {
     v.push(b.x, b.x + b.w / 2, b.x + b.w)
     h.push(b.y, b.y + b.h / 2, b.y + b.h)

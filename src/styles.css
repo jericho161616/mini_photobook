@@ -4068,42 +4068,109 @@ kbd {
   background-position: 0 0, 0 0, 0 0, 0 0;
 }
 
-.page-frame.with-rulers { padding: 18px 0 0 18px; }
+.page-frame.with-rulers { padding: 20px 0 0 20px; }
 
+/* Rulers sit outside the page and read in inches — the unit the book is
+   actually quoted and printed in. Dragging off one leaves a guide. */
 .ruler {
   position: absolute;
   background: var(--linen-deep);
   border: 1px solid var(--line);
-  pointer-events: none;
-  z-index: 4;
+  z-index: 6;
+  cursor: crosshair;
+  overflow: hidden;
 }
 
 .ruler.top {
-  top: 0;
-  left: 18px;
+  top: -20px;
+  left: 0;
   right: 0;
-  height: 17px;
-  /* A tick every 10% of the page, taller at the halfway mark. */
-  background-image:
-    linear-gradient(to right, var(--ink-soft) 0 1px, transparent 1px),
-    linear-gradient(to right, var(--line-strong) 0 1px, transparent 1px);
-  background-size: 50% 11px, 10% 6px;
-  background-position: 0 100%, 0 100%;
-  background-repeat: repeat-x;
+  height: 19px;
 }
 
 .ruler.left {
-  left: 0;
-  top: 18px;
+  left: -20px;
+  top: 0;
   bottom: 0;
-  width: 17px;
-  background-image:
-    linear-gradient(to bottom, var(--ink-soft) 0 1px, transparent 1px),
-    linear-gradient(to bottom, var(--line-strong) 0 1px, transparent 1px);
-  background-size: 11px 50%, 6px 10%;
-  background-position: 100% 0, 100% 0;
-  background-repeat: repeat-y;
+  width: 19px;
 }
+
+.ruler-tick { position: absolute; }
+
+.ruler.top .ruler-tick {
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid var(--line-strong);
+}
+
+.ruler.left .ruler-tick {
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--line-strong);
+}
+
+.ruler-label {
+  position: absolute;
+  font-family: var(--mono, ui-monospace), monospace;
+  font-size: 8px;
+  line-height: 1;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.ruler.top .ruler-label { top: 3px; left: 2px; }
+.ruler.left .ruler-label { top: 2px; left: 2px; }
+
+/* The line that follows the cursor while a guide is being pulled out. */
+.ruler-preview { position: absolute; background: #17a2b8; }
+.ruler.top .ruler-preview { top: 0; bottom: 0; width: 1px; }
+.ruler.left .ruler-preview { left: 0; right: 0; height: 1px; }
+
+/* The element is the grab area; the line itself is drawn by ::before.
+   Borders can't do this job — box-sizing is border-box globally, so a 1px
+   line with 5px borders ends up painting nothing at all. */
+.guide {
+  position: absolute;
+  z-index: 5;
+  background: none;
+}
+
+.guide::before {
+  content: '';
+  position: absolute;
+  background: #17a2b8;
+}
+
+.guide.vertical {
+  top: 0;
+  bottom: 0;
+  width: 11px;
+  margin-left: -5px;
+  cursor: col-resize;
+}
+
+.guide.vertical::before {
+  top: 0;
+  bottom: 0;
+  left: 5px;
+  width: 1px;
+}
+
+.guide.horizontal {
+  left: 0;
+  right: 0;
+  height: 11px;
+  margin-top: -5px;
+  cursor: row-resize;
+}
+
+.guide.horizontal::before {
+  left: 0;
+  right: 0;
+  top: 5px;
+  height: 1px;
+}
+
 
 /* ---- Numeric font size ---- */
 .ctx-size {
